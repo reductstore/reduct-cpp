@@ -43,6 +43,7 @@ class IBucket {
   virtual ReadResult Read(std::string_view entry_name, Time ts) const = 0;
   virtual Error Write(std::string_view entry_name, std::string_view data, Time ts = Time::clock::now()) const = 0;
   virtual ListResult List(std::string_view entry_name, Time start, Time stop) const = 0;
+  virtual Error Remove() const = 0;
 };
 
 class IClient {

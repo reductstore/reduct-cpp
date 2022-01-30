@@ -1,0 +1,9 @@
+enable_testing()
+
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+set (SRC_FILES
+        test.cc)
+
+add_executable(reduct-tests ${SRC_FILES})
+target_link_libraries(reduct-tests reduct ${CONAN_LIBS})
