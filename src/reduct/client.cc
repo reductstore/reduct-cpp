@@ -1,8 +1,7 @@
-//
-// Created by atimin on 30.01.22.
-//
+// Copyright 2022 Alexey Timin
 
-#include "client.h"
+
+#include "reduct/client.h"
 
 namespace reduct {
 

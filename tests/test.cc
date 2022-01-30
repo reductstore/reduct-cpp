@@ -9,8 +9,6 @@
 #include <string>
 #include <thread>
 
-
-
 /**
  * Main function for Catch2 tests to work with GMock
  * https://github.com/matepek/catch2-with-gmock
@@ -20,7 +18,6 @@
  */
 
 int main(int argc, char** argv) {
-
   int gmockArgC = 1;
   ::testing::InitGoogleMock(&gmockArgC, argv);
 

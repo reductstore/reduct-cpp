@@ -21,4 +21,4 @@ std::ostream& operator<<(std::ostream& os, const Error& error) {
   return os;
 }
 
-}  // namespace reduct::core
+}  // namespace reduct
