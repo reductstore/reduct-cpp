@@ -50,7 +50,7 @@ jobs:
           name: image
           path: /tmp/
       - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data ghcr.io/reduct-storage/reduct-storage:latest
+        run: docker run -p 8383:8383 -v ${PWD}/data:/data -d ghcr.io/reduct-storage/reduct-storage:latest
 
       - name: Load image with tests
         run: |
