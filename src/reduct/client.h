@@ -51,12 +51,21 @@ class IClient {
   struct ServerInfo {
     std::string version;
     size_t bucket_count;
+
+    bool operator<=>(const IClient::ServerInfo&) const = default;
   };
 
   virtual ServerInfo GetInfo() const = 0;
 
   virtual std::unique_ptr<IBucket> GetBucket(std::string_view name) const = 0;
   virtual std::unique_ptr<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings) const = 0;
+
+  /**
+   * @brief Build a client
+   * @param url URL of React Storage
+   * @return
+   */
+  static std::unique_ptr<IClient> Build(std::string_view url);
 };
 }  // namespace reduct
 
