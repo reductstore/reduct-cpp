@@ -48,14 +48,29 @@ class IBucket {
 
 class IClient {
  public:
+  /**
+   * Reduct Storage Information
+   */
   struct ServerInfo {
-    std::string version;
-    size_t bucket_count;
+    std::string version;  //  version of storage
+    size_t bucket_count;  //  number of buckets
 
     bool operator<=>(const IClient::ServerInfo&) const = default;
   };
 
-  virtual ServerInfo GetInfo() const = 0;
+  /**
+   * Result of GetInfo request
+   */
+  struct GetInfoResult {
+    ServerInfo info;    // information about the server
+    Error error;        // error
+  };
+
+  /**
+   * @brief Get information about the server
+   * @return
+   */
+  virtual GetInfoResult GetInfo() const = 0;
 
   virtual std::unique_ptr<IBucket> GetBucket(std::string_view name) const = 0;
   virtual std::unique_ptr<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings) const = 0;

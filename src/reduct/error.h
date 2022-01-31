@@ -17,8 +17,7 @@ struct [[nodiscard]] Error { // NOLINT
 
   std::string ToString() const;
 
-  bool operator==(const Error& rhs) const;
-  bool operator!=(const Error& rhs) const;
+  bool operator<=>(const Error& rhs) const  = default;
   friend std::ostream& operator<<(std::ostream& os, const Error& error);
 
   static const Error kOk;
