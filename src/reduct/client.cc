@@ -3,8 +3,9 @@
 #include "reduct/client.h"
 
 #include <fmt/core.h>
-#include <httplib/httplib.h>
 #include <nlohmann/json.hpp>
+
+#include "reduct/internal/http_client.h"
 
 namespace reduct {
 
@@ -19,22 +20,17 @@ class Bucket : public IBucket {
 
 class Client : public IClient {
  public:
-  explicit Client(std::string_view url) : url_(url), client_(std::make_unique<httplib::Client>(url_)) {}
+  explicit Client(std::string_view url) : url_(url) { client_ = internal::IHttpClient::Build(url); }
 
   [[nodiscard]] Result<ServerInfo> GetInfo() const noexcept override {
-    auto res = client_->Get("/result");
-    if (res.error() != httplib::Error::Success) {
-      return {{}, Error{.code = -1, .message = httplib::to_string(res.error())}};
+    auto [body, err] = client_->Get("/info");
+    if (err) {
+      return {{}, std::move(err)};
     }
 
     try {
       nlohmann::json data;
-      data = nlohmann::json::parse(res->body);
-
-      if (res->status != 200) {
-        return {{}, Error{.code = res->status, .message = data["detail"]}};
-      }
-
+      data = nlohmann::json::parse(body);
       return {
           ServerInfo{
               .version = data.at("version"),
@@ -70,22 +66,17 @@ class Client : public IClient {
       data["quota_size"] = *settings.quota_type;
     }
 
-    auto res = client_->Post(fmt::format("/b/{}", name).c_str(), data.dump(), "application/json");
-    if (res.error() != httplib::Error::Success) {
-      return {{}, Error{.code = -1, .message = httplib::to_string(res.error())}};
-    }
-
-    if (res->status != 200) {
-      data = nlohmann::json::parse(res->body);
-      return {{}, Error{.code = res->status, .message = data["detail"]}};
+    auto err = client_->Post(fmt::format("/b/{}", name), data.dump());
+    if (err) {
+      return {nullptr, std::move(err)};
     }
 
     return {std::make_unique<Bucket>(url_, name), {}};
   }
 
  private:
+  std::unique_ptr<internal::IHttpClient> client_;
   std::string url_;
-  std::unique_ptr<httplib::Client> client_;
 };
 
 std::unique_ptr<IClient> IClient::Build(std::string_view url) { return std::make_unique<Client>(url); }

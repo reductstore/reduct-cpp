@@ -1,9 +1,12 @@
 set(SRC_FILES
+        reduct/internal/http_client.cc
         reduct/client.cc
         reduct/error.cc)
 
-set(HEADERS
+set(PUBLIC_HEADERS
         reduct/client.h
-        reduct/error.h)
+        reduct/error.h
+        reduct/result.h)
+
 add_library(reduct STATIC ${SRC_FILES})
-set_target_properties(reduct PROPERTIES PUBLIC_HEADER HEADERS)
+set_target_properties(reduct PROPERTIES PUBLIC_HEADER PUBLIC_HEADERS)

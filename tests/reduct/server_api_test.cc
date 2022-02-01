@@ -8,7 +8,7 @@
 using reduct::Error;
 using reduct::IClient;
 
-TEST_CASE("reduct::Client should get result", "[server_api]") {
+TEST_CASE("reduct::Client should get info", "[server_api]") {
   StorageLauncher launcher;
 
   auto client = IClient::Build("http://127.0.0.1:8383");

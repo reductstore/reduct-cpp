@@ -10,26 +10,9 @@
 #include <vector>
 
 #include "reduct/error.h"
+#include "reduct/result.h"
 
 namespace reduct {
-
-/**
- * Result with error request
- */
-template <typename T>
-struct Result {
-  T result;
-  Error error;  // error code is HTTP status or -1 if it is communication error
-};
-
-/**
- * Result with error request
- */
-template <typename T>
-struct UPtrResult {
-  std::unique_ptr<T> result;
-  Error error;  // error code is HTTP status or -1 if it is communication error
-};
 
 class IBucket {
  public:
