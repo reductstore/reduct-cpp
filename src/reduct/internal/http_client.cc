@@ -38,7 +38,7 @@ class HttpClient : public IHttpClient {
   }
 
  private:
-  static Error ParseDetail(httplib::Result& res) {
+  static Error ParseDetail(const httplib::Result& res) {
     try {
       nlohmann::json data;
       data = nlohmann::json::parse(res->body);
