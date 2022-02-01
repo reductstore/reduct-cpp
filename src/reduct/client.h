@@ -12,6 +12,25 @@
 #include "reduct/error.h"
 
 namespace reduct {
+
+/**
+ * Result with error request
+ */
+template <typename T>
+struct Result {
+  T result;
+  Error error;  // error code is HTTP status or -1 if it is communication error
+};
+
+/**
+ * Result with error request
+ */
+template <typename T>
+struct UPtrResult {
+  std::unique_ptr<T> result;
+  Error error;  // error code is HTTP status or -1 if it is communication error
+};
+
 class IBucket {
  public:
   enum class QuotaType { kNone, kFifo };
@@ -59,21 +78,13 @@ class IClient {
   };
 
   /**
-   * Result of GetInfo request
-   */
-  struct GetInfoResult {
-    ServerInfo info;    // information about the server
-    Error error;        // error code is HTTP status or -1 if it is communication error
-  };
-
-  /**
    * @brief Get information about the server
-   * @return info and error
+   * @return result and error
    */
-  virtual GetInfoResult GetInfo() const noexcept = 0;
+  virtual Result<ServerInfo> GetInfo() const noexcept = 0;
 
-  virtual std::unique_ptr<IBucket> GetBucket(std::string_view name) const = 0;
-  virtual std::unique_ptr<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings) const = 0;
+  virtual UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept = 0;
+  virtual UPtrResult<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings = {}) const noexcept = 0;
 
   /**
    * @brief Build a client

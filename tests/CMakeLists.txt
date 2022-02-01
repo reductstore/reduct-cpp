@@ -3,7 +3,8 @@ enable_testing()
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set (SRC_FILES
-        reduct/client_server_api_test.cc
+        reduct/bucket_api_test.cc
+        reduct/server_api_test.cc
         test.cc)
 
 add_executable(reduct-tests ${SRC_FILES})

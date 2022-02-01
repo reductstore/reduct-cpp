@@ -2,17 +2,27 @@
 
 #include "reduct/client.h"
 
+#include <fmt/core.h>
 #include <httplib/httplib.h>
 #include <nlohmann/json.hpp>
 
 namespace reduct {
 
+class Bucket : public IBucket {
+ public:
+  Bucket(std::string_view url, std::string_view name) {}
+  ReadResult Read(std::string_view entry_name, Time ts) const override { return ReadResult(); }
+  Error Write(std::string_view entry_name, std::string_view data, Time ts) const override { return Error(); }
+  ListResult List(std::string_view entry_name, Time start, Time stop) const override { return ListResult(); }
+  Error Remove() const override { return Error(); }
+};
+
 class Client : public IClient {
  public:
-  explicit Client(std::string_view url) : client_(std::make_unique<httplib::Client>(std::string(url))) {}
+  explicit Client(std::string_view url) : url_(url), client_(std::make_unique<httplib::Client>(url_)) {}
 
-  [[nodiscard]] GetInfoResult GetInfo() const noexcept override {
-    auto res = client_->Get("/info");
+  [[nodiscard]] Result<ServerInfo> GetInfo() const noexcept override {
+    auto res = client_->Get("/result");
     if (res.error() != httplib::Error::Success) {
       return {{}, Error{.code = -1, .message = httplib::to_string(res.error())}};
     }
@@ -37,15 +47,44 @@ class Client : public IClient {
     }
   }
 
-  [[nodiscard]] std::unique_ptr<IBucket> GetBucket(std::string_view name) const override {
-    return std::unique_ptr<IBucket>();
-  }
-  [[nodiscard]] std::unique_ptr<IBucket> CreateBucket(std::string_view name,
-                                                      IBucket::Settings settings) const override {
-    return std::unique_ptr<IBucket>();
+  [[nodiscard]] UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept override { return {}; }
+  [[nodiscard]] UPtrResult<IBucket> CreateBucket(std::string_view name,
+                                                 IBucket::Settings settings) const noexcept override {
+    nlohmann::json data;
+    if (settings.max_block_size) {
+      data["max_block_size"] = *settings.max_block_size;
+    }
+
+    if (settings.quota_type) {
+      switch (*settings.quota_type) {
+        case IBucket::QuotaType::kNone:
+          data["quota_type"] = "NONE";
+          break;
+        case IBucket::QuotaType::kFifo:
+          data["quota_type"] = "FIFO";
+          break;
+      }
+    }
+
+    if (settings.quota_size) {
+      data["quota_size"] = *settings.quota_type;
+    }
+
+    auto res = client_->Post(fmt::format("/b/{}", name).c_str(), data.dump(), "application/json");
+    if (res.error() != httplib::Error::Success) {
+      return {{}, Error{.code = -1, .message = httplib::to_string(res.error())}};
+    }
+
+    if (res->status != 200) {
+      data = nlohmann::json::parse(res->body);
+      return {{}, Error{.code = res->status, .message = data["detail"]}};
+    }
+
+    return {std::make_unique<Bucket>(url_, name), {}};
   }
 
  private:
+  std::string url_;
   std::unique_ptr<httplib::Client> client_;
 };
 

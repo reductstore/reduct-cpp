@@ -20,13 +20,13 @@ using reduct::IClient;
 int main() {
     auto client = IClient::Build("http://127.0.0.1:8383");
     
-    auto [info, err] = client->GetInfo();
+    auto [result, err] = client->GetInfo();
     if (err) {
         fmt::print("Error: {}", err.ToString());
         return -1;
     }
     
-    fmt::print("Server version: {}", info.version);
+    fmt::print("Server version: {}", result.version);
     
     return 0;
 }
