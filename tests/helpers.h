@@ -3,15 +3,18 @@
 #ifndef REDUCT_CPP_HELPERS_H
 #define REDUCT_CPP_HELPERS_H
 
+#include <fmt/core.h>
+
 #include <cstdlib>
+#include <random>
 
-struct StorageLauncher {
-  StorageLauncher() {
-    std::system(
-        "docker run -p 8383:8383 --rm -d --name=reduct-cpp-container ghcr.io/reduct-storage/reduct-storage:main");
-  }
+inline std::string RandomBucketName() {
+  std::random_device r;
 
-  ~StorageLauncher() { std::system("docker stop reduct-cpp-container"); }
-};
+  std::default_random_engine e1(r());
+  std::uniform_int_distribution<int> uniform_dist(1, 10000000);
+
+  return fmt::format("bucket_{}", uniform_dist(e1));
+}
 
 #endif  // REDUCT_CPP_HELPERS_H
