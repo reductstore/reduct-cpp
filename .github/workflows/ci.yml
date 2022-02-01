@@ -57,4 +57,4 @@ jobs:
           docker load --input /tmp/image.tar
           docker image ls -a
       - name: Run tests
-        run: docker run ${{github.repository}} reduct-tests
+        run: docker run --network=host ${{github.repository}} reduct-tests
