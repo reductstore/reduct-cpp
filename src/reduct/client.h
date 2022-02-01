@@ -63,14 +63,14 @@ class IClient {
    */
   struct GetInfoResult {
     ServerInfo info;    // information about the server
-    Error error;        // error
+    Error error;        // error code is HTTP status or -1 if it is communication error
   };
 
   /**
    * @brief Get information about the server
-   * @return
+   * @return info and error
    */
-  virtual GetInfoResult GetInfo() const = 0;
+  virtual GetInfoResult GetInfo() const noexcept = 0;
 
   virtual std::unique_ptr<IBucket> GetBucket(std::string_view name) const = 0;
   virtual std::unique_ptr<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings) const = 0;

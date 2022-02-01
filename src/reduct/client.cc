@@ -11,23 +11,20 @@ class Client : public IClient {
  public:
   explicit Client(std::string_view url) : client_(std::make_unique<httplib::Client>(std::string(url))) {}
 
-  [[nodiscard]] GetInfoResult GetInfo() const override {
+  [[nodiscard]] GetInfoResult GetInfo() const noexcept override {
     auto res = client_->Get("/info");
-    if (res.error() == httplib::Error::Read) {
+    if (res.error() != httplib::Error::Success) {
       return {{}, Error{.code = -1, .message = httplib::to_string(res.error())}};
     }
 
-    nlohmann::json data;
-    data = nlohmann::json::parse(res->body, nullptr, false);
-    if (data.is_discarded()) {
-      return {{}, Error{.code = -1, .message = "Server return malformed request"}};
-    }
-
-    if (res->status != 200) {
-      return {{}, Error{.code = res->status, .message = data["detail"]}};
-    }
-
     try {
+      nlohmann::json data;
+      data = nlohmann::json::parse(res->body);
+
+      if (res->status != 200) {
+        return {{}, Error{.code = res->status, .message = data["detail"]}};
+      }
+
       return {
           ServerInfo{
               .version = data.at("version"),
