@@ -1,6 +1,4 @@
-//
-// Created by atimin on 02.02.22.
-//
+// Copyright 2022 Alexey Timin
 
 #include "reduct/bucket.h"
 
@@ -55,7 +53,6 @@ Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexce
     if (data.contains("quota_size")) {
       settings.quota_size = data["quota_size"];
     }
-
   } catch (const std::exception& ex) {
     return {{}, Error{.code = -1, .message = ex.what()}};
   }
