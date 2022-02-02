@@ -6,48 +6,17 @@
 #include <chrono>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
 
+#include "reduct/bucket.h"
 #include "reduct/error.h"
 #include "reduct/result.h"
-
 namespace reduct {
-
-class IBucket {
- public:
-  enum class QuotaType { kNone, kFifo };
-
-  struct Settings {
-    std::optional<size_t> max_block_size;
-    std::optional<QuotaType> quota_type;
-    std::optional<size_t> quota_size;
-  };
-
-  using Time = std::chrono::time_point<std::chrono::system_clock>;
-
-  struct ReadResult {
-    std::string data;
-    Time time;
-    Error error;
-  };
-
-  struct RecordInfo {
-    Time timestamp;
-    size_t size{};
-  };
-
-  struct ListResult {
-    std::vector<RecordInfo> records;
-    Error error;
-  };
-
-  virtual ReadResult Read(std::string_view entry_name, Time ts) const = 0;
-  virtual Error Write(std::string_view entry_name, std::string_view data, Time ts = Time::clock::now()) const = 0;
-  virtual ListResult List(std::string_view entry_name, Time start, Time stop) const = 0;
-  virtual Error Remove() const = 0;
-};
-
+/**
+ * Interface for Reduct Storage HTTP Client
+ */
 class IClient {
  public:
   /**

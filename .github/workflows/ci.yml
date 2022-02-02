@@ -42,7 +42,6 @@ jobs:
   tests:
     needs: build
     runs-on: ubuntu-latest
-
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v2

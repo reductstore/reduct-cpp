@@ -1,5 +1,6 @@
 set(SRC_FILES
         reduct/internal/http_client.cc
+        reduct/bucket.cc
         reduct/client.cc
         reduct/error.cc)
 

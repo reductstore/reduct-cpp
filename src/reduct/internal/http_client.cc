@@ -13,12 +13,8 @@ class HttpClient : public IHttpClient {
 
   Result<std::string> Get(std::string_view path) const noexcept override {
     auto res = client_->Get(path.data());
-    if (res.error() != httplib::Error::Success) {
-      return {{}, Error{.code = -1, .message = httplib::to_string(res.error())}};
-    }
-
-    if (res->status != 200) {
-      return {{}, ParseDetail(res)};
+    if (auto err = CheckRequest(res)) {
+      return {{}, std::move(err)};
     }
 
     return {std::move(res->body), Error::kOk};
@@ -26,6 +22,16 @@ class HttpClient : public IHttpClient {
 
   Error Post(std::string_view path, std::string_view body) const noexcept override {
     auto res = client_->Post(path.data(), std::string(body), "application/json");
+    return CheckRequest(res);
+  }
+
+  Error Put(std::string_view path, std::string_view body) const noexcept override {
+    auto res = client_->Put(path.data(), std::string(body), "application/json");
+    return CheckRequest(res);
+  }
+
+ private:
+  static Error CheckRequest(const httplib::Result& res) {
     if (res.error() != httplib::Error::Success) {
       return Error{.code = -1, .message = httplib::to_string(res.error())};
     }
@@ -37,7 +43,6 @@ class HttpClient : public IHttpClient {
     return Error::kOk;
   }
 
- private:
   static Error ParseDetail(const httplib::Result& res) {
     try {
       nlohmann::json data;
