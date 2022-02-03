@@ -37,7 +37,7 @@ class Bucket : public IBucket {
     return client_->Put(path_, current_setting.ToJsonString());
   }
 
-  Error Remove() const override { return client_->Delete(path_); }
+  Error Remove() const noexcept override { return client_->Delete(path_); }
 
   ReadResult Read(std::string_view entry_name, Time ts) const override { return ReadResult(); }
   Error Write(std::string_view entry_name, std::string_view data, Time ts) const override { return Error(); }

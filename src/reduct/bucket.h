@@ -85,7 +85,7 @@ class IBucket {
    * @brief Remove the bucket from server with all the entries
    * @return HTTP or communication error
    */
-  virtual Error Remove() const = 0;
+  virtual Error Remove() const noexcept = 0;
 
 
   static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name);
