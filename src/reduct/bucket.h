@@ -80,7 +80,15 @@ class IBucket {
    * @return error
    */
   virtual Error UpdateSettings(const Settings& settings) const noexcept = 0;
+
+  /**
+   * @brief Remove the bucket from server with all the entries
+   * @return HTTP or communication error
+   */
   virtual Error Remove() const = 0;
+
+
+  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name);
 };
 }  // namespace reduct
 

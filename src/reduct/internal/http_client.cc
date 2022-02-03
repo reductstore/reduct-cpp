@@ -30,6 +30,11 @@ class HttpClient : public IHttpClient {
     return CheckRequest(res);
   }
 
+  Error Delete(std::string_view path) const noexcept override {
+    auto res = client_->Delete(path.data());
+    return CheckRequest(res);
+  }
+
  private:
   static Error CheckRequest(const httplib::Result& res) {
     if (res.error() != httplib::Error::Success) {

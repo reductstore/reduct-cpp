@@ -13,18 +13,22 @@ namespace reduct {
  * Result with error request
  */
 template <typename T>
-struct [[nodiscard]] Result { // NOLINT
+struct [[nodiscard]] Result {  // NOLINT
   T result;
   Error error;  // error code is HTTP status or -1 if it is communication error
+
+  operator const Error&() const noexcept { return error; }
 };
 
 /**
  * Result with error request
  */
 template <typename T>
-struct [[nodiscard]] UPtrResult { // NOLINT
+struct [[nodiscard]] UPtrResult {  // NOLINT
   std::unique_ptr<T> result;
   Error error;  // error code is HTTP status or -1 if it is communication error
+
+  operator const Error&() const noexcept { return error; }
 };
 
 }  // namespace reduct

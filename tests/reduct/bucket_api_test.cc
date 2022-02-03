@@ -63,7 +63,9 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
     REQUIRE(settings == kSettings);
 
     SECTION("and return HTTP status") {
-      // TODO(Alexey Timin): We need to implement remove to check HTTP 404
+      REQUIRE(bucket->Remove() == Error::kOk);
+      REQUIRE(bucket->GetSettings() ==
+              Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
     }
   }
 
@@ -90,7 +92,19 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
     }
 
     SECTION("and return HTTP status") {
-      // TODO(Alexey Timin): We need to implement remove to check HTTP 404
+      REQUIRE(bucket->Remove() == Error::kOk);
+      REQUIRE(bucket->GetSettings() ==
+              Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
     }
   }
+}
+
+TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api") {
+  auto client = IClient::Build("http://127.0.0.1:8383");
+
+  const auto kBucketName = RandomBucketName();
+  auto [bucket, _] = client->CreateBucket(kBucketName);
+
+  REQUIRE(bucket->Remove() == Error::kOk);
+  REQUIRE(bucket->Remove() == Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
 }
