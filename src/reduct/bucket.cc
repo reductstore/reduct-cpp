@@ -64,7 +64,6 @@ class Bucket : public IBucket {
         records[i].timestamp = FromMicroseconds(json_records[i].at("ts"));
         records[i].size = json_records[i].at("size");
       }
-
     } catch (const std::exception& ex) {
       return {{}, Error{.code = -1, .message = ex.what()}};
     }

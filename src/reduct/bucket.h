@@ -53,7 +53,6 @@ class IBucket {
 
     bool operator<=>(const RecordInfo&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const RecordInfo& settings);
-
   };
 
   virtual Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const = 0;

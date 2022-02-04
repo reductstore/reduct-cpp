@@ -1,3 +1,5 @@
+// Copyright 2022 Alexey Timin
+
 #include <fmt/core.h>
 #include <reduct/client.h>
 
@@ -37,5 +39,4 @@ int main() {
       fmt::print("Read blob: '{}'\n", blob);
     }
   }
-
 }
