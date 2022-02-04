@@ -41,43 +41,50 @@ class IBucket {
      */
     static Result<Settings> Parse(std::string_view json) noexcept;
 
-
     bool operator<=>(const Settings&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const Settings& settings);
   };
 
   using Time = std::chrono::time_point<std::chrono::system_clock>;
 
-  struct ReadResult {
-    std::string data;
-    Time time;
-    Error error;
-  };
-
   struct RecordInfo {
     Time timestamp;
     size_t size{};
+
+    bool operator<=>(const RecordInfo&) const noexcept = default;
+    friend std::ostream& operator<<(std::ostream& os, const RecordInfo& settings);
+
   };
 
-  struct ListResult {
-    std::vector<RecordInfo> records;
-    Error error;
-  };
+  virtual Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const = 0;
 
-  virtual ReadResult Read(std::string_view entry_name, Time ts) const = 0;
+  /**
+   * Write an object to the storage with timestamp
+   * @param entry_name entry in bucket
+   * @param data an object ot store
+   * @param ts timestamp
+   * @return HTTP or communication error
+   */
   virtual Error Write(std::string_view entry_name, std::string_view data, Time ts = Time::clock::now()) const = 0;
-  virtual ListResult List(std::string_view entry_name, Time start, Time stop) const = 0;
+
+  /**
+   * Read a record by timestamp
+   * @param entry_name entry in bucket
+   * @param ts timestamp
+   * @return HTTP or communication error
+   */
+  virtual Result<std::string> Read(std::string_view entry_name, Time ts) const = 0;
 
   /**
    * @brief Get settings by HTTP request
-   * @return
+   * @return HTTP or communication error
    */
   virtual Result<Settings> GetSettings() const noexcept = 0;
 
   /**
    * @brief Update settings which has values
    * @param settings
-   * @return error
+   * @return HTTP or communication error
    */
   virtual Error UpdateSettings(const Settings& settings) const noexcept = 0;
 
@@ -86,7 +93,6 @@ class IBucket {
    * @return HTTP or communication error
    */
   virtual Error Remove() const noexcept = 0;
-
 
   static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name);
 };

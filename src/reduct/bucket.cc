@@ -39,11 +39,46 @@ class Bucket : public IBucket {
 
   Error Remove() const noexcept override { return client_->Delete(path_); }
 
-  ReadResult Read(std::string_view entry_name, Time ts) const override { return ReadResult(); }
-  Error Write(std::string_view entry_name, std::string_view data, Time ts) const override { return Error(); }
-  ListResult List(std::string_view entry_name, Time start, Time stop) const override { return ListResult(); }
+  Error Write(std::string_view entry_name, std::string_view data, Time ts) const override {
+    return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(ts)), data.data(),
+                         "application/octet-stream");
+  }
+
+  Result<std::string> Read(std::string_view entry_name, Time ts) const override {
+    return client_->Get(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(ts)));
+  }
+
+  Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const override {
+    auto [body, err] = client_->Get(
+        fmt::format("{}/{}/list?start={}&stop={}", path_, entry_name, ToMicroseconds(start), ToMicroseconds(stop)));
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    std::vector<RecordInfo> records;
+    try {
+      auto data = nlohmann::json::parse(body);
+      auto json_records = data.at("records");
+      records.resize(json_records.size());
+      for (int i = 0; i < records.size(); ++i) {
+        records[i].timestamp = FromMicroseconds(json_records[i].at("ts"));
+        records[i].size = json_records[i].at("size");
+      }
+
+    } catch (const std::exception& ex) {
+      return {{}, Error{.code = -1, .message = ex.what()}};
+    }
+
+    return {records, Error::kOk};
+  }
 
  private:
+  static int64_t ToMicroseconds(const Time& ts) {
+    return std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
+  }
+
+  static Time FromMicroseconds(int64_t ts) { return Time() + std::chrono::microseconds(ts); }
+
   std::unique_ptr<internal::IHttpClient> client_;
   std::string path_;
 };
@@ -53,7 +88,6 @@ std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string
 }
 
 // Settings
-
 std::ostream& operator<<(std::ostream& os, const reduct::IBucket::Settings& settings) {
   os << settings.ToJsonString();
   return os;
@@ -108,4 +142,10 @@ Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexce
   return {settings, Error::kOk};
 }
 
+std::ostream& operator<<(std::ostream& os, const IBucket::RecordInfo& record) {
+  os << fmt::format("<RecordInfo ts={}, size={}",
+                    std::chrono::duration_cast<std::chrono::microseconds>(record.timestamp.time_since_epoch()).count(),
+                    record.size);
+  return os;
+}
 }  // namespace reduct

@@ -20,13 +20,13 @@ class HttpClient : public IHttpClient {
     return {std::move(res->body), Error::kOk};
   }
 
-  Error Post(std::string_view path, std::string_view body) const noexcept override {
-    auto res = client_->Post(path.data(), std::string(body), "application/json");
+  Error Post(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
+    auto res = client_->Post(path.data(), body.data(), mime.data());
     return CheckRequest(res);
   }
 
-  Error Put(std::string_view path, std::string_view body) const noexcept override {
-    auto res = client_->Put(path.data(), std::string(body), "application/json");
+  Error Put(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
+    auto res = client_->Put(path.data(), std::string(body), mime.data());
     return CheckRequest(res);
   }
 
