@@ -16,9 +16,10 @@ jobs:
         run: docker build cpplint/ -t cpplint
       - name: Check code in /src
         run: docker run -v ${PWD}:/app cpplint bash -c "find src/ -name "*.cc" -o -name "*.h"  | xargs cpplint.py"
-      - name: Check code in /unit_tests
+      - name: Check code in /tests
         run: docker run -v ${PWD}:/app cpplint bash -c "find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint.py"
-
+      - name: Check code in /exampes
+        run: docker run -v ${PWD}:/app cpplint bash -c "find exampes/ -name "*.cc" -o -name "*.h"  | xargs cpplint.py"
   build:
     runs-on: ubuntu-latest
     needs: cpplint

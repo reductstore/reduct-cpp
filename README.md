@@ -26,8 +26,22 @@ int main() {
         return -1;
     }
     
-    fmt::print("Server version: {}", result.version);
+    fmt::print("Server version: {}\n", result.version);
+    // Create a bucket
+    auto [bucket, create_err] =
+      client->CreateBucket("bucket", IBucket::Settings{.quota_type = IBucket::QuotaType::kFifo, 
+                                                       .quota_size = 1000000});
+    if (create_err) {
+        fmt::print("Error: {}\n", create_err.ToString());
+        return -1;
+    }
     
+    // Write some data to the storage
+    IBucket::Time ts = IBucket::Time::clock::now();
+    [[maybe_unused]] auto write_err = bucket->Write("entry-1", "some_data1", ts);
+    
+    auto [data, read_err] = bucket->Read("entry-1", ts);
+    fmt::print("Read data: {}\n", data);
     return 0;
 }
 ```
