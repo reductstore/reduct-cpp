@@ -7,8 +7,10 @@ set(FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION})
 
 project(reduct_cpp VERSION ${FULL_VERSION})
 
-
 message(STATUS "Version ${FULL_VERSION}")
+
+set(REDUCT_CPP_ENABLE_TESTS ON CACHE BOOL "Compile tests")
+set(REDUCT_CPP_ENABLE_EXAMPLES ON CACHE BOOL "Compile examples")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -33,5 +35,12 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
+
 add_subdirectory(src)
-add_subdirectory(tests)
+if (REDUCT_CPP_ENABLE_TESTS)
+    add_subdirectory(tests)
+endif ()
+
+if (REDUCT_CPP_ENABLE_EXAMPLES)
+    add_subdirectory(examples)
+endif ()

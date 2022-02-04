@@ -9,6 +9,7 @@ COPY conanfile.txt .
 
 COPY src src
 COPY tests tests
+COPY examples examples
 COPY CMakeLists.txt .
 
 WORKDIR /build
