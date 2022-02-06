@@ -25,14 +25,50 @@ if (NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
 endif ()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
-conan_cmake_autodetect(settings)
-conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_SOURCE_DIR}/conanfile.txt
-        BUILD missing
-        SETTINGS ${settings})
 
+find_program(CONAN_CMD conan)
+if (NOT CONAN_CMD)
+    conan_cmake_autodetect(settings)
+    conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_SOURCE_DIR}/conanfile.txt
+            BUILD missing
+            SETTINGS ${settings})
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+    include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+    conan_basic_setup()
+
+    add_library(dependencies INTERFACE)
+    target_link_libraries(dependencies INTERFACE ${CONAN_LIBS})
+else ()
+    message(STATUS "Conan not found. Fetch dependencies")
+    include(FetchContent)
+    FetchContent_Declare(
+            fmt
+            URL https://github.com/fmtlib/fmt/archive/refs/tags/8.1.1.zip
+            URL_HASH MD5=fed2f2c5027a4034cc8351bf59aa8f7c
+    )
+
+    FetchContent_Declare(
+            nlohmann_json
+            URL https://github.com/nlohmann/json/archive/refs/tags/v3.10.5.zip
+            URL_HASH MD5=accaeb6a75f5972f479ef9139fa65b9e
+    )
+
+    FetchContent_Declare(
+            httplib
+            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.10.1.zip
+            URL_HASH MD5=a0a3b8852f2ddd68a8fa428643710b87
+    )
+
+    FetchContent_Declare(
+            Catch2
+            URL https://github.com/catchorg/Catch2/archive/refs/tags/v2.13.8.zip
+            URL_HASH MD5=78148e1a75aea786038fb8d21b9455f2
+    )
+
+    FetchContent_MakeAvailable(fmt nlohmann_json httplib Catch2)
+    add_library(dependencies INTERFACE)
+    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib Catch2::Catch2)
+endif ()
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 

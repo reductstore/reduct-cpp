@@ -2,7 +2,7 @@
 
 #include "reduct/internal/http_client.h"
 
-#include <httplib/httplib.h>
+#include <httplib.h>
 #include <nlohmann/json.hpp>
 
 namespace reduct::internal {

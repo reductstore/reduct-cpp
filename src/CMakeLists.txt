@@ -10,4 +10,5 @@ set(PUBLIC_HEADERS
         reduct/result.h)
 
 add_library(reduct STATIC ${SRC_FILES})
+target_link_libraries(reduct dependencies)
 set_target_properties(reduct PROPERTIES PUBLIC_HEADER PUBLIC_HEADERS)

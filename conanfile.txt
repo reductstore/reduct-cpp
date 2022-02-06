@@ -1,9 +1,8 @@
 [requires]
-fmt/8.0.1
+fmt/8.1.1
 cpp-httplib/0.10.1
-nlohmann_json/3.9.1
-gtest/1.11.0
-catch2/2.13.7
+nlohmann_json/3.10.5
+catch2/2.13.8
 
 [generators]
 cmake
