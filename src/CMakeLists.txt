@@ -5,10 +5,16 @@ set(SRC_FILES
         reduct/error.cc)
 
 set(PUBLIC_HEADERS
+        reduct/bucket.h
         reduct/client.h
         reduct/error.h
         reduct/result.h)
 
-add_library(reduct STATIC ${SRC_FILES})
-target_link_libraries(reduct dependencies)
-set_target_properties(reduct PROPERTIES PUBLIC_HEADER PUBLIC_HEADERS)
+add_library(${CMAKE_PROJECT_NAME} STATIC ${SRC_FILES})
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE dependencies)
+set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
+
+install(TARGETS ${CMAKE_PROJECT_NAME}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )

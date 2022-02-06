@@ -67,7 +67,7 @@ else ()
 
     FetchContent_MakeAvailable(fmt nlohmann_json httplib Catch2)
     add_library(dependencies INTERFACE)
-    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib Catch2::Catch2)
+    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib::httplib Catch2::Catch2)
 endif ()
 
 include_directories(${CMAKE_SOURCE_DIR}/src)

@@ -1,2 +1,2 @@
 add_executable(usage-example usage_example.cc)
-target_link_libraries(usage-example reduct)
+target_link_libraries(usage-example ${CMAKE_PROJECT_NAME})
