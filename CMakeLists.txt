@@ -27,7 +27,7 @@ endif ()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
 find_program(CONAN_CMD conan)
-if (NOT CONAN_CMD)
+if (CONAN_CMD)
     conan_cmake_autodetect(settings)
     conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_SOURCE_DIR}/conanfile.txt
             BUILD missing
