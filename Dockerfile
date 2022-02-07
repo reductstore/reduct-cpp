@@ -7,6 +7,7 @@ WORKDIR /src
 
 COPY conanfile.txt .
 
+COPY cmake cmake
 COPY src src
 COPY tests tests
 COPY examples examples
