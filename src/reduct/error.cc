@@ -1,7 +1,7 @@
 // Copyright 2022 Alexey Timin
 
 #include "reduct/error.h"
-
+#define FMT_HEADER_ONLY 1
 #include <fmt/core.h>
 
 namespace reduct {

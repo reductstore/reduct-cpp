@@ -1,7 +1,8 @@
 // Copyright 2022 Alexey Timin
 
-#include <fmt/core.h>
 #include <reduct/client.h>
+
+#include <iostream>
 
 using reduct::IBucket;
 using reduct::IClient;
@@ -12,16 +13,16 @@ int main() {
   // Get information about the server
   auto [info, err] = client->GetInfo();
   if (err) {
-    fmt::print("Error: {}\n", err.ToString());
+    std::cerr << "Error: " << err;
     return -1;
   }
 
-  fmt::print("Server version: {}\n", info.version);
+  std::cout << "Server version: " << info.version;
   // Create a bucket
   auto [bucket, create_err] =
       client->CreateBucket("bucket", IBucket::Settings{.quota_type = IBucket::QuotaType::kFifo, .quota_size = 1000000});
   if (create_err) {
-    fmt::print("Error: {}\n", create_err.ToString());
+    std::cerr << "Error: " << create_err;
     return -1;
   }
 
@@ -36,7 +37,7 @@ int main() {
   for (auto&& record : records) {
     auto [blob, read_err] = bucket->Read("entry-1", record.timestamp);
     if (!read_err) {
-      fmt::print("Read blob: '{}'\n", blob);
+      std::cout << "Read blob: " <<  blob;
     }
   }
 }
