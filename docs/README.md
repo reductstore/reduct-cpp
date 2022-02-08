@@ -6,14 +6,14 @@ C++ Client SDK is an open-source client for [Reduct Storage](https://reduct-stor
 
 If you're not familiar to [Reduct Storage](https://reduct-storage.dev) and want to give it a try before diving deeper into the detail, jump here
 
-{% content-ref url="quick-start.md" %}
-[quick-start.md](Projects/flipback/reduct-storage/reduct-cpp/docs/quick-start.mdack/reduct-storage/reduct-cpp/docs/quick-start.md)
+{% content-ref url="../quick-start.md" %}
+[quick-start.md](../quick-start.md)
 {% endcontent-ref %}
 
 ### API Reference
 
 The whole API is documented here:
 
-{% content-ref url="reference/api-reference.md" %}
-[api-reference.md](Projects/flipback/reduct-storage/reduct-cpp/docs/referenceflipback/reduct-storage/reduct-cpp/docs/reference/api-reference.md)
+{% content-ref url="../reference/api-reference.md" %}
+[api-reference.md](../reference/api-reference.md)
 {% endcontent-ref %}
