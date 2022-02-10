@@ -39,16 +39,16 @@ class Bucket : public IBucket {
 
   Error Remove() const noexcept override { return client_->Delete(path_); }
 
-  Error Write(std::string_view entry_name, std::string_view data, Time ts) const override {
+  Error Write(std::string_view entry_name, std::string_view data, Time ts) const noexcept override {
     return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(ts)), data.data(),
                          "application/octet-stream");
   }
 
-  Result<std::string> Read(std::string_view entry_name, Time ts) const override {
+  Result<std::string> Read(std::string_view entry_name, Time ts) const noexcept override {
     return client_->Get(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(ts)));
   }
 
-  Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const override {
+  Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const noexcept override {
     auto [body, err] = client_->Get(
         fmt::format("{}/{}/list?start={}&stop={}", path_, entry_name, ToMicroseconds(start), ToMicroseconds(stop)));
     if (err) {
@@ -82,7 +82,7 @@ class Bucket : public IBucket {
   std::string path_;
 };
 
-std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name) {
+std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name) noexcept {
   return std::make_unique<Bucket>(server_url, name);
 }
 

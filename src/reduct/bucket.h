@@ -55,7 +55,7 @@ class IBucket {
     friend std::ostream& operator<<(std::ostream& os, const RecordInfo& settings);
   };
 
-  virtual Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const = 0;
+  virtual Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const noexcept = 0;
 
   /**
    * Write an object to the storage with timestamp
@@ -64,7 +64,8 @@ class IBucket {
    * @param ts timestamp
    * @return HTTP or communication error
    */
-  virtual Error Write(std::string_view entry_name, std::string_view data, Time ts = Time::clock::now()) const = 0;
+  virtual Error Write(std::string_view entry_name, std::string_view data,
+                      Time ts = Time::clock::now()) const noexcept = 0;
 
   /**
    * Read a record by timestamp
@@ -72,7 +73,7 @@ class IBucket {
    * @param ts timestamp
    * @return HTTP or communication error
    */
-  virtual Result<std::string> Read(std::string_view entry_name, Time ts) const = 0;
+  virtual Result<std::string> Read(std::string_view entry_name, Time ts) const noexcept = 0;
 
   /**
    * @brief Get settings by HTTP request
@@ -93,7 +94,7 @@ class IBucket {
    */
   virtual Error Remove() const noexcept = 0;
 
-  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name);
+  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name) noexcept;
 };
 }  // namespace reduct
 
