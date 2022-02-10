@@ -1,4 +1,4 @@
-# Main
+# 🎉 Main
 
 C++ Client SDK is an open-source client for [Reduct Storage](https://reduct-storage.dev) written in C++20. You can use it in your C++ applications to integrate them with the storage.
 
@@ -14,6 +14,6 @@ If you're not familiar to [Reduct Storage](https://reduct-storage.dev) and want 
 
 The whole API is documented here:
 
-{% content-ref url="../reference/api-reference.md" %}
-[api-reference.md](../reference/api-reference.md)
+{% content-ref url="reference/api-reference/" %}
+[api-reference](reference/api-reference/)
 {% endcontent-ref %}
