@@ -37,8 +37,6 @@ To build a client, you should use `IClient::Build` static factory method with HT
 std::unique_ptr<IClient> client = IClient::Build("http://127.0.0.1:8383");
 ```
 
-
-
 ### GetInfo
 
 You can take information about the storage by using method `GetInfo`:
@@ -52,5 +50,38 @@ if (err) {
 }
 
 std::cout << "Server version: " << info.version;
+```
+
+See `IClient::ServerInfo` structure to find that information about the storage can be retrieved
+
+### CreateBucket
+
+To create a new bucket in the storage, you should use `CreateBucket` method with `IBucket::Settings`:
+
+```cpp
+auto [bucket, err] =
+    client->CreateBucket("bucket", IBucket::Settings{.quota_type = IBucket::QuotaType::kFifo, .quota_size = 1000000});
+if (err) {
+  std::cerr << "Error: " << err;
+  return;
+}
+
+std::cout << bucket->GetSettings(); // bucket has type std::unique_ptr<IBucket>
+```
+
+You don't need to specify all the settings, if something is missed, the storage will use the default parameters.
+
+### GetBucket
+
+To work with an existing bucket, you should get by using `GetBucket` method:
+
+```
+auto [bucket, err] = client->Get("bucket");
+if (err) {
+  std::cerr << "Error: " << err;
+  return;
+}
+
+std::cout << bucket->GetSettings(); // bucket has type std::unique_ptr<IBucket>
 ```
 
