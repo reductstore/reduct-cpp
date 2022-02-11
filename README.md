@@ -61,3 +61,8 @@ FetchContent. To use Reduct Storage SDK you need only to use `find_pacakge` in y
 ```cmake
 find_package(ReductCpp)
 ```
+
+## References
+
+* [Documentation](https://cpp.reduct-storage.dev)
+* [Reduct Storage HTTP API](https://docs.reduct-storage.dev/http-api)
