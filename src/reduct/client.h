@@ -50,7 +50,7 @@ class IClient {
    * @param url URL of React Storage
    * @return
    */
-  static std::unique_ptr<IClient> Build(std::string_view url);
+  static std::unique_ptr<IClient> Build(std::string_view url) noexcept;
 };
 }  // namespace reduct
 

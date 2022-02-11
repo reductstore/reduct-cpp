@@ -61,6 +61,6 @@ class Client : public IClient {
   std::string url_;
 };
 
-std::unique_ptr<IClient> IClient::Build(std::string_view url) { return std::make_unique<Client>(url); }
+std::unique_ptr<IClient> IClient::Build(std::string_view url) noexcept { return std::make_unique<Client>(url); }
 
 }  // namespace reduct
