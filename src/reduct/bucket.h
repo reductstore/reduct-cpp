@@ -55,7 +55,15 @@ class IBucket {
     friend std::ostream& operator<<(std::ostream& os, const RecordInfo& settings);
   };
 
-  virtual Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const noexcept = 0;
+  /**
+   * Returns list of records for a time interval
+   * @param entry_name name of the entry
+   * @param start start time point in the interval
+   * @param stop stop time point in the interval
+   * @return the list or communication error
+   */
+  [[nodiscard]] virtual Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start,
+                                                             Time stop) const noexcept = 0;
 
   /**
    * Write an object to the storage with timestamp
@@ -94,6 +102,12 @@ class IBucket {
    */
   virtual Error Remove() const noexcept = 0;
 
+  /**
+   * @brief Creates a new bucket
+   * @param server_url HTTP url
+   * @param name name of the bucket
+   * @return a pointer to the bucket
+   */
   static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name) noexcept;
 };
 }  // namespace reduct
