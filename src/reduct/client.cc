@@ -38,7 +38,7 @@ class Client : public IClient {
   }
 
   [[nodiscard]] UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept override {
-    auto [body, err] = client_->Get(fmt::format("/b/{}", name));
+    auto err = client_->Head(fmt::format("/b/{}", name));
     if (err) {
       return {{}, std::move(err)};
     }
