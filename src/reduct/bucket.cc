@@ -29,11 +29,6 @@ class Bucket : public IBucket {
       return get_err;
     }
 
-    // TODO(Alexey Timin): Make PUT request parameters optional to avoid this
-    if (settings.max_block_size) current_setting.max_block_size = settings.max_block_size;
-    if (settings.quota_type) current_setting.quota_type = settings.quota_type;
-    if (settings.quota_size) current_setting.quota_size = settings.quota_size;
-
     return client_->Put(path_, current_setting.ToJsonString());
   }
 
