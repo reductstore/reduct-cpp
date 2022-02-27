@@ -24,12 +24,7 @@ class Bucket : public IBucket {
   }
 
   Error UpdateSettings(const Settings& settings) const noexcept override {
-    auto [current_setting, get_err] = GetSettings();
-    if (get_err) {
-      return get_err;
-    }
-
-    return client_->Put(path_, current_setting.ToJsonString());
+    return client_->Put(path_, settings.ToJsonString());
   }
 
   Error Remove() const noexcept override { return client_->Delete(path_); }
@@ -108,7 +103,7 @@ std::string IBucket::Settings::ToJsonString() const noexcept {
     data["quota_size"] = *quota_size;
   }
 
-  return data.dump();
+  return data.is_null() ? "{}" : data.dump();
 }
 
 Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexcept {
@@ -116,7 +111,7 @@ Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexce
   try {
     auto data = nlohmann::json::parse(json);
     if (data.contains("max_block_size")) {
-      settings.max_block_size = data["max_block_size"];
+      settings.max_block_size = std::stoul(data["max_block_size"].get<std::string>());
     }
 
     if (data.contains("quota_type")) {
@@ -128,7 +123,7 @@ Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexce
     }
 
     if (data.contains("quota_size")) {
-      settings.quota_size = data["quota_size"];
+      settings.quota_size = std::stoul(data["quota_size"].get<std::string>());
     }
   } catch (const std::exception& ex) {
     return {{}, Error{.code = -1, .message = ex.what()}};

@@ -13,7 +13,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   auto [info, err] = client->GetInfo();
 
   REQUIRE(err == Error::kOk);
-  REQUIRE(info.version == "0.1.0");
+  REQUIRE(info.version == "0.2.0");
 }
 
 TEST_CASE("reduct::Client should return error", "[server_api]") {

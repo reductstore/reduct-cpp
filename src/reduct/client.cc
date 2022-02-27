@@ -28,7 +28,7 @@ class Client : public IClient {
       return {
           ServerInfo{
               .version = data.at("version"),
-              .bucket_count = data.at("bucket_count"),
+              .bucket_count = std::stoul(data.at("bucket_count").get<std::string>()),
           },
           Error::kOk,
       };
@@ -40,6 +40,9 @@ class Client : public IClient {
   [[nodiscard]] UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept override {
     auto err = client_->Head(fmt::format("/b/{}", name));
     if (err) {
+      if (err.code == 404) {
+        err.message = fmt::format("Bucket '{}' is not found", name);
+      }
       return {{}, std::move(err)};
     }
 

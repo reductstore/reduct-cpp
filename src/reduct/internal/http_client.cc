@@ -47,7 +47,11 @@ class HttpClient : public IHttpClient {
     }
 
     if (res->status != 200) {
-      return ParseDetail(res);
+      if (res->body.empty()) {
+        return {.code = res->status, .message = "HTTP Error"};
+      } else {
+        return ParseDetail(res);
+      }
     }
 
     return Error::kOk;
