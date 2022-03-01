@@ -25,10 +25,14 @@ class Client : public IClient {
     try {
       nlohmann::json data;
       data = nlohmann::json::parse(body);
+      auto to_ul = [&data](std::string_view key) { return std::stoul(data.at(key.data()).get<std::string>()); };
       return {
           ServerInfo{
               .version = data.at("version"),
-              .bucket_count = std::stoul(data.at("bucket_count").get<std::string>()),
+              .bucket_count = to_ul("bucket_count"),
+              .usage = to_ul("usage"),
+              .oldest_record = std::chrono::system_clock::from_time_t(to_ul("oldest_record")),
+              .latest_record = std::chrono::system_clock::from_time_t(to_ul("latest_record")),
           },
           Error::kOk,
       };

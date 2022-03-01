@@ -25,6 +25,10 @@ class IClient {
   struct ServerInfo {
     std::string version;  //  version of storage
     size_t bucket_count;  //  number of buckets
+    size_t usage;         //  disk usage in bytes
+    std::chrono::seconds uptime; // server uptime
+    std::chrono::system_clock::time_point oldest_record;
+    std::chrono::system_clock::time_point latest_record;
 
     bool operator<=>(const IClient::ServerInfo&) const = default;
   };

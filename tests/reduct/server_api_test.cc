@@ -14,6 +14,10 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
 
   REQUIRE(err == Error::kOk);
   REQUIRE(info.version == "0.2.0");
+  REQUIRE(info.bucket_count > 0);
+  REQUIRE(info.usage > 0);
+  REQUIRE(info.oldest_record.time_since_epoch().count() >= 0);
+  REQUIRE(info.latest_record.time_since_epoch().count() >= 0);
 }
 
 TEST_CASE("reduct::Client should return error", "[server_api]") {
