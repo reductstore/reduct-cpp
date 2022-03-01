@@ -19,6 +19,8 @@ namespace reduct {
  */
 class IClient {
  public:
+  using Time = std::chrono::time_point<std::chrono::system_clock>;
+
   /**
    * Reduct Storage Information
    */
@@ -27,8 +29,8 @@ class IClient {
     size_t bucket_count;  //  number of buckets
     size_t usage;         //  disk usage in bytes
     std::chrono::seconds uptime; // server uptime
-    std::chrono::system_clock::time_point oldest_record;
-    std::chrono::system_clock::time_point latest_record;
+    Time oldest_record;
+    Time latest_record;
 
     bool operator<=>(const IClient::ServerInfo&) const = default;
   };
@@ -39,6 +41,17 @@ class IClient {
    */
   virtual Result<ServerInfo> GetInfo() const noexcept = 0;
 
+  /**
+   * @brief Get list of buckets with stats
+   * @return the list or an error
+   */
+  virtual Result<std::vector<IBucket::BucketInfo>> GetBucketList() const noexcept = 0;
+
+  /**
+   * Get an existing bucket
+   * @param name name of bucket
+   * @return pointer to bucket or an error
+   */
   virtual UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept = 0;
 
   /**

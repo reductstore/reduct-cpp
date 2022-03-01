@@ -25,20 +25,51 @@ class Client : public IClient {
     try {
       nlohmann::json data;
       data = nlohmann::json::parse(body);
-      auto to_ul = [&data](std::string_view key) { return std::stoul(data.at(key.data()).get<std::string>()); };
+      auto as_ul = [&data](std::string_view key) { return std::stoul(data.at(key.data()).get<std::string>()); };
       return {
           ServerInfo{
               .version = data.at("version"),
-              .bucket_count = to_ul("bucket_count"),
-              .usage = to_ul("usage"),
-              .oldest_record = std::chrono::system_clock::from_time_t(to_ul("oldest_record")),
-              .latest_record = std::chrono::system_clock::from_time_t(to_ul("latest_record")),
+              .bucket_count = as_ul("bucket_count"),
+              .usage = as_ul("usage"),
+              .oldest_record = Time::clock::from_time_t(as_ul("oldest_record")),
+              .latest_record = Time::clock::from_time_t(as_ul("latest_record")),
           },
           Error::kOk,
       };
     } catch (const std::exception& e) {
       return {{}, Error{.code = -1, .message = e.what()}};
     }
+  }
+
+  Result<std::vector<IBucket::BucketInfo>> GetBucketList() const noexcept override {
+    auto [body, err] = client_->Get("/list");
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    std::vector<IBucket::BucketInfo> bucket_list;
+    try {
+      nlohmann::json data;
+      data = nlohmann::json::parse(body);
+
+      auto json_buckets = data.at("buckets");
+      bucket_list.reserve(json_buckets.size());
+      for (const auto& bucket : json_buckets) {
+        auto as_ul = [&bucket](std::string_view key) { return std::stoul(bucket.at(key.data()).get<std::string>()); };
+        bucket_list.push_back({
+            .name = bucket.at("name"),
+            .entry_count = as_ul("entry_count"),
+            .size = as_ul("size"),
+            .oldest_record = Time::clock::from_time_t(as_ul("oldest_record")),
+            .latest_record = Time::clock::from_time_t(as_ul("latest_record")),
+        });
+      }
+
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+
+    return {bucket_list, Error::kOk};
   }
 
   [[nodiscard]] UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept override {
