@@ -27,7 +27,7 @@ class IHttpClient {
 
   virtual Error Delete(std::string_view path) const noexcept = 0;
 
-  static std::unique_ptr<IHttpClient> Build(std::string_view url);
+  static std::unique_ptr<IHttpClient> Build(std::string_view url, std::string_view api_token);
 };
 
 }  // namespace reduct::internal

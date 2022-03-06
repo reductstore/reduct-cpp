@@ -10,7 +10,12 @@ using reduct::IBucket;
 using reduct::IClient;
 
 TEST_CASE("reduct::Client should create a bucket", "[bucket_api]") {
-  auto client = IClient::Build("http://127.0.0.1:8383");
+  IClient::Options opts;
+  auto token =  std::getenv("REDUCT_CPP_TOKEN_API");
+  if (token != nullptr) {
+    opts.api_token = token;
+  };
+  auto client = IClient::Build("http://127.0.0.1:8383", opts);
 
   const auto kBucketName = RandomBucketName();
   auto [bucket, err] = client->CreateBucket(kBucketName);

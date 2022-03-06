@@ -11,8 +11,8 @@ namespace reduct {
 
 class Bucket : public IBucket {
  public:
-  Bucket(std::string_view url, std::string_view name) : path_(fmt::format("/b/{}", name)) {
-    client_ = internal::IHttpClient::Build(url);
+  Bucket(std::string_view url, std::string_view name, std::string_view api_token) : path_(fmt::format("/b/{}", name)) {
+    client_ = internal::IHttpClient::Build(url, api_token);
   }
 
   Result<Settings> GetSettings() const noexcept override {
@@ -72,8 +72,9 @@ class Bucket : public IBucket {
   std::string path_;
 };
 
-std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name) noexcept {
-  return std::make_unique<Bucket>(server_url, name);
+std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name,
+                                        std::string_view api_token) noexcept {
+  return std::make_unique<Bucket>(server_url, name, api_token);
 }
 
 // Settings

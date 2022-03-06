@@ -14,7 +14,10 @@ namespace reduct {
  */
 class Client : public IClient {
  public:
-  explicit Client(std::string_view url) : url_(url) { client_ = internal::IHttpClient::Build(url); }
+  explicit Client(std::string_view url, Options options) : url_(url), options_(std::move(options)) {
+
+    client_ = internal::IHttpClient::Build(url_, options_.api_token);
+  }
 
   [[nodiscard]] Result<ServerInfo> GetInfo() const noexcept override {
     auto [body, err] = client_->Get("/info");
@@ -81,7 +84,7 @@ class Client : public IClient {
       return {{}, std::move(err)};
     }
 
-    return {IBucket::Build(url_, name), {}};
+    return {IBucket::Build(url_, name, options_.api_token), {}};
   }
 
   [[nodiscard]] UPtrResult<IBucket> CreateBucket(std::string_view name,
@@ -91,14 +94,17 @@ class Client : public IClient {
       return {nullptr, std::move(err)};
     }
 
-    return {IBucket::Build(url_, name), {}};
+    return {IBucket::Build(url_, name, options_.api_token), {}};
   }
 
  private:
+  Options options_;
   std::unique_ptr<internal::IHttpClient> client_;
   std::string url_;
 };
 
-std::unique_ptr<IClient> IClient::Build(std::string_view url) noexcept { return std::make_unique<Client>(url); }
+std::unique_ptr<IClient> IClient::Build(std::string_view url, Options options) noexcept {
+  return std::make_unique<Client>(url, std::move(options));
+}
 
 }  // namespace reduct

@@ -62,12 +62,20 @@ class IClient {
    */
   virtual UPtrResult<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings = {}) const noexcept = 0;
 
+
+  /**
+   * Client options
+   */
+  struct Options {
+    std::string api_token; // API token, if empty anonymous access
+  };
+
   /**
    * @brief Build a client
    * @param url URL of React Storage
    * @return
    */
-  static std::unique_ptr<IClient> Build(std::string_view url) noexcept;
+  static std::unique_ptr<IClient> Build(std::string_view url, Options options = {}) noexcept;
 };
 }  // namespace reduct
 
