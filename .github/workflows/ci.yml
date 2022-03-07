@@ -76,4 +76,4 @@ jobs:
           docker load --input /tmp/image.tar
           docker image ls -a
       - name: Run tests
-        run: docker run --network=host ${{github.repository}} --env REDUCT_CPP_TOKEN_API=TOKEN reduct-tests
+        run: docker run --network=host --env REDUCT_CPP_TOKEN_API=TOKEN ${{github.repository}} reduct-tests
