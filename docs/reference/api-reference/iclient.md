@@ -31,10 +31,14 @@ if (create_err) {
 
 ### Factory
 
-To build a client, you should use `IClient::Build` static factory method with HTTP URL of the storage:
+To build a client, you should use `IClient::Build` static factory method with HTTP URL of the storage and options:
 
 ```cpp
-std::unique_ptr<IClient> client = IClient::Build("http://127.0.0.1:8383");
+IClient::Options opts {
+    .api_token = "SOME_API_TOKEN",    // leave empty to use anonymous access
+};
+
+std::unique_ptr<IClient> client = IClient::Build("http://127.0.0.1:8383", opts);
 ```
 
 ### GetInfo
@@ -52,7 +56,20 @@ if (err) {
 std::cout << "Server version: " << info.version;
 ```
 
-See `IClient::ServerInfo` structure to find that information about the storage can be retrieved
+See `IClient::ServerInfo` structure to find that information about the storage can be retrieved.
+
+### GetBucketList
+
+To get a list of buckets and their statistic information, you can use `GetBucketList` method:
+
+```
+auto [list, err] = client->GetBucketList();
+for (auto& bucket : list) {
+    std::cout << bucket.name;
+} 
+```
+
+See `IClient::BucketInfo` structure for more information.
 
 ### CreateBucket
 
@@ -84,4 +101,3 @@ if (err) {
 
 std::cout << bucket->GetSettings(); // bucket has type std::unique_ptr<IBucket>
 ```
-
