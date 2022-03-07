@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 set(MAJOR_VERSION 0)
-set(MINOR_VERSION 1)
+set(MINOR_VERSION 2)
 set(PATCH_VERSION 0)
 set(REDUCT_CPP_FULL_VERSION ${MAJOR_VERSION}.${MINOR_VERSION}.${PATCH_VERSION})
 
@@ -23,6 +23,7 @@ configure_file(cmake/ReductCppConfigVersion.cmake.in ${CMAKE_BINARY_DIR}/cmake/R
 
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/3dparty)
 
 add_subdirectory(src)
 if (REDUCT_CPP_ENABLE_TESTS)

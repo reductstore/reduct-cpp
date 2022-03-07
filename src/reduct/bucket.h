@@ -47,6 +47,20 @@ class IBucket {
 
   using Time = std::chrono::time_point<std::chrono::system_clock>;
 
+  /**
+   * Stats of bucket
+   */
+  struct BucketInfo {
+    std::string name;    // name of bucket
+    size_t entry_count;  // number of entries in the bucket
+    size_t size;         // size of stored data in the bucket in bytes
+    Time oldest_record;  // timestamp of the oldest record in the bucket
+    Time latest_record;  // timestamp of the latest record in the bucket
+  };
+
+  /**
+   * Information about a record
+   */
   struct RecordInfo {
     Time timestamp;
     size_t size{};
@@ -106,9 +120,11 @@ class IBucket {
    * @brief Creates a new bucket
    * @param server_url HTTP url
    * @param name name of the bucket
+   * @param api_token API Token
    * @return a pointer to the bucket
    */
-  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name) noexcept;
+  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
+                                        std::string_view api_token) noexcept;
 };
 }  // namespace reduct
 

@@ -11,8 +11,8 @@ namespace reduct {
 
 class Bucket : public IBucket {
  public:
-  Bucket(std::string_view url, std::string_view name) : path_(fmt::format("/b/{}", name)) {
-    client_ = internal::IHttpClient::Build(url);
+  Bucket(std::string_view url, std::string_view name, std::string_view api_token) : path_(fmt::format("/b/{}", name)) {
+    client_ = internal::IHttpClient::Build(url, api_token);
   }
 
   Result<Settings> GetSettings() const noexcept override {
@@ -24,17 +24,7 @@ class Bucket : public IBucket {
   }
 
   Error UpdateSettings(const Settings& settings) const noexcept override {
-    auto [current_setting, get_err] = GetSettings();
-    if (get_err) {
-      return get_err;
-    }
-
-    // TODO(Alexey Timin): Make PUT request parameters optional to avoid this
-    if (settings.max_block_size) current_setting.max_block_size = settings.max_block_size;
-    if (settings.quota_type) current_setting.quota_type = settings.quota_type;
-    if (settings.quota_size) current_setting.quota_size = settings.quota_size;
-
-    return client_->Put(path_, current_setting.ToJsonString());
+    return client_->Put(path_, settings.ToJsonString());
   }
 
   Error Remove() const noexcept override { return client_->Delete(path_); }
@@ -82,8 +72,9 @@ class Bucket : public IBucket {
   std::string path_;
 };
 
-std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name) noexcept {
-  return std::make_unique<Bucket>(server_url, name);
+std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name,
+                                        std::string_view api_token) noexcept {
+  return std::make_unique<Bucket>(server_url, name, api_token);
 }
 
 // Settings
@@ -113,7 +104,7 @@ std::string IBucket::Settings::ToJsonString() const noexcept {
     data["quota_size"] = *quota_size;
   }
 
-  return data.dump();
+  return data.is_null() ? "{}" : data.dump();
 }
 
 Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexcept {
@@ -121,7 +112,7 @@ Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexce
   try {
     auto data = nlohmann::json::parse(json);
     if (data.contains("max_block_size")) {
-      settings.max_block_size = data["max_block_size"];
+      settings.max_block_size = std::stoul(data["max_block_size"].get<std::string>());
     }
 
     if (data.contains("quota_type")) {
@@ -133,7 +124,7 @@ Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexce
     }
 
     if (data.contains("quota_size")) {
-      settings.quota_size = data["quota_size"];
+      settings.quota_size = std::stoul(data["quota_size"].get<std::string>());
     }
   } catch (const std::exception& ex) {
     return {{}, Error{.code = -1, .message = ex.what()}};

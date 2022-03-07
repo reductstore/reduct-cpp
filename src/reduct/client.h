@@ -19,12 +19,18 @@ namespace reduct {
  */
 class IClient {
  public:
+  using Time = std::chrono::time_point<std::chrono::system_clock>;
+
   /**
    * Reduct Storage Information
    */
   struct ServerInfo {
-    std::string version;  //  version of storage
-    size_t bucket_count;  //  number of buckets
+    std::string version;          //  version of storage
+    size_t bucket_count;          //  number of buckets
+    size_t usage;                 //  disk usage in bytes
+    std::chrono::seconds uptime;  // server uptime
+    Time oldest_record;
+    Time latest_record;
 
     bool operator<=>(const IClient::ServerInfo&) const = default;
   };
@@ -35,6 +41,17 @@ class IClient {
    */
   virtual Result<ServerInfo> GetInfo() const noexcept = 0;
 
+  /**
+   * @brief Get list of buckets with stats
+   * @return the list or an error
+   */
+  virtual Result<std::vector<IBucket::BucketInfo>> GetBucketList() const noexcept = 0;
+
+  /**
+   * Get an existing bucket
+   * @param name name of bucket
+   * @return pointer to bucket or an error
+   */
   virtual UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept = 0;
 
   /**
@@ -46,11 +63,18 @@ class IClient {
   virtual UPtrResult<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings = {}) const noexcept = 0;
 
   /**
+   * Client options
+   */
+  struct Options {
+    std::string api_token;  // API token, if empty anonymous access
+  };
+
+  /**
    * @brief Build a client
    * @param url URL of React Storage
    * @return
    */
-  static std::unique_ptr<IClient> Build(std::string_view url) noexcept;
+  static std::unique_ptr<IClient> Build(std::string_view url, Options options = {}) noexcept;
 };
 }  // namespace reduct
 
