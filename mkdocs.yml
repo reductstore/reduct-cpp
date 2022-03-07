@@ -1,5 +1,5 @@
 site_name: Reduct Storage Client SDK for C++
-site_url: ""
+site_url: "https://reduct-cpp.readthedocs.io"
 nav:
   - Home:
       - index.md
@@ -57,3 +57,12 @@ markdown_extensions:
       check_paths: true
   - plantuml_markdown:
       format: svg
+
+# Repository
+repo_name: reduct-storage/reduct-cpp
+repo_url: https://github.com/reduct-storage/reduct-cpp
+edit_uri: edit/main/docs
+
+extra:
+  version:
+    provider: mike
