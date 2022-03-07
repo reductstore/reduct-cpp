@@ -8,6 +8,7 @@ nav:
       - api_reference/index.md
       - api_reference/iclient.md
       - api_reference/ibucket.md
+  - Reduct Storage: 'https://reduct-storage.dev'
 
 # Configuration
 theme:

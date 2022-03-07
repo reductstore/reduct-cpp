@@ -1,6 +1,6 @@
 # 📒 API Reference
 
-The SDK has a few interfaces to communicate with Reduct Storage via HTTP.&#x20;
+The SDK has a few interfaces to communicate with [Reduct Storage via HTTP](https://docs.reduct-storage.dev/http-api).
 
 !!! info 
     The SDK is written in a way to hide all dependencies and implementation in .cc files. So, the user works only
@@ -30,10 +30,10 @@ std::cout << ret;
 
 Interface to manage buckets and the storage
 
-[iclient.md](iclient.md){ .md-button }
+[IClient](iclient.md){ .md-button }
 
 ## IBucket
 
 Interface to write, read and browse data in a bucket
 
-[ibucket.md](ibucket.md){ .md-button }
+[IBucket](ibucket.md){ .md-button }
