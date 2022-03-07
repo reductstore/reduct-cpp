@@ -67,3 +67,6 @@ edit_uri: edit/main/docs
 extra:
   version:
     provider: mike
+  analytics:
+    provider: google
+    property: G-20G64DGXYZ
