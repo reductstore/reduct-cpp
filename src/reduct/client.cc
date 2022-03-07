@@ -15,7 +15,6 @@ namespace reduct {
 class Client : public IClient {
  public:
   explicit Client(std::string_view url, Options options) : url_(url), options_(std::move(options)) {
-
     client_ = internal::IHttpClient::Build(url_, options_.api_token);
   }
 
@@ -67,7 +66,6 @@ class Client : public IClient {
             .latest_record = Time::clock::from_time_t(as_ul("latest_record")),
         });
       }
-
     } catch (const std::exception& e) {
       return {{}, Error{.code = -1, .message = e.what()}};
     }

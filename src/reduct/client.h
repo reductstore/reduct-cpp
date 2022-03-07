@@ -25,10 +25,10 @@ class IClient {
    * Reduct Storage Information
    */
   struct ServerInfo {
-    std::string version;  //  version of storage
-    size_t bucket_count;  //  number of buckets
-    size_t usage;         //  disk usage in bytes
-    std::chrono::seconds uptime; // server uptime
+    std::string version;          //  version of storage
+    size_t bucket_count;          //  number of buckets
+    size_t usage;                 //  disk usage in bytes
+    std::chrono::seconds uptime;  // server uptime
     Time oldest_record;
     Time latest_record;
 
@@ -62,12 +62,11 @@ class IClient {
    */
   virtual UPtrResult<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings = {}) const noexcept = 0;
 
-
   /**
    * Client options
    */
   struct Options {
-    std::string api_token; // API token, if empty anonymous access
+    std::string api_token;  // API token, if empty anonymous access
   };
 
   /**

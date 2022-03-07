@@ -5,7 +5,7 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
-#include "reduct/internal/sha256.h"
+#include "sha256.h"
 
 namespace reduct::internal {
 
@@ -62,7 +62,7 @@ class HttpClient : public IHttpClient {
           client_->set_bearer_token_auth(access_token_.data());
           res = req();  // repeat request with the new access token
         } catch (const std::exception& e) {
-          // TODO (Alexey Timin): Needs rethinking error handling
+          // TODO(Alexey Timin): Needs rethinking error handling
         }
       }
     }

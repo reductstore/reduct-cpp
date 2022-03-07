@@ -23,6 +23,7 @@ configure_file(cmake/ReductCppConfigVersion.cmake.in ${CMAKE_BINARY_DIR}/cmake/R
 
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/3dparty)
 
 add_subdirectory(src)
 if (REDUCT_CPP_ENABLE_TESTS)
