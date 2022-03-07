@@ -5,6 +5,11 @@
 # Required
 version: 2
 
+python:
+  install:
+    - requirements: docs/requirements.txt
+    - path: .
+      method: pip
 # Build documentation with MkDocs
 mkdocs:
   configuration: mkdocs.yml
