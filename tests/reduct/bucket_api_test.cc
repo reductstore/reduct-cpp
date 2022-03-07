@@ -10,13 +10,7 @@ using reduct::IBucket;
 using reduct::IClient;
 
 TEST_CASE("reduct::Client should create a bucket", "[bucket_api]") {
-  IClient::Options opts;
-  auto token =  std::getenv("REDUCT_CPP_TOKEN_API");
-  if (token != nullptr) {
-    opts.api_token = token;
-  };
-  auto client = IClient::Build("http://127.0.0.1:8383", opts);
-
+  auto client = BuildClient();
   const auto kBucketName = RandomBucketName();
   auto [bucket, err] = client->CreateBucket(kBucketName);
 
@@ -31,8 +25,7 @@ TEST_CASE("reduct::Client should create a bucket", "[bucket_api]") {
 }
 
 TEST_CASE("reduct::Client should get a bucket", "[bucket_api]") {
-  auto client = IClient::Build("http://127.0.0.1:8383");
-
+  auto client = BuildClient();
   const auto kBucketName = RandomBucketName();
   [[maybe_unused]] auto _ = client->CreateBucket(kBucketName);
 
@@ -49,8 +42,7 @@ TEST_CASE("reduct::Client should get a bucket", "[bucket_api]") {
 }
 
 TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
-  auto client = IClient::Build("http://127.0.0.1:8383");
-
+  auto client = BuildClient();
   const auto kBucketName = RandomBucketName();
   const IBucket::Settings kSettings{
       .max_block_size = 100,
@@ -105,7 +97,7 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
 }
 
 TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api") {
-  auto client = IClient::Build("http://127.0.0.1:8383");
+  auto client = BuildClient();
 
   const auto kBucketName = RandomBucketName();
   auto [bucket, _] = client->CreateBucket(kBucketName);

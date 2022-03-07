@@ -10,8 +10,7 @@ using reduct::IBucket;
 using reduct::IClient;
 
 TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
-  auto client = IClient::Build("http://127.0.0.1:8383");
-
+  auto client = BuildClient();
   const auto kBucketName = RandomBucketName();
   auto [bucket, err] = client->CreateBucket(kBucketName);
 
@@ -29,8 +28,7 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
 }
 
 TEST_CASE("reduct::IBucket should list records", "[entry_api]") {
-  auto client = IClient::Build("http://127.0.0.1:8383");
-
+  auto client = BuildClient();
   const auto kBucketName = RandomBucketName();
   auto [bucket, _] = client->CreateBucket(kBucketName);
   REQUIRE(bucket);
