@@ -1,0 +1,69 @@
+site_name: Reduct Storage Client SDK for C++
+site_url: "https://reduct-cpp.readthedocs.io"
+nav:
+  - Home:
+      - index.md
+      - Quick Start: quick-start.md
+  - API Reference:
+      - api_reference/index.md
+      - api_reference/iclient.md
+      - api_reference/ibucket.md
+  - Reduct Storage: 'https://reduct-storage.dev'
+
+# Configuration
+theme:
+  name: material
+  language: en
+  palette:
+    primary: 231b49
+  font:
+    text: Roboto
+    code: JetBrains Mono
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.indexes
+    - navigation.top
+
+# Extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - codehilite:
+      guess_lang: false
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tabbed
+  - pymdownx.tilde
+  - pymdownx.snippets:
+      base_path: docs
+      check_paths: true
+  - plantuml_markdown:
+      format: svg
+
+# Repository
+repo_name: reduct-storage/reduct-cpp
+repo_url: https://github.com/reduct-storage/reduct-cpp
+edit_uri: edit/main/docs
+
+extra:
+  version:
+    provider: mike

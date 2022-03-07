@@ -1,4 +1,4 @@
-# Quick Start
+# 💡 Quick Start
 
 ## Requirements
 
@@ -31,9 +31,8 @@ Let's create a simple C++ application which connects to the storage, creates a b
 touch CMakeLists.txt main.cc
 ```
 
-​I'm sure you're familiar to cmake, so I don't have to explain all the detail. The `CMakeLists.txt` should look like this:
+I'm sure you're familiar to cmake, so I don't have to explain all the detail. The `CMakeLists.txt` should look like this:
 
-{% code title="CMakeLists.txt" %}
 ```cmake
 cmake_minimum_required(VERSION 3.18)
 
@@ -46,7 +45,6 @@ find_package(ReductCpp 0.1.0)
 add_executable(usage-example main.cc)
 target_link_libraries(usage-example ${REDUCT_CPP_LIBRARIES})
 ```
-{% endcode %}
 
 And now the code in `main.cc`:
 
@@ -78,7 +76,6 @@ int main() {
     std::cout << "Read blob: " <<  blob << std::endl;
   }
 }
-
 ```
 
 To compile the example, we use the same idiom:
