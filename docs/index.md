@@ -39,30 +39,3 @@ int main() {
   }
 }
 ```
-
-## Build
-
-* GCC 11.2 or higher (support C++20)
-* CMake 3.18 or higher
-* Conan 1.40 (optional)
-
-```shell
-git clone https://github.com/reduct-storage/reduct-cpp.git
-cd reduct-cpp
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-sudo cmake --build . --target install
-```
-
-cmake tries to use package manager `conan` if it is installed. If it isn't, it downloads all the dependencies by using
-FetchContent. To use Reduct Storage SDK you need only to use `find_pacakge` in your cmake lists:
-
-```cmake
-find_package(ReductCpp)
-```
-
-## References
-
-* [Documentation](https://cpp.reduct-storage.dev)
-* [Reduct Storage HTTP API](https://docs.reduct-storage.dev/http-api)

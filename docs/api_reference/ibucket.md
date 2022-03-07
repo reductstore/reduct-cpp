@@ -6,7 +6,8 @@ description: Interface to read, write and browse historical data
 
 ### Factory Methods
 
-To get access to a bucket, you should use `IClient::GetBucket` or `IClient::CreateBucket`methods. See [IClient](iclient.md) interface.
+To get access to a bucket, you should use `IClient::GetBucket` or `IClient::CreateBucket`methods.
+See [IClient](iclient.md) interface.
 
 ### Read
 
@@ -20,7 +21,8 @@ if (!read_err) {
 }
 ```
 
-To read data, you should specify a name of the entry(`entry-1)` and an exact timestamp of the record. If you don't know the timestamps, use method`IBucket::List` to browse records.
+To read data, you should specify a name of the entry(`entry-1)` and an exact timestamp of the record. If you don't know
+the timestamps, use method`IBucket::List` to browse records.
 
 ### Write
 
@@ -46,12 +48,10 @@ for (auto&& record : records) {
 }
 ```
 
-
-
 ### Remove
 
 You can remove a bucket by using `IBucket::Remove` method.
 
-{% hint style="warning" %}
-When you remove a bucket, you remove all the data in it.
-{% endhint %}
+!!!warning 
+    When you remove a bucket, you remove all the data in it.
+
