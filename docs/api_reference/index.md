@@ -2,8 +2,9 @@
 
 The SDK has a few interfaces to communicate with Reduct Storage via HTTP.&#x20;
 
-!!! info The SDK is written in a way to hide all dependencies and implementation in .cc files. So, the user works only
-with abstract interfaces and factory methods.;
+!!! info 
+    The SDK is written in a way to hide all dependencies and implementation in .cc files. So, the user works only
+    with abstract interfaces and factory methods.
 
 ## Error Handling
 
