@@ -3,6 +3,7 @@
 **Features**:
 
 * Support Reduct Storage API v0.2.0, [PR-9](https://github.com/reduct-storage/reduct-cpp/pull/9)
+* Add conan recipe, [PR-12](https://github.com/reduct-storage/reduct-cpp/pull/12)
 
 **Documentation**:
 
