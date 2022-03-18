@@ -52,7 +52,7 @@ class Bucket : public IBucket {
       records.resize(json_records.size());
       for (int i = 0; i < records.size(); ++i) {
         records[i].timestamp = FromMicroseconds(json_records[i].at("ts"));
-        records[i].size = json_records[i].at("size");
+        records[i].size = std::stoul(json_records[i].at("size").get<std::string>());
       }
     } catch (const std::exception& ex) {
       return {{}, Error{.code = -1, .message = ex.what()}};
@@ -66,14 +66,14 @@ class Bucket : public IBucket {
     return std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
   }
 
-  static Time FromMicroseconds(int64_t ts) { return Time() + std::chrono::microseconds(ts); }
+  static Time FromMicroseconds(const std::string& ts) { return Time() + std::chrono::microseconds(std::stoul(ts)); }
 
   std::unique_ptr<internal::IHttpClient> client_;
   std::string path_;
 };
 
 std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name,
-                                       const HttpOptions options) noexcept {
+                                        const HttpOptions options) noexcept {
   return std::make_unique<Bucket>(server_url, name, options);
 }
 
@@ -110,7 +110,7 @@ std::string IBucket::Settings::ToJsonString() const noexcept {
 Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexcept {
   IBucket::Settings settings;
   try {
-    auto data = nlohmann::json::parse(json);
+    auto data = nlohmann::json::parse(json).at("settings");
     if (data.contains("max_block_size")) {
       settings.max_block_size = std::stoul(data["max_block_size"].get<std::string>());
     }
