@@ -124,7 +124,8 @@ class IBucket {
    * @param options HTTP options
    * @return a pointer to the bucket
    */
-  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name, const HttpOptions options) noexcept;
+  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
+                                        const HttpOptions options) noexcept;
 };
 }  // namespace reduct
 
