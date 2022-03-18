@@ -4,18 +4,18 @@
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>
-
 #include "sha256.h"
 
 namespace reduct::internal {
 
 class HttpClient : public IHttpClient {
  public:
-  explicit HttpClient(std::string_view url, std::string_view api_token)
+  explicit HttpClient(std::string_view url, const HttpOptions& options)
       : client_(std::make_unique<httplib::Client>(std::string(url))) {
     std::vector<unsigned char> hash(picosha2::k_digest_size);
-    picosha2::hash256(api_token.begin(), api_token.end(), hash.begin(), hash.end());
+    picosha2::hash256(options.api_token.begin(), options.api_token.end(), hash.begin(), hash.end());
     api_token_ = picosha2::bytes_to_hex_string(hash.begin(), hash.end());
+    client_->enable_server_certificate_verification(options.ssl_verification);
   }
 
   Result<std::string> Get(std::string_view path) const noexcept override {
@@ -100,7 +100,7 @@ class HttpClient : public IHttpClient {
   mutable std::string access_token_;
 };
 
-std::unique_ptr<IHttpClient> IHttpClient::Build(std::string_view url, std::string_view api_token) {
-  return std::make_unique<HttpClient>(url, api_token);
+std::unique_ptr<IHttpClient> IHttpClient::Build(std::string_view url, const HttpOptions& options) {
+  return std::make_unique<HttpClient>(url, options);
 }
 }  // namespace reduct::internal

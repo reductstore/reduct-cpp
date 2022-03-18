@@ -13,7 +13,7 @@ set(PUBLIC_HEADERS
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 add_library(${CMAKE_PROJECT_NAME} STATIC ${SRC_FILES})
-target_link_libraries(${CMAKE_PROJECT_NAME} INTERFACE dependencies)
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE dependencies)
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 

@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "http_options.h"
 #include "reduct/error.h"
 #include "reduct/result.h"
 
@@ -120,11 +121,10 @@ class IBucket {
    * @brief Creates a new bucket
    * @param server_url HTTP url
    * @param name name of the bucket
-   * @param api_token API Token
+   * @param options HTTP options
    * @return a pointer to the bucket
    */
-  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
-                                        std::string_view api_token) noexcept;
+  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name, const HttpOptions options) noexcept;
 };
 }  // namespace reduct
 

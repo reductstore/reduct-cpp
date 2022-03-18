@@ -5,7 +5,7 @@ from conans import ConanFile, CMake
 
 class DriftFrameworkConan(ConanFile):
     name = "reduct-cpp"
-    version = "0.2.0"
+    version = "0.3.0"
     license = "MIT"
     author = "Alexey Timin"
     url = "https://github.com/reduct-storage/reduct-cpp"
@@ -13,11 +13,11 @@ class DriftFrameworkConan(ConanFile):
     topics = ("reduct-storage", "http-client", "http-api")
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = {"shared": False, "fPIC": True}
+    default_options = {"shared": False, "fPIC": True, "cpp-httplib:with_openssl": True}
     generators = "cmake"
 
     requires = ("fmt/8.1.1",
-                "cpp-httplib/0.10.1",
+                "cpp-httplib/0.10.4",
                 "nlohmann_json/3.10.5",
                 "catch2/2.13.8")
 

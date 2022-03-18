@@ -9,4 +9,4 @@ set(SRC_FILES
         test.cc)
 
 add_executable(reduct-tests ${SRC_FILES})
-target_link_libraries(reduct-tests ${CMAKE_PROJECT_NAME})
+target_link_libraries(reduct-tests ${CMAKE_PROJECT_NAME} dependencies)
