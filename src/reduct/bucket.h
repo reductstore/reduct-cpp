@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "http_options.h"
 #include "reduct/error.h"
 #include "reduct/result.h"
 
@@ -56,6 +57,9 @@ class IBucket {
     size_t size;         // size of stored data in the bucket in bytes
     Time oldest_record;  // timestamp of the oldest record in the bucket
     Time latest_record;  // timestamp of the latest record in the bucket
+
+    bool operator<=>(const BucketInfo&) const noexcept = default;
+    friend std::ostream& operator<<(std::ostream& os, const BucketInfo& info);
   };
 
   /**
@@ -92,14 +96,15 @@ class IBucket {
   /**
    * Read a record by timestamp
    * @param entry_name entry in bucket
-   * @param ts timestamp
+   * @param ts timestamp if nullopt it returns the latest
    * @return HTTP or communication error
    */
-  virtual Result<std::string> Read(std::string_view entry_name, Time ts) const noexcept = 0;
+  virtual Result<std::string> Read(std::string_view entry_name,
+                                   std::optional<Time> ts = std::nullopt) const noexcept = 0;
 
   /**
    * @brief Get settings by HTTP request
-   * @return HTTP or communication error
+   * @return settings or HTTP error
    */
   virtual Result<Settings> GetSettings() const noexcept = 0;
 
@@ -111,6 +116,18 @@ class IBucket {
   virtual Error UpdateSettings(const Settings& settings) const noexcept = 0;
 
   /**
+   * @brief Get stats about bucket
+   * @return the stats or HTTP error
+   */
+  virtual Result<BucketInfo> GetInfo() const noexcept = 0;
+
+  /**
+   * @brief Get list of entries in the bucket
+   * @return list or HTTP error
+   */
+  virtual Result<std::vector<std::string>> GetEntryList() const noexcept = 0;
+
+  /**
    * @brief Remove the bucket from server with all the entries
    * @return HTTP or communication error
    */
@@ -120,11 +137,11 @@ class IBucket {
    * @brief Creates a new bucket
    * @param server_url HTTP url
    * @param name name of the bucket
-   * @param api_token API Token
+   * @param options HTTP options
    * @return a pointer to the bucket
    */
   static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
-                                        std::string_view api_token) noexcept;
+                                        const HttpOptions& options) noexcept;
 };
 }  // namespace reduct
 

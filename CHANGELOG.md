@@ -1,3 +1,9 @@
+## Release 0.3.0 (in progress)
+
+**Features**:
+
+* Support Reduct Storage API v0.3.0, [PR-9](https://github.com/reduct-storage/reduct-cpp/pull/13)
+
 ## Release 0.2.0 (2022-03-09)
 
 **Features**:

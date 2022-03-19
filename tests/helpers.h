@@ -22,7 +22,7 @@ inline std::string RandomBucketName() {
 inline std::unique_ptr<reduct::IClient> BuildClient(std::string_view url = "http://127.0.0.1:8383") {
   using reduct::IClient;
 
-  IClient::Options opts;
+  reduct::HttpOptions opts{};
   auto token = std::getenv("REDUCT_CPP_TOKEN_API");
   if (token != nullptr) {
     opts.api_token = token;

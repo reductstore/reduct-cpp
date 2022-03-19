@@ -6,6 +6,7 @@
 #include <memory>
 #include <string_view>
 
+#include "reduct/http_options.h"
 #include "reduct/result.h"
 
 namespace reduct::internal {
@@ -27,7 +28,7 @@ class IHttpClient {
 
   virtual Error Delete(std::string_view path) const noexcept = 0;
 
-  static std::unique_ptr<IHttpClient> Build(std::string_view url, std::string_view api_token);
+  static std::unique_ptr<IHttpClient> Build(std::string_view url, const HttpOptions &options);
 };
 
 }  // namespace reduct::internal

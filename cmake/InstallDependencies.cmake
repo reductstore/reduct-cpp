@@ -37,8 +37,8 @@ else ()
 
     FetchContent_Declare(
             httplib
-            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.10.1.zip
-            URL_HASH MD5=a0a3b8852f2ddd68a8fa428643710b87
+            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.10.4.zip
+            URL_HASH MD5=828c854ac6615d97f0c064b0dedda4e3
     )
 
     FetchContent_Declare(
@@ -49,5 +49,5 @@ else ()
 
     FetchContent_MakeAvailable(fmt nlohmann_json httplib Catch2)
     add_library(dependencies INTERFACE)
-    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib::httplib Catch2::Catch2)
+    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib Catch2::Catch2)
 endif ()

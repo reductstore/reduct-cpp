@@ -27,6 +27,23 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   }
 }
 
+TEST_CASE("reduct::IBucket should read the latest record", "[entry_api]") {
+  auto client = BuildClient();
+  const auto kBucketName = RandomBucketName();
+  auto [bucket, _] = client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  using us = std::chrono::microseconds;
+  IBucket::Time ts{};
+  REQUIRE(bucket->Write("entry", "some_data1", ts) == Error::kOk);
+  REQUIRE(bucket->Write("entry", "some_data2", ts + us(1)) == Error::kOk);
+  REQUIRE(bucket->Write("entry", "some_data3", ts + us(2)) == Error::kOk);
+
+  auto [latest_record, err] = bucket->Read("entry");
+  REQUIRE(err == Error::kOk);
+  REQUIRE(latest_record == "some_data3");
+}
+
 TEST_CASE("reduct::IBucket should list records", "[entry_api]") {
   auto client = BuildClient();
   const auto kBucketName = RandomBucketName();
