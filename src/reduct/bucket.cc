@@ -27,6 +27,30 @@ class Bucket : public IBucket {
     return client_->Put(path_, settings.ToJsonString());
   }
 
+  Result<BucketInfo> GetInfo() const noexcept override {
+    auto [body, err] = client_->Get(path_);
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      auto info = nlohmann::json::parse(body).at("info");
+      auto as_ul = [&info](std::string_view key) { return std::stoul(info.at(key.data()).get<std::string>()); };
+      return {
+          BucketInfo{
+              .name = info.at("name"),
+              .entry_count = as_ul("entry_count"),
+              .size = as_ul("size"),
+              .oldest_record = Time::clock::from_time_t(as_ul("oldest_record")),
+              .latest_record = Time::clock::from_time_t(as_ul("latest_record")),
+          },
+          Error::kOk,
+      };
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+  }
+
   Error Remove() const noexcept override { return client_->Delete(path_); }
 
   Error Write(std::string_view entry_name, std::string_view data, Time ts) const noexcept override {
@@ -133,9 +157,15 @@ Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexce
 }
 
 std::ostream& operator<<(std::ostream& os, const IBucket::RecordInfo& record) {
-  os << fmt::format("<RecordInfo ts={}, size={}",
+  os << fmt::format("<RecordInfo ts={}, size={}>",
                     std::chrono::duration_cast<std::chrono::microseconds>(record.timestamp.time_since_epoch()).count(),
                     record.size);
+  return os;
+}
+std::ostream& operator<<(std::ostream& os, const IBucket::BucketInfo& info) {
+  auto to_t = IBucket::Time::clock::to_time_t;
+  os << fmt::format("<BucketInfo name={}, entry_count={}, size={}, oldest_record={}, latest_record={}>", info.name,
+                    info.entry_count, info.size, to_t(info.oldest_record), to_t(info.latest_record));
   return os;
 }
 }  // namespace reduct

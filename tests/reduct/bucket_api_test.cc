@@ -96,6 +96,28 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
   }
 }
 
+TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
+  auto client = BuildClient();
+
+  const auto kBucketName = RandomBucketName();
+  auto [bucket, _] = client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", "some_data", t) == Error::kOk);
+  REQUIRE(bucket->Write("entry-2", "some_data", t + std::chrono::seconds(1)) == Error::kOk);
+
+  auto [info, err] = bucket->GetInfo();
+  REQUIRE(err == Error::kOk);
+
+  REQUIRE(info == IBucket::BucketInfo{
+                      .name = kBucketName,
+                      .entry_count = 2,
+                      .size = 22,
+                      .oldest_record = t,
+                      .latest_record = t + std::chrono::seconds(1),
+                  });
+}
+
 TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api") {
   auto client = BuildClient();
 

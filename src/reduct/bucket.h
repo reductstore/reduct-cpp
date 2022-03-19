@@ -57,6 +57,9 @@ class IBucket {
     size_t size;         // size of stored data in the bucket in bytes
     Time oldest_record;  // timestamp of the oldest record in the bucket
     Time latest_record;  // timestamp of the latest record in the bucket
+
+    bool operator<=>(const BucketInfo&) const noexcept = default;
+    friend std::ostream& operator<<(std::ostream& os, const BucketInfo& info);
   };
 
   /**
@@ -100,7 +103,7 @@ class IBucket {
 
   /**
    * @brief Get settings by HTTP request
-   * @return HTTP or communication error
+   * @return settings or HTTP error
    */
   virtual Result<Settings> GetSettings() const noexcept = 0;
 
@@ -110,6 +113,12 @@ class IBucket {
    * @return HTTP or communication error
    */
   virtual Error UpdateSettings(const Settings& settings) const noexcept = 0;
+
+  /**
+   * @brief Get stats about bucket
+   * @return the stats or HTTP error
+   */
+  virtual Result<BucketInfo> GetInfo() const noexcept = 0;
 
   /**
    * @brief Remove the bucket from server with all the entries
