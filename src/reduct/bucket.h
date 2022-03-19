@@ -121,6 +121,12 @@ class IBucket {
   virtual Result<BucketInfo> GetInfo() const noexcept = 0;
 
   /**
+   * @brief Get list of entries in the bucket
+   * @return list or HTTP error
+   */
+  virtual Result<std::vector<std::string>> GetEntryList() const noexcept = 0;
+
+  /**
    * @brief Remove the bucket from server with all the entries
    * @return HTTP or communication error
    */
@@ -134,7 +140,7 @@ class IBucket {
    * @return a pointer to the bucket
    */
   static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
-                                        const HttpOptions options) noexcept;
+                                        const HttpOptions& options) noexcept;
 };
 }  // namespace reduct
 

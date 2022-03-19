@@ -51,6 +51,20 @@ class Bucket : public IBucket {
     }
   }
 
+  Result<std::vector<std::string>> GetEntryList() const noexcept override {
+    auto [body, err] = client_->Get(path_);
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      auto entries = nlohmann::json::parse(body).at("entries");
+      return {entries, Error::kOk};
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+  }
+
   Error Remove() const noexcept override { return client_->Delete(path_); }
 
   Error Write(std::string_view entry_name, std::string_view data, Time ts) const noexcept override {
@@ -97,7 +111,7 @@ class Bucket : public IBucket {
 };
 
 std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name,
-                                        const HttpOptions options) noexcept {
+                                        const HttpOptions& options) noexcept {
   return std::make_unique<Bucket>(server_url, name, options);
 }
 

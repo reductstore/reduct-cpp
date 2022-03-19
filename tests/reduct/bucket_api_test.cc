@@ -118,6 +118,19 @@ TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
                   });
 }
 
+TEST_CASE("reduct::IBucket should get list of entries") {
+  auto client = BuildClient();
+
+  const auto kBucketName = RandomBucketName();
+  auto [bucket, _] = client->CreateBucket(kBucketName);
+
+  REQUIRE(bucket->Write("entry-1", "some_data") == Error::kOk);
+  REQUIRE(bucket->Write("entry-2", "some_data") == Error::kOk);
+
+  auto [entries, err] = bucket->GetEntryList();
+  REQUIRE(entries == std::vector<std::string>{"entry-1", "entry-2"});
+}
+
 TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api") {
   auto client = BuildClient();
 
