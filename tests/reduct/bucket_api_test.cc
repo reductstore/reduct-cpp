@@ -118,7 +118,7 @@ TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
                   });
 }
 
-TEST_CASE("reduct::IBucket should get list of entries") {
+TEST_CASE("reduct::IBucket should get list of entries", "[bucket_api]") {
   auto client = BuildClient();
 
   const auto kBucketName = RandomBucketName();
@@ -131,7 +131,7 @@ TEST_CASE("reduct::IBucket should get list of entries") {
   REQUIRE(entries == std::vector<std::string>{"entry-1", "entry-2"});
 }
 
-TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api") {
+TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api]") {
   auto client = BuildClient();
 
   const auto kBucketName = RandomBucketName();

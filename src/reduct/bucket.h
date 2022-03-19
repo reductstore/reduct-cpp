@@ -96,10 +96,10 @@ class IBucket {
   /**
    * Read a record by timestamp
    * @param entry_name entry in bucket
-   * @param ts timestamp
+   * @param ts timestamp if nullopt it returns the latest
    * @return HTTP or communication error
    */
-  virtual Result<std::string> Read(std::string_view entry_name, Time ts) const noexcept = 0;
+  virtual Result<std::string> Read(std::string_view entry_name, std::optional<Time> ts = std::nullopt) const noexcept = 0;
 
   /**
    * @brief Get settings by HTTP request

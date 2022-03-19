@@ -72,8 +72,12 @@ class Bucket : public IBucket {
                          "application/octet-stream");
   }
 
-  Result<std::string> Read(std::string_view entry_name, Time ts) const noexcept override {
-    return client_->Get(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(ts)));
+  Result<std::string> Read(std::string_view entry_name, std::optional<Time> ts) const noexcept override {
+    if (ts) {
+      return client_->Get(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)));
+    } else {
+      return client_->Get(fmt::format("{}/{}", path_, entry_name));
+    }
   }
 
   Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const noexcept override {
