@@ -22,7 +22,12 @@ if (!read_err) {
 ```
 
 To read data, you should specify a name of the entry(`entry-1)` and an exact timestamp of the record. If you don't know
-the timestamps, use method`IBucket::List` to browse records.
+the timestamps, use method`IBucket::List` to browse records. Also, you can take the latest record don't specify the
+timestamp:
+
+```cpp
+auto [latest_record, read_err] = bucket->Read("entry-1");
+```
 
 ### Write
 
@@ -52,6 +57,4 @@ for (auto&& record : records) {
 
 You can remove a bucket by using `IBucket::Remove` method.
 
-!!!warning 
-    When you remove a bucket, you remove all the data in it.
-
+!!!warning When you remove a bucket, you remove all the data in it.

@@ -40,7 +40,7 @@ project(ReductCppExamples)
 set(CMAKE_CXX_STANDARD 20)
 
 
-find_package(ReductCpp 0.1.0)
+find_package(ReductCpp 0.3.0)
 
 add_executable(usage-example main.cc)
 target_link_libraries(usage-example ${REDUCT_CPP_LIBRARIES})
