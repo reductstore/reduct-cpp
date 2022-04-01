@@ -33,8 +33,8 @@ class Client : public IClient {
               .version = data.at("version"),
               .bucket_count = as_ul("bucket_count"),
               .usage = as_ul("usage"),
-              .oldest_record = Time::clock::from_time_t(as_ul("oldest_record")),
-              .latest_record = Time::clock::from_time_t(as_ul("latest_record")),
+              .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
+              .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
           },
           Error::kOk,
       };
@@ -62,8 +62,8 @@ class Client : public IClient {
             .name = bucket.at("name"),
             .entry_count = as_ul("entry_count"),
             .size = as_ul("size"),
-            .oldest_record = Time::clock::from_time_t(as_ul("oldest_record")),
-            .latest_record = Time::clock::from_time_t(as_ul("latest_record")),
+            .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
+            .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
         });
       }
     } catch (const std::exception& e) {
