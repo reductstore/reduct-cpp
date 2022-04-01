@@ -62,17 +62,16 @@ class IBucket {
     friend std::ostream& operator<<(std::ostream& os, const BucketInfo& info);
   };
 
-
   /**
    * Stats of entry
    */
   struct EntryInfo {
-    std::string name;    // name of entry
-    size_t record_count; // number of entries in the bucket
-    size_t block_count;  //
-    size_t size;         // size of stored data in the bucket in bytes
-    Time oldest_record;  // timestamp of the oldest record in the entry
-    Time latest_record;  // timestamp of the latest record in the entry
+    std::string name;     // name of entry
+    size_t record_count;  // number of entries in the entry
+    size_t block_count;   // number of blocks in the entry
+    size_t size;          // size of stored data in the bucket in bytes
+    Time oldest_record;   // timestamp of the oldest record in the entry
+    Time latest_record;   // timestamp of the latest record in the entry
 
     bool operator<=>(const EntryInfo&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const EntryInfo& info);
