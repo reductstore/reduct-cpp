@@ -112,7 +112,7 @@ TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
   REQUIRE(info == IBucket::BucketInfo{
                       .name = kBucketName,
                       .entry_count = 2,
-                      .size = 22,
+                      .size = 18,
                       .oldest_record = t,
                       .latest_record = t + std::chrono::seconds(1),
                   });
@@ -124,11 +124,30 @@ TEST_CASE("reduct::IBucket should get list of entries", "[bucket_api]") {
   const auto kBucketName = RandomBucketName();
   auto [bucket, _] = client->CreateBucket(kBucketName);
 
-  REQUIRE(bucket->Write("entry-1", "some_data") == Error::kOk);
-  REQUIRE(bucket->Write("entry-2", "some_data") == Error::kOk);
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", "some_data", t) == Error::kOk);
+  REQUIRE(bucket->Write("entry-2", "some_data", t + std::chrono::microseconds(100)) == Error::kOk);
 
   auto [entries, err] = bucket->GetEntryList();
-  REQUIRE(entries == std::vector<std::string>{"entry-1", "entry-2"});
+  REQUIRE(err == Error::kOk);
+  REQUIRE(entries.size() == 2);
+  REQUIRE(entries[0] == IBucket::EntryInfo{
+                            .name = "entry-1",
+                            .record_count = 1,
+                            .block_count = 1,
+                            .size = 9,
+                            .oldest_record = t,
+                            .latest_record = t,
+                        });
+
+  REQUIRE(entries[1] == IBucket::EntryInfo{
+                            .name = "entry-2",
+                            .record_count = 1,
+                            .block_count = 1,
+                            .size = 9,
+                            .oldest_record = t + std::chrono::microseconds(100),
+                            .latest_record = t + std::chrono::microseconds(100),
+                        });
 }
 
 TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api]") {

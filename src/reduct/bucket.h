@@ -63,6 +63,21 @@ class IBucket {
   };
 
   /**
+   * Stats of entry
+   */
+  struct EntryInfo {
+    std::string name;     // name of entry
+    size_t record_count;  // number of entries in the entry
+    size_t block_count;   // number of blocks in the entry
+    size_t size;          // size of stored data in the bucket in bytes
+    Time oldest_record;   // timestamp of the oldest record in the entry
+    Time latest_record;   // timestamp of the latest record in the entry
+
+    bool operator<=>(const EntryInfo&) const noexcept = default;
+    friend std::ostream& operator<<(std::ostream& os, const EntryInfo& info);
+  };
+
+  /**
    * Information about a record
    */
   struct RecordInfo {
@@ -125,7 +140,7 @@ class IBucket {
    * @brief Get list of entries in the bucket
    * @return list or HTTP error
    */
-  virtual Result<std::vector<std::string>> GetEntryList() const noexcept = 0;
+  virtual Result<std::vector<EntryInfo>> GetEntryList() const noexcept = 0;
 
   /**
    * @brief Remove the bucket from server with all the entries

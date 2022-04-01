@@ -13,7 +13,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   auto [info, err] = client->GetInfo();
 
   REQUIRE(err == Error::kOk);
-  REQUIRE(info.version == "0.3.0");
+  REQUIRE(info.version == "0.4.0");
   REQUIRE(info.bucket_count > 0);
   REQUIRE(info.usage >= 0);
   REQUIRE(info.uptime.count() >= 0);

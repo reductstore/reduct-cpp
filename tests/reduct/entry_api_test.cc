@@ -60,9 +60,9 @@ TEST_CASE("reduct::IBucket should list records", "[entry_api]") {
 
   REQUIRE(err == Error::kOk);
   REQUIRE(list.size() == 3);
-  REQUIRE(list[0] == IBucket::RecordInfo{.timestamp = ts, .size = 12});
-  REQUIRE(list[1] == IBucket::RecordInfo{.timestamp = ts + us(1), .size = 12});
-  REQUIRE(list[2] == IBucket::RecordInfo{.timestamp = ts + us(2), .size = 12});
+  REQUIRE(list[0] == IBucket::RecordInfo{.timestamp = ts, .size = 10});
+  REQUIRE(list[1] == IBucket::RecordInfo{.timestamp = ts + us(1), .size = 10});
+  REQUIRE(list[2] == IBucket::RecordInfo{.timestamp = ts + us(2), .size = 10});
 
   SECTION("http error") {
     REQUIRE(bucket->List("entry", ts + us(3), ts + us(10)).error ==

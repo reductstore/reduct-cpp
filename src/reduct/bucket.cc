@@ -41,8 +41,8 @@ class Bucket : public IBucket {
               .name = info.at("name"),
               .entry_count = as_ul("entry_count"),
               .size = as_ul("size"),
-              .oldest_record = Time::clock::from_time_t(as_ul("oldest_record")),
-              .latest_record = Time::clock::from_time_t(as_ul("latest_record")),
+              .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
+              .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
           },
           Error::kOk,
       };
@@ -51,14 +51,29 @@ class Bucket : public IBucket {
     }
   }
 
-  Result<std::vector<std::string>> GetEntryList() const noexcept override {
+  Result<std::vector<EntryInfo>> GetEntryList() const noexcept override {
     auto [body, err] = client_->Get(path_);
     if (err) {
       return {{}, std::move(err)};
     }
 
     try {
-      auto entries = nlohmann::json::parse(body).at("entries");
+      auto json_entries = nlohmann::json::parse(body).at("entries");
+      std::vector<EntryInfo> entries(json_entries.size());
+      for (int i = 0; i < entries.size(); ++i) {
+        auto entry = json_entries[i];
+        auto as_ul = [&entry](std::string_view key) { return std::stoul(entry.at(key.data()).get<std::string>()); };
+
+        entries[i] = EntryInfo{
+            .name = entry.at("name"),
+            .record_count = as_ul("record_count"),
+            .block_count = as_ul("block_count"),
+            .size = as_ul("size"),
+            .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
+            .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
+        };
+      }
+
       return {entries, Error::kOk};
     } catch (const std::exception& e) {
       return {{}, Error{.code = -1, .message = e.what()}};
@@ -180,10 +195,19 @@ std::ostream& operator<<(std::ostream& os, const IBucket::RecordInfo& record) {
                     record.size);
   return os;
 }
+
 std::ostream& operator<<(std::ostream& os, const IBucket::BucketInfo& info) {
-  auto to_t = IBucket::Time::clock::to_time_t;
   os << fmt::format("<BucketInfo name={}, entry_count={}, size={}, oldest_record={}, latest_record={}>", info.name,
-                    info.entry_count, info.size, to_t(info.oldest_record), to_t(info.latest_record));
+                    info.entry_count, info.size, info.oldest_record.time_since_epoch().count() / 1000,
+                    info.latest_record.time_since_epoch().count() / 1000);
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const IBucket::EntryInfo& info) {
+  os << fmt::format("<EntryInfo name={}, record_count={}, block_count={}, size={}, oldest_record={}, latest_record={}>",
+                    info.name, info.record_count, info.block_count, info.size,
+                    info.oldest_record.time_since_epoch().count() / 1000,
+                    info.latest_record.time_since_epoch().count() / 1000);
   return os;
 }
 }  // namespace reduct
