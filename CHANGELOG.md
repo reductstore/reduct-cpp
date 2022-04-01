@@ -1,8 +1,14 @@
+## Release 0.4.0 (2022-04-01)
+
+**Features**:
+
+* Support Reduct Storage API v0.4.0, [PR-16](https://github.com/reduct-storage/reduct-cpp/pull/16)
+
 ## Release 0.3.0 (2022-03-19)
 
 **Features**:
 
-* Support Reduct Storage API v0.3.0, [PR-9](https://github.com/reduct-storage/reduct-cpp/pull/13)
+* Support Reduct Storage API v0.3.0, [PR-13](https://github.com/reduct-storage/reduct-cpp/pull/13)
 
 ## Release 0.2.0 (2022-03-09)
 
