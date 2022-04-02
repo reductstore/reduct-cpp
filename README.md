@@ -4,7 +4,7 @@ Open source client for [Reduct Storage](https://reduct-storage.dev) written in C
 
 ## Features
 
-* Implement Reduct Storage HTTP API v0.3.0
+* Implement Reduct Storage HTTP API v0.4.0
 * Support HTTP and HTTPS protocols
 * Exception free
 * Support Linux AMD64
