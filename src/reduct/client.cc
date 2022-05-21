@@ -33,6 +33,7 @@ class Client : public IClient {
               .version = data.at("version"),
               .bucket_count = as_ul("bucket_count"),
               .usage = as_ul("usage"),
+              .uptime = std::chrono::seconds(as_ul("uptime")),
               .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
               .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
           },
