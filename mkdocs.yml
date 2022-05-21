@@ -1,13 +1,14 @@
 site_name: Reduct Storage Client SDK for C++
 site_url: "https://reduct-cpp.readthedocs.io"
+docs_dir: .
 nav:
   - Home:
-      - index.md
-      - Quick Start: quick-start.md
+      - README.md
+      - Quick Start: docs/quick-start.md
   - API Reference:
-      - api_reference/index.md
-      - api_reference/iclient.md
-      - api_reference/ibucket.md
+      - docs/api_reference/index.md
+      - docs/api_reference/iclient.md
+      - docs/api_reference/ibucket.md
   - Reduct Storage: 'https://reduct-storage.dev'
 
 # Configuration
@@ -70,3 +71,6 @@ extra:
   analytics:
     provider: google
     property: G-20G64DGXYZ
+
+plugins:
+  - same-dir
