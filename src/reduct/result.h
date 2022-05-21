@@ -29,6 +29,7 @@ struct [[nodiscard]] UPtrResult {  // NOLINT
   Error error;  // error code is HTTP status or -1 if it is communication error
 
   operator const Error&() const noexcept { return error; }
+  operator const std::unique_ptr<T>() noexcept { return std::move(result); }
 };
 
 }  // namespace reduct

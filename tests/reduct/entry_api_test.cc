@@ -2,17 +2,18 @@
 
 #include <catch2/catch.hpp>
 
-#include "helpers.h"
+#include "fixture.h"
 #include "reduct/client.h"
 
 using reduct::Error;
 using reduct::IBucket;
 using reduct::IClient;
 
+const auto kBucketName = "bucket";
+
 TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
-  auto client = BuildClient();
-  const auto kBucketName = RandomBucketName();
-  auto [bucket, err] = client->CreateBucket(kBucketName);
+  Fixture ctx;
+  auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
 
   REQUIRE(err == Error::kOk);
   REQUIRE(bucket);
@@ -28,9 +29,8 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
 }
 
 TEST_CASE("reduct::IBucket should read the latest record", "[entry_api]") {
-  auto client = BuildClient();
-  const auto kBucketName = RandomBucketName();
-  auto [bucket, _] = client->CreateBucket(kBucketName);
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
   REQUIRE(bucket);
 
   using us = std::chrono::microseconds;
@@ -45,9 +45,8 @@ TEST_CASE("reduct::IBucket should read the latest record", "[entry_api]") {
 }
 
 TEST_CASE("reduct::IBucket should list records", "[entry_api]") {
-  auto client = BuildClient();
-  const auto kBucketName = RandomBucketName();
-  auto [bucket, _] = client->CreateBucket(kBucketName);
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
   REQUIRE(bucket);
 
   using us = std::chrono::microseconds;

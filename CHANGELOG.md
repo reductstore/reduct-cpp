@@ -1,8 +1,12 @@
 ## Release 0.5.0 (in progress)
 
-**Documentation**
+**Documentation**:
 
 * Use README for index page of docs, [PR-22](https://github.com/reduct-storage/reduct-cpp/pull/22)
+
+**Other**:
+
+* Refactor tests, [PR-23](https://github.com/reduct-storage/reduct-cpp/pull/23)
 
 ## Release 0.4.0 (2022-04-01)
 

@@ -22,10 +22,9 @@ using reduct::IBucket;
 using reduct::IClient;
 
 int main() {
-  auto client = IClient::Build("http://127.0.0.1:8383");
+  auto client = IClient::Build("https://play.reduct-storage.dev");
   // Create a bucket
-  auto [bucket, create_err] =
-      client->CreateBucket("bucket");
+  auto [bucket, create_err] = client->CreateBucket("bucket");
   if (create_err) {
     std::cerr << "Error: " << create_err;
     return -1;
