@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "http_options.h"
+#include "reduct/http_options.h"
 #include "reduct/error.h"
 #include "reduct/result.h"
 
