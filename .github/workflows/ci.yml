@@ -77,3 +77,20 @@ jobs:
           docker image ls -a
       - name: Run tests
         run: docker run --network=host --env REDUCT_CPP_TOKEN_API=TOKEN ${{github.repository}} reduct-tests
+
+  test-install:
+    runs-on: ubuntu-22.04
+    needs: cpplint
+    steps:
+      - name: Build and install package
+        run: |
+          mkdir build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          sudo cmake --build . --target install
+      - name: Build example
+        run:  |
+          mkdir examples/build
+          cd examples/build
+          cmake ..
+          cmake --build .
