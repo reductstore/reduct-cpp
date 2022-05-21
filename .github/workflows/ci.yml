@@ -46,9 +46,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build package
-        run: cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DREDUCT_CPP_ENABLE_TESTS=OFF -S . -B build
       - name: Install pckage
-        run: cmake --build build --target install
+        run: sudo cmake --build build --target install
       - name: Build example
         run:  |
           mkdir examples/build
