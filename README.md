@@ -46,6 +46,8 @@ int main() {
 
 * GCC 11.2 or higher (support C++20)
 * CMake 3.18 or higher
+* ZLib
+* OpenSSL 1.1 or 3.0
 * Conan 1.40 (optional)
 
 ```shell

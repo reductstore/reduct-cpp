@@ -45,6 +45,8 @@ jobs:
     needs: cpplint
     steps:
       - uses: actions/checkout@v2
+      - name: Install conan
+        run: pip3 install conan
       - name: Build package
         run: cmake -DCMAKE_BUILD_TYPE=Release -DREDUCT_CPP_ENABLE_TESTS=OFF -S . -B build
       - name: Install pckage
