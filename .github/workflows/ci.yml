@@ -40,8 +40,25 @@ jobs:
           name: image
           path: /tmp/image.tar
 
+  test-pkg:
+    runs-on: ubuntu-22.04
+    needs: cpplint
+    steps:
+      - name: Build package
+        run: cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+      - name: Install pckage
+        run: cmake --build build --target install
+      - name: Build example
+        run:  |
+          mkdir examples/build
+          cd examples/build
+          cmake ..
+          cmake --build .
+
   tests-without-auth:
-    needs: build
+    needs:
+      - build
+      - test-pkg
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -60,7 +77,9 @@ jobs:
         run: docker run --network=host ${{github.repository}} reduct-tests
 
   tests-with-auth:
-    needs: build
+    needs:
+      - build
+      - test-pkg
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -78,17 +97,3 @@ jobs:
       - name: Run tests
         run: docker run --network=host --env REDUCT_CPP_TOKEN_API=TOKEN ${{github.repository}} reduct-tests
 
-  test-install:
-    runs-on: ubuntu-22.04
-    needs: cpplint
-    steps:
-      - name: Build package
-        run: cmake -DCMAKE_BUILD_TYPE=Release .
-      - name: Install pckage
-        run: cmake --build . --target install
-      - name: Build example
-        run:  |
-          mkdir examples/build
-          cd examples/build
-          cmake ..
-          cmake --build .
