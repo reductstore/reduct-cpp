@@ -44,6 +44,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: cpplint
     steps:
+      - uses: actions/checkout@v2
       - name: Build package
         run: cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
       - name: Install pckage
