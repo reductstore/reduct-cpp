@@ -1,0 +1,22 @@
+name: "run-tests"
+description: "Pull storage and run tests"
+inputs:
+  api-token: # id of input
+    description: 'API_TOKEN'
+    required: false
+    default: ""
+runs:
+  using: "composite"
+  steps:
+    - name: Run Reduct Storage
+      shell: bash
+      run: docker run -p 8383:8383 -v ${PWD}/data:/data -e  --env RS_API_TOKEN=TOKEN={{inputs.api-token}} -d ghcr.io/reduct-storage/reduct-storage:latest
+
+    - name: Load image with tests
+      shell: bash
+      run: |
+        docker load --input /tmp/image.tar
+        docker image ls -a
+    - name: Run tests
+      shell: bash
+      run: docker run --network=host --env REDUCT_CPP_TOKEN_API={{inputs.api-token}} ${{github.repository}} reduct-tests

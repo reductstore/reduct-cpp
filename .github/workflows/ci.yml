@@ -68,15 +68,8 @@ jobs:
         with:
           name: image
           path: /tmp/
-      - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data -d ghcr.io/reduct-storage/reduct-storage:latest
-
-      - name: Load image with tests
-        run: |
-          docker load --input /tmp/image.tar
-          docker image ls -a
-      - name: Run tests
-        run: docker run --network=host ${{github.repository}} reduct-tests
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/run-tests
 
   tests-with-auth:
     needs:
@@ -90,13 +83,7 @@ jobs:
         with:
           name: image
           path: /tmp/
-      - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data -d --env RS_API_TOKEN=TOKEN ghcr.io/reduct-storage/reduct-storage:latest
-
-      - name: Load image with tests
-        run: |
-          docker load --input /tmp/image.tar
-          docker image ls -a
-      - name: Run tests
-        run: docker run --network=host --env REDUCT_CPP_TOKEN_API=TOKEN ${{github.repository}} reduct-tests
-
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/run-tests
+        with:
+          api-token: TOKEN
