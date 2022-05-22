@@ -61,7 +61,7 @@ jobs:
   tests-without-auth:
     needs:
       - build
-      - test-pkg
+      - test-pkg-with-conan
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -82,7 +82,7 @@ jobs:
   tests-with-auth:
     needs:
       - build
-      - test-pkg
+      - test-pkg-with-conan
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
