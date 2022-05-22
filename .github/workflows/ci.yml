@@ -58,10 +58,27 @@ jobs:
           cmake ..
           cmake --build .
 
+  test-pkg-without-conan:
+    runs-on: ubuntu-22.04
+    needs: cpplint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build package
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DREDUCT_CPP_ENABLE_TESTS=OFF -S . -B build
+      - name: Install package
+        run: sudo cmake --build build --target install
+      - name: Build example
+        run:  |
+          mkdir examples/build
+          cd examples/build
+          cmake ..
+          cmake --build .
+
   tests-without-auth:
     needs:
       - build
       - test-pkg-with-conan
+      - test-pkg-without-conan
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -83,6 +100,7 @@ jobs:
     needs:
       - build
       - test-pkg-with-conan
+      - test-pkg-without-conan
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
