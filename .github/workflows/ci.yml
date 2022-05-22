@@ -40,8 +40,27 @@ jobs:
           name: image
           path: /tmp/image.tar
 
+  test-pkg-with-conan:
+    runs-on: ubuntu-22.04
+    needs: cpplint
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install conan
+        run: pip3 install conan
+      - uses: ./.github/actions/check-package
+
+  test-pkg-without-conan:
+    runs-on: ubuntu-22.04
+    needs: cpplint
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/check-package
+
   tests-without-auth:
-    needs: build
+    needs:
+      - build
+      - test-pkg-with-conan
+      - test-pkg-without-conan
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -49,18 +68,14 @@ jobs:
         with:
           name: image
           path: /tmp/
-      - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data -d ghcr.io/reduct-storage/reduct-storage:latest
-
-      - name: Load image with tests
-        run: |
-          docker load --input /tmp/image.tar
-          docker image ls -a
-      - name: Run tests
-        run: docker run --network=host ${{github.repository}} reduct-tests
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/run-tests
 
   tests-with-auth:
-    needs: build
+    needs:
+      - build
+      - test-pkg-with-conan
+      - test-pkg-without-conan
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
@@ -68,12 +83,7 @@ jobs:
         with:
           name: image
           path: /tmp/
-      - name: Run Reduct Storage
-        run: docker run -p 8383:8383 -v ${PWD}/data:/data -d --env RS_API_TOKEN=TOKEN ghcr.io/reduct-storage/reduct-storage:latest
-
-      - name: Load image with tests
-        run: |
-          docker load --input /tmp/image.tar
-          docker image ls -a
-      - name: Run tests
-        run: docker run --network=host --env REDUCT_CPP_TOKEN_API=TOKEN ${{github.repository}} reduct-tests
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/run-tests
+        with:
+          api-token: TOKEN

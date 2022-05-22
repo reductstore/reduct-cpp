@@ -1,0 +1,18 @@
+name: "check-package"
+description: "Install package and build example"
+runs:
+  using: "composite"
+  steps:
+    - name: Build package
+      shell: bash
+      run: cmake -DCMAKE_BUILD_TYPE=Release -DREDUCT_CPP_ENABLE_TESTS=OFF -S . -B build
+    - name: Install package
+      shell: bash
+      run: sudo cmake --build build --target install
+    - name: Build example
+      shell: bash
+      run: |
+        mkdir examples/build
+        cd examples/build
+        cmake ..
+        cmake --build .

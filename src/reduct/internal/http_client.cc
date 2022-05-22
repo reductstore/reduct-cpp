@@ -1,6 +1,7 @@
 // Copyright 2022 Alexey Timin
 
 #include "reduct/internal/http_client.h"
+#undef CPPHTTPLIB_BROTLI_SUPPORT
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>

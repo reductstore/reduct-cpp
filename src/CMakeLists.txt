@@ -8,6 +8,7 @@ set(PUBLIC_HEADERS
         reduct/bucket.h
         reduct/client.h
         reduct/error.h
+        reduct/http_options.h
         reduct/result.h)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")

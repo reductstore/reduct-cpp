@@ -37,8 +37,8 @@ else ()
 
     FetchContent_Declare(
             httplib
-            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.10.4.zip
-            URL_HASH MD5=828c854ac6615d97f0c064b0dedda4e3
+            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.10.7.zip
+            URL_HASH MD5=31497d5f3ff1e0df2f57195dbabd3198
     )
 
     FetchContent_Declare(

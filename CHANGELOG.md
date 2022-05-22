@@ -7,6 +7,7 @@
 **Other**:
 
 * Refactor tests, [PR-23](https://github.com/reduct-storage/reduct-cpp/pull/23)
+* Install and test package in CI, [PR-24](https://github.com/reduct-storage/reduct-cpp/pull/24)
 
 ## Release 0.4.0 (2022-04-01)
 
