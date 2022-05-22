@@ -40,7 +40,7 @@ jobs:
           name: image
           path: /tmp/image.tar
 
-  test-pkg:
+  test-pkg-wiht-connan:
     runs-on: ubuntu-22.04
     needs: cpplint
     steps:
@@ -49,7 +49,7 @@ jobs:
         run: pip3 install conan
       - name: Build package
         run: cmake -DCMAKE_BUILD_TYPE=Release -DREDUCT_CPP_ENABLE_TESTS=OFF -S . -B build
-      - name: Install pckage
+      - name: Install package
         run: sudo cmake --build build --target install
       - name: Build example
         run:  |

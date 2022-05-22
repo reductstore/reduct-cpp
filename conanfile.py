@@ -19,6 +19,7 @@ class DriftFrameworkConan(ConanFile):
     requires = ("fmt/8.1.1",
                 "cpp-httplib/0.10.7",
                 "nlohmann_json/3.10.5",
+                "openssl/3.0.3",
                 "catch2/2.13.8")
 
     def config_options(self):
