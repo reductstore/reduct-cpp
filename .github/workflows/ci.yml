@@ -40,7 +40,7 @@ jobs:
           name: image
           path: /tmp/image.tar
 
-  test-pkg-wiht-connan:
+  test-pkg-with-connan:
     runs-on: ubuntu-22.04
     needs: cpplint
     steps:
