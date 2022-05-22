@@ -8,7 +8,7 @@ endif ()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
-find_program(CONAN_CMD conan1)
+find_program(CONAN_CMD conan)
 if (CONAN_CMD)
     conan_cmake_autodetect(settings)
     conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_SOURCE_DIR}/conanfile.py
@@ -47,7 +47,6 @@ else ()
             URL_HASH MD5=78148e1a75aea786038fb8d21b9455f2
     )
 
-    set(httlib_HTTPLIB_USE_BROTLI_IF_AVAILABLE OFF)
     FetchContent_MakeAvailable(fmt nlohmann_json httplib Catch2)
     add_library(dependencies INTERFACE)
     target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib Catch2::Catch2)
