@@ -8,7 +8,7 @@ endif ()
 
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
-find_program(CONAN_CMD conan)
+find_program(CONAN_CMD conan1)
 if (CONAN_CMD)
     conan_cmake_autodetect(settings)
     conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_SOURCE_DIR}/conanfile.py
@@ -37,8 +37,8 @@ else ()
 
     FetchContent_Declare(
             httplib
-            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.10.4.zip
-            URL_HASH MD5=828c854ac6615d97f0c064b0dedda4e3
+            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.10.7.zip
+            URL_HASH MD5=31497d5f3ff1e0df2f57195dbabd3198
     )
 
     FetchContent_Declare(
@@ -47,6 +47,7 @@ else ()
             URL_HASH MD5=78148e1a75aea786038fb8d21b9455f2
     )
 
+    set(httlib_HTTPLIB_USE_BROTLI_IF_AVAILABLE OFF)
     FetchContent_MakeAvailable(fmt nlohmann_json httplib Catch2)
     add_library(dependencies INTERFACE)
     target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib Catch2::Catch2)
