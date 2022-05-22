@@ -54,16 +54,7 @@ jobs:
     needs: cpplint
     steps:
       - uses: actions/checkout@v2
-      - name: Build package
-        run: cmake -DCMAKE_BUILD_TYPE=Release -DREDUCT_CPP_ENABLE_TESTS=OFF -S . -B build
-      - name: Install package
-        run: sudo cmake --build build --target install
-      - name: Build example
-        run:  |
-          mkdir examples/build
-          cd examples/build
-          cmake ..
-          cmake --build .
+      - uses: ./.github/actions/check-package
 
   tests-without-auth:
     needs:

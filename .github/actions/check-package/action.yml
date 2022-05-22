@@ -1,5 +1,6 @@
 name: "check-package"
 description: "Install package and build example"
+shell: bash
 runs:
   using: "composite"
   steps:
