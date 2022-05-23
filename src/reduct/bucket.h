@@ -29,18 +29,6 @@ class IBucket {
     std::optional<QuotaType> quota_type;
     std::optional<size_t> quota_size;
 
-    /**
-     * @brief Serialize to JSON string
-     * @return
-     */
-    [[nodiscard]] std::string ToJsonString() const noexcept;
-
-    /**
-     * @brief Parse from JSON string
-     * @param json
-     * @return
-     */
-    static Result<Settings> Parse(std::string_view json) noexcept;
 
     bool operator<=>(const Settings&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const Settings& settings);

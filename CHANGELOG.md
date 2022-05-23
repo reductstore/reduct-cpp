@@ -1,5 +1,9 @@
 ## Release 0.5.0 (in progress)
 
+**Features**:
+
+* Support Reduct Storage API v0.5.0, [PR-25](https://github.com/reduct-storage/reduct-cpp/pull/25)
+
 **Documentation**:
 
 * Use README for index page of docs, [PR-22](https://github.com/reduct-storage/reduct-cpp/pull/22)

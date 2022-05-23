@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include "reduct/internal/http_client.h"
+#include "reduct/internal/serialisation.h"
 
 namespace reduct {
 
@@ -28,15 +29,19 @@ class Client : public IClient {
       nlohmann::json data;
       data = nlohmann::json::parse(body);
       auto as_ul = [&data](std::string_view key) { return std::stoul(data.at(key.data()).get<std::string>()); };
+
+      auto [default_bucket_settings, def_err] = internal::ParseBucketSettings(data.at("defaults").at("bucket"));
+      if (def_err) {
+        return {{}, def_err};
+      }
       return {
-          ServerInfo{
-              .version = data.at("version"),
-              .bucket_count = as_ul("bucket_count"),
-              .usage = as_ul("usage"),
-              .uptime = std::chrono::seconds(as_ul("uptime")),
-              .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
-              .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
-          },
+          ServerInfo{.version = data.at("version"),
+                     .bucket_count = as_ul("bucket_count"),
+                     .usage = as_ul("usage"),
+                     .uptime = std::chrono::seconds(as_ul("uptime")),
+                     .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
+                     .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
+                     .defaults = {.bucket = default_bucket_settings}},
           Error::kOk,
       };
     } catch (const std::exception& e) {
@@ -88,7 +93,8 @@ class Client : public IClient {
 
   [[nodiscard]] UPtrResult<IBucket> CreateBucket(std::string_view name,
                                                  IBucket::Settings settings) const noexcept override {
-    auto err = client_->Post(fmt::format("/b/{}", name), settings.ToJsonString());
+    auto json_data = internal::BucketSettingToJsonString(settings);
+    auto err = client_->Post(fmt::format("/b/{}", name), json_data.is_null() ? "{}" : json_data.dump());
     if (err) {
       return {nullptr, std::move(err)};
     }
