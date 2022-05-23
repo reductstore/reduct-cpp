@@ -34,6 +34,14 @@ class IClient {
     Time oldest_record;
     Time latest_record;
 
+    struct Defaults {
+      IBucket::Settings bucket;   // default settings for a new bucket
+
+      bool operator <=>(const IClient::ServerInfo::Defaults&) const = default;
+    };
+
+    Defaults defaults;
+
     bool operator<=>(const IClient::ServerInfo&) const = default;
   };
 

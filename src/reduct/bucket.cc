@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include "reduct/internal/http_client.h"
+#include "reduct/internal/serialisation.h"
 
 namespace reduct {
 
@@ -20,11 +21,17 @@ class Bucket : public IBucket {
     if (err) {
       return {{}, std::move(err)};
     }
-    return Settings::Parse(body);
+
+    try {
+      auto data = nlohmann::json::parse(body);
+      return internal::ParseBucketSettings(data.at("settings"));
+    } catch (const std::exception& ex) {
+      return {{}, Error{.code = -1, .message = ex.what()}};
+    }
   }
 
   Error UpdateSettings(const Settings& settings) const noexcept override {
-    return client_->Put(path_, settings.ToJsonString());
+    return client_->Put(path_, internal::BucketSettingToJsonString(settings).dump());
   }
 
   Result<BucketInfo> GetInfo() const noexcept override {
@@ -136,57 +143,8 @@ std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string
 
 // Settings
 std::ostream& operator<<(std::ostream& os, const reduct::IBucket::Settings& settings) {
-  os << settings.ToJsonString();
+  os << internal::BucketSettingToJsonString(settings).dump();
   return os;
-}
-
-std::string IBucket::Settings::ToJsonString() const noexcept {
-  nlohmann::json data;
-  if (max_block_size) {
-    data["max_block_size"] = *max_block_size;
-  }
-
-  if (quota_type) {
-    switch (*quota_type) {
-      case IBucket::QuotaType::kNone:
-        data["quota_type"] = "NONE";
-        break;
-      case IBucket::QuotaType::kFifo:
-        data["quota_type"] = "FIFO";
-        break;
-    }
-  }
-
-  if (quota_size) {
-    data["quota_size"] = *quota_size;
-  }
-
-  return data.is_null() ? "{}" : data.dump();
-}
-
-Result<IBucket::Settings> IBucket::Settings::Parse(std::string_view json) noexcept {
-  IBucket::Settings settings;
-  try {
-    auto data = nlohmann::json::parse(json).at("settings");
-    if (data.contains("max_block_size")) {
-      settings.max_block_size = std::stoul(data["max_block_size"].get<std::string>());
-    }
-
-    if (data.contains("quota_type")) {
-      if (data["quota_type"] == "NONE") {
-        settings.quota_type = IBucket::QuotaType::kNone;
-      } else if (data["quota_type"] == "FIFO") {
-        settings.quota_type = IBucket::QuotaType::kFifo;
-      }
-    }
-
-    if (data.contains("quota_size")) {
-      settings.quota_size = std::stoul(data["quota_size"].get<std::string>());
-    }
-  } catch (const std::exception& ex) {
-    return {{}, Error{.code = -1, .message = ex.what()}};
-  }
-  return {settings, Error::kOk};
 }
 
 std::ostream& operator<<(std::ostream& os, const IBucket::RecordInfo& record) {
