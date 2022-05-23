@@ -35,7 +35,6 @@ class Client : public IClient {
         return {{}, def_err};
       }
       return {
-
           ServerInfo{.version = data.at("version"),
                      .bucket_count = as_ul("bucket_count"),
                      .usage = as_ul("usage"),
