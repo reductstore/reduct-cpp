@@ -2,6 +2,9 @@
 
 #include <catch2/catch.hpp>
 
+#include <fstream>
+#include <sstream>
+
 #include "fixture.h"
 #include "reduct/client.h"
 
@@ -61,6 +64,24 @@ TEST_CASE("reduct::IBucket should read a record by chunks", "[entry_api]") {
     return true;
   }) == Error::kOk);
 
+  REQUIRE(received == blob);
+}
+
+TEST_CASE("reduct::IBucket should write a record by chunks", "[entry_api]") {
+  Fixture ctx;
+  auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket);
+
+  IBucket::Time ts = IBucket::Time::clock::now();
+  const std::string blob(10'000, 'x');
+  REQUIRE(bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
+    return std::pair{true, blob.substr(offset, size)};
+  }) == Error::kOk);
+
+  auto [received, read_err] = bucket->Read("entry", ts);
+  REQUIRE(read_err == Error::kOk);
   REQUIRE(received == blob);
 }
 

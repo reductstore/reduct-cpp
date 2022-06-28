@@ -97,12 +97,26 @@ class Bucket : public IBucket {
                          "application/octet-stream");
   }
 
-  Result<std::string> Read(std::string_view entry_name, std::optional<Time> ts) const noexcept override {
-    if (ts) {
-      return client_->Get(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)));
-    } else {
-      return client_->Get(fmt::format("{}/{}", path_, entry_name));
+  Error Write(std::string_view entry_name, std::optional<Time> ts, size_t content_length, WriteCallback callback) const noexcept override {
+    if (!ts) {
+      ts = Time::clock::now();
     }
+    return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)),
+                         "application/octet-stream", content_length, std::move(callback));
+  }
+
+  Result<std::string> Read(std::string_view entry_name, std::optional<Time> ts) const noexcept override {
+    std::string data;
+    auto err = Read(entry_name, ts, [&data](auto chunk) {
+      data.append(chunk);
+      return true;
+    });
+
+    if (err) {
+      return {{}, err};
+    }
+
+    return {std::move(data), Error::kOk};
   }
 
   Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept override {

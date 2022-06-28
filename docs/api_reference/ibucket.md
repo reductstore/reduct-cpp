@@ -48,6 +48,15 @@ IBucket::Time ts = IBucket::Time::clock::now();
 [[maybe_unused]] auto write_err = bucket->Write("entry-1", "some_data1", ts);
 ```
 
+You also can write a big blob by chunks:
+
+```cpp
+const std::string blob(10'000, 'x');
+REQUIRE(bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
+    return std::pair{true, blob.substr(offset, size)};
+})
+```
+
 ### List
 
 `IClient::List`method returns a list of timestamps and sizes of records for some time interval:

@@ -116,6 +116,19 @@ class IBucket {
    */
   virtual Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept = 0;
 
+  using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
+
+  /**
+   * Write a record by chunks
+   * @param entry_name entry in bucket
+   * @param ts timestamp, if it is nullopt, the method returns the latest record
+   * @param content_length the size of the record
+   * @param callback
+   * @return HTTP or communication error
+   */
+  virtual Error Write(std::string_view entry_name, std::optional<Time> ts, size_t content_length,
+                      WriteCallback callback) const noexcept = 0;
+
   /**
    * @brief Get settings by HTTP request
    * @return settings or HTTP error

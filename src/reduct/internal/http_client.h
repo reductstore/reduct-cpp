@@ -27,6 +27,9 @@ class IHttpClient {
   virtual Error Post(std::string_view path, std::string_view body,
                      std::string_view mime = "application/json") const noexcept = 0;
 
+  using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
+  virtual Error Post(std::string_view path, std::string_view mime, size_t content_length, WriteCallback) const noexcept = 0;
+
   virtual Error Put(std::string_view path, std::string_view body,
                     std::string_view mime = "application/json") const noexcept = 0;
 
