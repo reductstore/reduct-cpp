@@ -1,5 +1,10 @@
 ## Release 0.6.0 (in progress)
 
+**Features**:
+
+* Overload IBucket::Write and IBucket::Read methods to read/write by
+  chunks, [PR-29](https://github.com/reduct-storage/reduct-cpp/pull/29/)
+
 ## Release 0.5.0 (2022-05-23)
 
 **Features**:
