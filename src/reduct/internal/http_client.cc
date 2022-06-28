@@ -65,11 +65,11 @@ class HttpClient : public IHttpClient {
     return CheckRequest(res);
   }
 
-  Error Post(std::string_view path, std::string_view mime, size_t content_length, WriteCallback callback) const noexcept override {
+  Error Post(std::string_view path, std::string_view mime, size_t content_length,
+             WriteCallback callback) const noexcept override {
     auto res = AuthWrapper([this, path, mime, content_length, clb = std::move(callback)] {
       return client_->Post(
-          path.data(),
-          content_length,
+          path.data(), content_length,
           [&](size_t offset, size_t size, DataSink& sink) {
             auto [ok, data] = clb(offset, size);
             sink.write(data.data(), data.size());
