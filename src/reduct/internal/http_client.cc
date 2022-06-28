@@ -5,6 +5,7 @@
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>
+
 #include "sha256.h"
 
 namespace reduct::internal {
@@ -26,6 +27,13 @@ class HttpClient : public IHttpClient {
     }
 
     return {std::move(res->body), Error::kOk};
+  }
+
+  Error Get(std::string_view path, ReadCallback callback) const noexcept override {
+    auto res = AuthWrapper([this, path, clb = std::move(callback)] {
+      return client_->Get(path.data(), [&](const char* data, size_t size) { return clb(std::string_view(data, size)); });
+    });
+    return CheckRequest(res);
   }
 
   Error Head(std::string_view path) const noexcept override {

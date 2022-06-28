@@ -105,6 +105,14 @@ class Bucket : public IBucket {
     }
   }
 
+  Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept override {
+    if (ts) {
+      return client_->Get(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)), std::move(callback));
+    } else {
+      return client_->Get(fmt::format("{}/{}", path_, entry_name), std::move(callback));
+    }
+  }
+
   Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const noexcept override {
     auto [body, err] = client_->Get(
         fmt::format("{}/{}/list?start={}&stop={}", path_, entry_name, ToMicroseconds(start), ToMicroseconds(stop)));

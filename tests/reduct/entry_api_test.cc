@@ -44,6 +44,26 @@ TEST_CASE("reduct::IBucket should read the latest record", "[entry_api]") {
   REQUIRE(latest_record == "some_data3");
 }
 
+TEST_CASE("reduct::IBucket should read a record by chunks", "[entry_api]") {
+  Fixture ctx;
+  auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket);
+
+  IBucket::Time ts = IBucket::Time::clock::now();
+  const std::string blob(10'000, 'x');
+  REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
+
+  std::string received;
+  REQUIRE(bucket->Read("entry", ts, [&received](auto data) {
+    received.append(data);
+    return true;
+  }) == Error::kOk);
+
+  REQUIRE(received == blob);
+}
+
 TEST_CASE("reduct::IBucket should list records", "[entry_api]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);

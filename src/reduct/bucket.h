@@ -105,6 +105,16 @@ class IBucket {
   virtual Result<std::string> Read(std::string_view entry_name,
                                    std::optional<Time> ts = std::nullopt) const noexcept = 0;
 
+  using ReadCallback = std::function<bool(std::string_view)>;
+
+  /**
+   * Read a record by chunks
+   * @param entry_name entry in bucket
+   * @param ts timestamp, if it is nullopt, the method returns the latest record
+   * @param callback called with received chunk. To continue receiving it should return true
+   * @return HTTP or communication error
+   */
+  virtual Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept = 0;
   /**
    * @brief Get settings by HTTP request
    * @return settings or HTTP error
