@@ -2,6 +2,9 @@
 
 #include <catch2/catch.hpp>
 
+#include <fstream>
+#include <sstream>
+
 #include "fixture.h"
 #include "reduct/client.h"
 
@@ -42,6 +45,44 @@ TEST_CASE("reduct::IBucket should read the latest record", "[entry_api]") {
   auto [latest_record, err] = bucket->Read("entry");
   REQUIRE(err == Error::kOk);
   REQUIRE(latest_record == "some_data3");
+}
+
+TEST_CASE("reduct::IBucket should read a record by chunks", "[entry_api]") {
+  Fixture ctx;
+  auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket);
+
+  IBucket::Time ts = IBucket::Time::clock::now();
+  const std::string blob(10'000, 'x');
+  REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
+
+  std::string received;
+  REQUIRE(bucket->Read("entry", ts, [&received](auto data) {
+    received.append(data);
+    return true;
+  }) == Error::kOk);
+
+  REQUIRE(received == blob);
+}
+
+TEST_CASE("reduct::IBucket should write a record by chunks", "[entry_api]") {
+  Fixture ctx;
+  auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket);
+
+  IBucket::Time ts = IBucket::Time::clock::now();
+  const std::string blob(10'000, 'x');
+  REQUIRE(bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
+    return std::pair{true, blob.substr(offset, size)};
+  }) == Error::kOk);
+
+  auto [received, read_err] = bucket->Read("entry", ts);
+  REQUIRE(read_err == Error::kOk);
+  REQUIRE(received == blob);
 }
 
 TEST_CASE("reduct::IBucket should list records", "[entry_api]") {

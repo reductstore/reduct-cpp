@@ -5,9 +5,12 @@
 
 #include <httplib.h>
 #include <nlohmann/json.hpp>
+
 #include "sha256.h"
 
 namespace reduct::internal {
+
+using httplib::DataSink;
 
 class HttpClient : public IHttpClient {
  public:
@@ -28,6 +31,30 @@ class HttpClient : public IHttpClient {
     return {std::move(res->body), Error::kOk};
   }
 
+  Error Get(std::string_view path, ReadCallback callback) const noexcept override {
+    Error err = Error::kOk;
+    std::string err_body;
+    auto res = AuthWrapper([this, &err, &err_body, path, clb = std::move(callback)] {
+      return client_->Get(
+          path.data(),
+          [&](const auto& response) {
+            if (response.status != 200) {
+              err.code = response.status;
+            }
+            return true;
+          },
+          [&](const char* data, size_t size) {
+            if (err) {
+              err_body.append(std::string_view(data, size));
+              return true;
+            }
+
+            return clb(std::string_view(data, size));
+          });
+    });
+    return CheckRequest(res, err_body);
+  }
+
   Error Head(std::string_view path) const noexcept override {
     auto res = AuthWrapper([this, path] { return client_->Head(path.data()); });
     return CheckRequest(res);
@@ -35,6 +62,21 @@ class HttpClient : public IHttpClient {
 
   Error Post(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
     auto res = AuthWrapper([this, path, body, mime] { return client_->Post(path.data(), body.data(), mime.data()); });
+    return CheckRequest(res);
+  }
+
+  Error Post(std::string_view path, std::string_view mime, size_t content_length,
+             WriteCallback callback) const noexcept override {
+    auto res = AuthWrapper([this, path, mime, content_length, clb = std::move(callback)] {
+      return client_->Post(
+          path.data(), content_length,
+          [&](size_t offset, size_t size, DataSink& sink) {
+            auto [ok, data] = clb(offset, size);
+            sink.write(data.data(), data.size());
+            return ok;
+          },
+          mime.data());
+    });
     return CheckRequest(res);
   }
 
@@ -70,30 +112,34 @@ class HttpClient : public IHttpClient {
     return res;
   }
 
-  static Error CheckRequest(const httplib::Result& res) {
+  static Error CheckRequest(const httplib::Result& res, std::string_view body = {}) {
+    auto parse_detail = [](int status, std::string_view body) -> Error {
+      try {
+        nlohmann::json data;
+        data = nlohmann::json::parse(body);
+        return Error{.code = status, .message = data["detail"]};
+      } catch (const std::exception& e) {
+        return Error{.code = -1, .message = e.what()};
+      }
+    };
+
     if (res.error() != httplib::Error::Success) {
       return Error{.code = -1, .message = httplib::to_string(res.error())};
     }
 
-    if (res->status != 200) {
+    auto status = res->status;
+    if (status != 200) {
+      if (!body.empty()) {
+        return parse_detail(status, body);
+      }
       if (res->body.empty()) {
         return {.code = res->status, .message = "HTTP Error"};
-      } else {
-        return ParseDetail(res);
       }
+
+      return parse_detail(status, res->body);
     }
 
     return Error::kOk;
-  }
-
-  static Error ParseDetail(const httplib::Result& res) {
-    try {
-      nlohmann::json data;
-      data = nlohmann::json::parse(res->body);
-      return Error{.code = res->status, .message = data["detail"]};
-    } catch (const std::exception& e) {
-      return Error{.code = -1, .message = e.what()};
-    }
   }
 
   std::unique_ptr<httplib::Client> client_;

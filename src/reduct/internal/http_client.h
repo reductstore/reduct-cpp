@@ -3,6 +3,7 @@
 #ifndef REDUCT_CPP_HTTP_CLIENT_H
 #define REDUCT_CPP_HTTP_CLIENT_H
 
+#include <functional>
 #include <memory>
 #include <string_view>
 
@@ -18,10 +19,17 @@ class IHttpClient {
  public:
   virtual Result<std::string> Get(std::string_view path) const noexcept = 0;
 
+  using ReadCallback = std::function<bool(std::string_view)>;
+  virtual Error Get(std::string_view path, ReadCallback) const noexcept = 0;
+
   virtual Error Head(std::string_view path) const noexcept = 0;
 
   virtual Error Post(std::string_view path, std::string_view body,
                      std::string_view mime = "application/json") const noexcept = 0;
+
+  using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
+  virtual Error Post(std::string_view path, std::string_view mime, size_t content_length,
+                     WriteCallback) const noexcept = 0;
 
   virtual Error Put(std::string_view path, std::string_view body,
                     std::string_view mime = "application/json") const noexcept = 0;

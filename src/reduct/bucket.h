@@ -3,13 +3,14 @@
 #define REDUCT_CPP_BUCKET_H
 
 #include <chrono>
+#include <functional>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
 
-#include "reduct/http_options.h"
 #include "reduct/error.h"
+#include "reduct/http_options.h"
 #include "reduct/result.h"
 
 namespace reduct {
@@ -28,7 +29,6 @@ class IBucket {
     std::optional<size_t> max_block_size;
     std::optional<QuotaType> quota_type;
     std::optional<size_t> quota_size;
-
 
     bool operator<=>(const Settings&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const Settings& settings);
@@ -90,20 +90,44 @@ class IBucket {
    * Write an object to the storage with timestamp
    * @param entry_name entry in bucket
    * @param data an object ot store
-   * @param ts timestamp
+   * @param ts timestamp, if it is nullopt, if it is nullpot the method uses current time
    * @return HTTP or communication error
    */
   virtual Error Write(std::string_view entry_name, std::string_view data,
-                      Time ts = Time::clock::now()) const noexcept = 0;
+                      std::optional<Time> ts = std::nullopt) const noexcept = 0;
 
   /**
    * Read a record by timestamp
    * @param entry_name entry in bucket
-   * @param ts timestamp if nullopt it returns the latest
+   * @param ts timestamp, if it is nullopt, the method returns the latest record
    * @return HTTP or communication error
    */
   virtual Result<std::string> Read(std::string_view entry_name,
                                    std::optional<Time> ts = std::nullopt) const noexcept = 0;
+
+  using ReadCallback = std::function<bool(std::string_view)>;
+
+  /**
+   * Read a record by chunks
+   * @param entry_name entry in bucket
+   * @param ts timestamp, if it is nullopt, the method returns the latest record
+   * @param callback called with received chunk. To continue receiving it should return true
+   * @return HTTP or communication error
+   */
+  virtual Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept = 0;
+
+  using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
+
+  /**
+   * Write a record by chunks
+   * @param entry_name entry in bucket
+   * @param ts timestamp, if it is nullopt, the method returns the latest record
+   * @param content_length the size of the record
+   * @param callback
+   * @return HTTP or communication error
+   */
+  virtual Error Write(std::string_view entry_name, std::optional<Time> ts, size_t content_length,
+                      WriteCallback callback) const noexcept = 0;
 
   /**
    * @brief Get settings by HTTP request
