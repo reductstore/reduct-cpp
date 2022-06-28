@@ -20,6 +20,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
 
   REQUIRE(err == Error::kOk);
   REQUIRE(info.version >= "0.6.0");
+
   REQUIRE(info.bucket_count == 2);
   REQUIRE(info.usage == 36);
   REQUIRE(info.uptime.count() >= 1);
