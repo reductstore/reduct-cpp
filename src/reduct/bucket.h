@@ -115,6 +115,7 @@ class IBucket {
    * @return HTTP or communication error
    */
   virtual Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept = 0;
+
   /**
    * @brief Get settings by HTTP request
    * @return settings or HTTP error

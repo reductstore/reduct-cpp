@@ -29,6 +29,16 @@ timestamp:
 auto [latest_record, read_err] = bucket->Read("entry-1");
 ```
 
+If you need to receive a big blob of data, you can receive it by chunks:
+
+```cpp
+std::ofstream file("some.blob");
+auto err = bucket->Read("entry", ts, [&file](auto data) {
+    file << data;
+    return true;
+});
+```
+
 ### Write
 
 The interface provides method`IClient::Write` to write some data to an entry:
