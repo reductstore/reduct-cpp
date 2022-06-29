@@ -17,7 +17,7 @@ class DriftFrameworkConan(ConanFile):
     generators = "cmake"
 
     requires = ("fmt/8.1.1",
-                "cpp-httplib/0.10.7",
+                "cpp-httplib/0.10.8",
                 "nlohmann_json/3.10.5",
                 "openssl/3.0.3",
                 "catch2/2.13.8")
