@@ -48,6 +48,7 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
       .max_block_size = 100,
       .quota_type = IBucket::QuotaType::kFifo,
       .quota_size = 1000,
+      .max_block_records = 200,
   };
   auto [bucket, create_err] = ctx.client->CreateBucket(kBucketName, kSettings);
 
@@ -80,6 +81,7 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
           .max_block_size = 777777,
           .quota_type = IBucket::QuotaType::kNone,
           .quota_size = 999,
+          .max_block_records = 1020,
       };
       auto err = bucket->UpdateSettings(kNewSettings);
       REQUIRE(err == Error::kOk);

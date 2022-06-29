@@ -28,6 +28,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(info.latest_record.time_since_epoch() == s(6));
 
   REQUIRE(*info.defaults.bucket.max_block_size == 67108864);
+  REQUIRE(*info.defaults.bucket.max_block_records == 1024);
   REQUIRE(*info.defaults.bucket.quota_type == IBucket::QuotaType::kNone);
   REQUIRE(*info.defaults.bucket.quota_size == 0);
 }
