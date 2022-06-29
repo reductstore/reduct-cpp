@@ -19,8 +19,7 @@ int main() {
 
   std::cout << "Server version: " << info.version;
   // Create a bucket
-  auto [bucket, create_err] =
-      client->CreateBucket("bucket", IBucket::Settings{.quota_type = IBucket::QuotaType::kFifo, .quota_size = 1000000});
+  auto [bucket, create_err] = client->GetOrCreateBucket("bucket");
   if (create_err) {
     std::cerr << "Error: " << create_err;
     return -1;
@@ -37,7 +36,7 @@ int main() {
   for (auto&& record : records) {
     auto [blob, read_err] = bucket->Read("entry-1", record.timestamp);
     if (!read_err) {
-      std::cout << "Read blob: " <<  blob;
+      std::cout << "Read blob: " << blob;
     }
   }
 }

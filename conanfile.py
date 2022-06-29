@@ -1,11 +1,9 @@
-import re
-
 from conans import ConanFile, CMake
 
 
 class DriftFrameworkConan(ConanFile):
     name = "reduct-cpp"
-    version = "0.6.0"
+    version = "0.7.0"
     license = "MIT"
     author = "Alexey Timin"
     url = "https://github.com/reduct-storage/reduct-cpp"
