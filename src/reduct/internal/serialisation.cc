@@ -55,7 +55,6 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) noexce
     if (json.contains("max_block_records")) {
       settings.max_block_records = std::stoul(json["max_block_records"].get<std::string>());
     }
-
   } catch (const std::exception& ex) {
     return {{}, Error{.code = -1, .message = ex.what()}};
   }
