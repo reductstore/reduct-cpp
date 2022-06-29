@@ -6,7 +6,8 @@ Open source client for [Reduct Storage](https://reduct-storage.dev) written in C
 
 ## Features
 
-* Implement Reduct Storage HTTP API v0.5.0
+* Written in C++20
+* Implement Reduct Storage HTTP API v0.6.0
 * Support HTTP and HTTPS protocols
 * Exception free
 * Support Linux AMD64
@@ -48,7 +49,7 @@ int main() {
 * CMake 3.18 or higher
 * ZLib
 * OpenSSL 1.1 or 3.0
-* Conan 1.40 (optional)
+* Conan 1.40 (optionally)
 
 ```shell
 git clone https://github.com/reduct-storage/reduct-cpp.git
@@ -59,7 +60,7 @@ cmake --build .
 sudo cmake --build . --target install
 ```
 
-cmake tries to use package manager `conan` if it is installed. If it isn't, it downloads all the dependencies by using
+CMake tries to use package manager `conan` if it is installed. If it isn't, it downloads all the dependencies by using
 FetchContent. To use Reduct Storage SDK you need only to use `find_pacakge` in your cmake lists:
 
 ```cmake
