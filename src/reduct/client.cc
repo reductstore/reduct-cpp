@@ -102,6 +102,15 @@ class Client : public IClient {
     return {IBucket::Build(url_, name, options_), {}};
   }
 
+  UPtrResult<IBucket> GetOrCreateBucket(std::string_view name, IBucket::Settings settings) const noexcept override {
+    auto ret = GetBucket(name);
+    if (ret.error.code == 404) {
+      return CreateBucket(name, settings);
+    }
+
+    return ret;
+  }
+
  private:
   HttpOptions options_;
   std::unique_ptr<internal::IHttpClient> client_;

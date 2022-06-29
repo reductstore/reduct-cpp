@@ -42,6 +42,15 @@ TEST_CASE("reduct::Client should get a bucket", "[bucket_api]") {
   }
 }
 
+TEST_CASE("reduct::Client should get or create a bucket", "[bucket_api]") {
+  Fixture ctx;
+  [[maybe_unused]] auto _ = ctx.client->GetOrCreateBucket(kBucketName);
+  auto [bucket, err] = ctx.client->GetOrCreateBucket(kBucketName);
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket);
+}
+
 TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
   Fixture ctx;
   const IBucket::Settings kSettings{
