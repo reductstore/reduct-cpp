@@ -65,12 +65,20 @@ class IClient {
   virtual UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept = 0;
 
   /**
-   * Creates a new bucket
+   * Create a new bucket
    * @param name unique name for bucket
    * @param settings optional settings
    * @return pointer to created bucket
    */
   virtual UPtrResult<IBucket> CreateBucket(std::string_view name, IBucket::Settings settings = {}) const noexcept = 0;
+
+  /**
+   * Get an existing bucket or create a new bucket
+   * @param name unique name for bucket
+   * @param settings optional settings
+   * @return pointer to created bucket
+   */
+  virtual UPtrResult<IBucket> GetOrCreateBucket(std::string_view name, IBucket::Settings settings = {}) const noexcept = 0;
 
   /**
    * @brief Build a client
