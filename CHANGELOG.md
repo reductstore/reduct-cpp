@@ -4,6 +4,7 @@
 
 * Overload IBucket::Write and IBucket::Read methods to read/write by
   chunks, [PR-29](https://github.com/reduct-storage/reduct-cpp/pull/29/)
+* Update to HTTP API v0.6, [PR-30](https://github.com/reduct-storage/reduct-cpp/pull/30/)
 
 ## Release 0.5.0 (2022-05-23)
 

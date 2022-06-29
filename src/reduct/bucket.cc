@@ -90,11 +90,9 @@ class Bucket : public IBucket {
   Error Remove() const noexcept override { return client_->Delete(path_); }
 
   Error Write(std::string_view entry_name, std::string_view data, std::optional<Time> ts) const noexcept override {
-    if (!ts) {
-      ts = Time::clock::now();
-    }
-    return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)), data.data(),
-                         "application/octet-stream");
+    return Write(entry_name, ts, data.size(), [&data](auto offset, auto size) -> std::pair<bool, std::string> {
+      return {true, std::string(data.substr(offset, size))};
+    });
   }
 
   Error Write(std::string_view entry_name, std::optional<Time> ts, size_t content_length,

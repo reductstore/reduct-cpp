@@ -29,6 +29,7 @@ class IBucket {
     std::optional<size_t> max_block_size;
     std::optional<QuotaType> quota_type;
     std::optional<size_t> quota_size;
+    std::optional<size_t> max_block_records;
 
     bool operator<=>(const Settings&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const Settings& settings);

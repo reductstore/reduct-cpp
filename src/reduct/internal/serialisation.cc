@@ -6,7 +6,7 @@ namespace reduct::internal {
 
 nlohmann::json BucketSettingToJsonString(const IBucket::Settings& settings) noexcept {
   nlohmann::json data;
-  const auto& [max_block_size, quota_type, quota_size] = settings;
+  const auto& [max_block_size, quota_type, quota_size, max_record_size] = settings;
   if (max_block_size) {
     data["max_block_size"] = *max_block_size;
   }
@@ -24,6 +24,10 @@ nlohmann::json BucketSettingToJsonString(const IBucket::Settings& settings) noex
 
   if (quota_size) {
     data["quota_size"] = *quota_size;
+  }
+
+  if (max_record_size) {
+    data["max_block_records"] = *max_record_size;
   }
 
   return data;
@@ -46,6 +50,10 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) noexce
 
     if (json.contains("quota_size")) {
       settings.quota_size = std::stoul(json["quota_size"].get<std::string>());
+    }
+
+    if (json.contains("max_block_records")) {
+      settings.max_block_records = std::stoul(json["max_block_records"].get<std::string>());
     }
   } catch (const std::exception& ex) {
     return {{}, Error{.code = -1, .message = ex.what()}};
