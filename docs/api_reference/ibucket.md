@@ -52,9 +52,9 @@ You also can write a big blob by chunks:
 
 ```cpp
 const std::string blob(10'000, 'x');
-REQUIRE(bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
+bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
     return std::pair{true, blob.substr(offset, size)};
-})
+});
 ```
 
 ### List
