@@ -11,7 +11,7 @@ include(${CMAKE_BINARY_DIR}/conan.cmake)
 find_program(CONAN_CMD conan)
 if (CONAN_CMD)
     conan_cmake_autodetect(settings)
-    conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_SOURCE_DIR}/conanfile.py
+    conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_CURRENT_SOURCE_DIR}/conanfile.py
             BUILD missing
             SETTINGS ${settings})
 

@@ -1,4 +1,8 @@
-## Release 0.7.0 (in progress)
+## [Unreleased]
+
+### Fixed
+
+- Cmake Fetch_Content integration, [PR-33](https://github.com/reduct-storage/reduct-cpp/pull/33)
 
 ## Release 0.6.0 (2022-06-29)
 
