@@ -3,7 +3,11 @@ set(SRC_FILES
         reduct/internal/serialisation.cc
         reduct/bucket.cc
         reduct/client.cc
-        reduct/error.cc)
+        reduct/error.cc
+        ../3dparty/sha256.h
+        reduct/internal/http_client.h
+        reduct/internal/serialisation.h
+        )
 
 set(PUBLIC_HEADERS
         reduct/bucket.h
@@ -12,9 +16,14 @@ set(PUBLIC_HEADERS
         reduct/http_options.h
         reduct/result.h)
 
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 add_library(${CMAKE_PROJECT_NAME} STATIC ${SRC_FILES})
+
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../3dparty)
+
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE dependencies)
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
