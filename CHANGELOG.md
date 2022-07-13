@@ -1,56 +1,65 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [Unreleased]
 
 ### Fixed
 
 - Cmake Fetch_Content integration, [PR-33](https://github.com/reduct-storage/reduct-cpp/pull/33)
 
-## Release 0.6.0 (2022-06-29)
+## [0.6.0] - 2022-06-29
 
-**Features**:
+### Added
 
-* Overload IBucket::Write and IBucket::Read methods to read/write by
+- IBucket::GetOrCreateBucket, [PR-31](https://github.com/reduct-storage/reduct-cpp/pull/31/)
+- Support HTTP API v0.6, [PR-30](https://github.com/reduct-storage/reduct-cpp/pull/30/)
+
+### Changed
+
+- Overload IBucket::Write and IBucket::Read methods to read/write by
   chunks, [PR-29](https://github.com/reduct-storage/reduct-cpp/pull/29/)
-* Update to HTTP API v0.6, [PR-30](https://github.com/reduct-storage/reduct-cpp/pull/30/)
-* Add IBucket::GetOrCreateBucket, [PR-31](https://github.com/reduct-storage/reduct-cpp/pull/31/)
 
-## Release 0.5.0 (2022-05-23)
+## [0.5.0] - 2022-05-23
 
-**Features**:
+### Added
 
-* Support Reduct Storage API v0.5.0, [PR-25](https://github.com/reduct-storage/reduct-cpp/pull/25)
+- Support Reduct Storage API v0.5.0, [PR-25](https://github.com/reduct-storage/reduct-cpp/pull/25)
 
-**Documentation**:
+### Changed:
 
-* Use README for index page of docs, [PR-22](https://github.com/reduct-storage/reduct-cpp/pull/22)
+- Use README for index page of docs, [PR-22](https://github.com/reduct-storage/reduct-cpp/pull/22)
+- Refactor tests, [PR-23](https://github.com/reduct-storage/reduct-cpp/pull/23)
+- Install and test package in CI, [PR-24](https://github.com/reduct-storage/reduct-cpp/pull/24)
 
-**Other**:
+## [0.4.0] - 2022-04-01
 
-* Refactor tests, [PR-23](https://github.com/reduct-storage/reduct-cpp/pull/23)
-* Install and test package in CI, [PR-24](https://github.com/reduct-storage/reduct-cpp/pull/24)
+### Added
 
-## Release 0.4.0 (2022-04-01)
+- Support Reduct Storage API v0.4.0, [PR-16](https://github.com/reduct-storage/reduct-cpp/pull/16)
 
-**Features**:
+## [0.3.0] - 2022-03-19
 
-* Support Reduct Storage API v0.4.0, [PR-16](https://github.com/reduct-storage/reduct-cpp/pull/16)
+### Added
 
-## Release 0.3.0 (2022-03-19)
+- Support Reduct Storage API v0.3.0, [PR-13](https://github.com/reduct-storage/reduct-cpp/pull/13)
 
-**Features**:
+## [0.2.0] - 2022-03-09
 
-* Support Reduct Storage API v0.3.0, [PR-13](https://github.com/reduct-storage/reduct-cpp/pull/13)
+### Added
 
-## Release 0.2.0 (2022-03-09)
+- Support Reduct Storage API v0.2.0, [PR-9](https://github.com/reduct-storage/reduct-cpp/pull/9)
+- Conan recipe, [PR-12](https://github.com/reduct-storage/reduct-cpp/pull/12)
 
-**Features**:
+### Changed
 
-* Support Reduct Storage API v0.2.0, [PR-9](https://github.com/reduct-storage/reduct-cpp/pull/9)
-* Add conan recipe, [PR-12](https://github.com/reduct-storage/reduct-cpp/pull/12)
+- Move documentation on mkdocs + RDT, [PR-11](https://github.com/reduct-storage/reduct-cpp/pull/11)
 
-**Documentation**:
+## [0.1.0] - 2022-02-11
 
-* Move documentation on mkdocs + RDT, [PR-11](https://github.com/reduct-storage/reduct-cpp/pull/11)
+### Added
 
-## Release 0.1.0 (2022-02-11)
-
-* Initial implementation of Reduct Storage API v0.1.0
+-  Initial implementation of Reduct Storage API v0.1.0
