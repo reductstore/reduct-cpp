@@ -23,7 +23,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE dependencies)
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
-
+target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC CPPHTTPLIB_OPENSSL_SUPPORT)
 
 include(GNUInstallDirs)
 install(TARGETS ${CMAKE_PROJECT_NAME}
