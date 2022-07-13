@@ -4,9 +4,6 @@ set(SRC_FILES
         reduct/bucket.cc
         reduct/client.cc
         reduct/error.cc
-        ../3dparty/sha256.h
-        reduct/internal/http_client.h
-        reduct/internal/serialisation.h
         )
 
 set(PUBLIC_HEADERS
