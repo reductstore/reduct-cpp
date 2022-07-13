@@ -18,7 +18,7 @@ class DriftFrameworkConan(ConanFile):
                 "cpp-httplib/0.10.8",
                 "nlohmann_json/3.10.5",
                 "openssl/3.0.3",
-                "catch2/2.13.9")
+                "catch2/2.13.8")
 
     def config_options(self):
         if self.settings.os == "Windows":

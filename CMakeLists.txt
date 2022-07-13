@@ -9,7 +9,6 @@ project(reductcpp VERSION ${REDUCT_CPP_FULL_VERSION})
 
 message(STATUS "Version ${REDUCT_CPP_FULL_VERSION}")
 
-set(REDUCT_CPP_INSTALL_DEPS ON CACHE BOOL "Install dependencies by using conan or fetch content")
 set(REDUCT_CPP_ENABLE_TESTS ON CACHE BOOL "Compile tests")
 set(REDUCT_CPP_ENABLE_EXAMPLES ON CACHE BOOL "Compile examples")
 
@@ -17,9 +16,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-if (REDUCT_CPP_INSTALL_DEPS)
-    include(cmake/InstallDependencies.cmake)
-endif()
+include(cmake/InstallDependencies.cmake)
 
 configure_file(cmake/ReductCppConfig.cmake.in ${CMAKE_BINARY_DIR}/cmake/ReductCppConfig.cmake @ONLY)
 configure_file(cmake/ReductCppConfigVersion.cmake.in ${CMAKE_BINARY_DIR}/cmake/ReductCppConfigVersion.cmake @ONLY)
