@@ -13,7 +13,7 @@ using httplib::DataSink;
 class HttpClient : public IHttpClient {
  public:
   explicit HttpClient(std::string_view url, const HttpOptions& options)
-      : client_(std::make_unique<httplib::Client>(std::string(url))) {
+      : client_(std::make_unique<httplib::Client>(std::string(url))), api_token_(options.api_token) {
     client_->enable_server_certificate_verification(options.ssl_verification);
   }
 
