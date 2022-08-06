@@ -84,8 +84,8 @@ class IBucket {
    * @param stop stop time point in the interval
    * @return the list or communication error
    */
-  [[nodiscard]] virtual Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start,
-                                                             Time stop) const noexcept = 0;
+  [[nodiscard, deprecated("Will be deleted in v1.0.0. Use IBucket::Query")]] virtual Result<std::vector<RecordInfo>>
+  List(std::string_view entry_name, Time start, Time stop) const noexcept = 0;
 
   /**
    * Write an object to the storage with timestamp
