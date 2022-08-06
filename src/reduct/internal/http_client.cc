@@ -6,8 +6,6 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
-#include "sha256.h"
-
 namespace reduct::internal {
 
 using httplib::DataSink;
@@ -16,9 +14,6 @@ class HttpClient : public IHttpClient {
  public:
   explicit HttpClient(std::string_view url, const HttpOptions& options)
       : client_(std::make_unique<httplib::Client>(std::string(url))) {
-    std::vector<unsigned char> hash(picosha2::k_digest_size);
-    picosha2::hash256(options.api_token.begin(), options.api_token.end(), hash.begin(), hash.end());
-    api_token_ = picosha2::bytes_to_hex_string(hash.begin(), hash.end());
     client_->enable_server_certificate_verification(options.ssl_verification);
   }
 
