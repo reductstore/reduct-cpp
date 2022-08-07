@@ -167,7 +167,7 @@ TEST_CASE("reduct::IBucket should query records (huge blob)", "[entry_api]") {
 
   using us = std::chrono::microseconds;
   IBucket::Time ts{};
-  std::string blob(10'000'000, 'x');
+  std::string blob(100000, 'x');
   REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
 
   std::string received_data;
