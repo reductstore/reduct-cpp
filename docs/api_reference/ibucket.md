@@ -57,9 +57,9 @@ bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
 });
 ```
 
-### List
+### List (Deprecated)
 
-`IClient::List`method returns a list of timestamps and sizes of records for some time interval:
+The `IClient::List`method returns a list of timestamps and sizes of records for some time interval:
 
 ```cpp
 auto now = IBucket::Time::clock::now();
@@ -71,6 +71,36 @@ for (auto&& record : records) {
   }
 }
 ```
+
+### Query
+
+The `IClient::Quert` method allows to iterate records for a time interval:
+
+```cpp
+  err = bucket->Query("entry-1", start, IBucket::Time::clock::now(), std::nullopt, [](auto&& record) {
+    std::string blob;
+    auto read_err = record.Read([&blob](auto chunk) {
+      blob.append(chunk);
+      return true;  // return false if you want to aboard the receiving
+    });
+
+    if (!read_err) {
+      std::cout << "Read blob: " << blob;
+    }
+
+    return true; // return false if you want stop iterating
+  });
+```
+
+You can walk through all the records in an entry if you don't specify the start and stop time points:
+
+```cpp
+  err = bucket->Query("entry-1", std::nullopt, std::nullopt, std::nullopt, [](auto&& record) {
+      // ...
+  });
+```
+
+The callback for each record is executed in a separated thread, so you should care of thread safety.
 
 ### Remove
 
