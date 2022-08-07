@@ -32,11 +32,17 @@ int main() {
   write_err = bucket->Write("entry-1", "some_data3");
 
   // Walk through the data
-  auto [records, _] = bucket->List("entry-1", start, IBucket::Time::clock::now());
-  for (auto&& record : records) {
-    auto [blob, read_err] = bucket->Read("entry-1", record.timestamp);
+  err = bucket->Query("entry-1", start, IBucket::Time::clock::now(), std::nullopt, [](auto&& record) {
+    std::string blob;
+    auto read_err = record.Read([&blob](auto chunk) {
+      blob.append(chunk);
+      return true;
+    });
+
     if (!read_err) {
       std::cout << "Read blob: " << blob;
     }
-  }
+
+    return true;
+  });
 }
