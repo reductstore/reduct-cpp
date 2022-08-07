@@ -44,18 +44,12 @@ else ()
     )
 
     FetchContent_Declare(
-            Catch2
-            URL https://github.com/catchorg/Catch2/archive/refs/tags/v2.13.8.zip
-            URL_HASH MD5=78148e1a75aea786038fb8d21b9455f2
-    )
-
-    FetchContent_Declare(
             concurrentqueue
             URL https://github.com/cameron314/concurrentqueue/archive/refs/tags/v1.0.3.zip
             URL_HASH MD5=6e879b14c833df7c011be5959e70cef7
     )
 
-    FetchContent_MakeAvailable(fmt nlohmann_json httplib Catch2 concurrentqueue)
+    FetchContent_MakeAvailable(fmt nlohmann_json httplib concurrentqueue)
     add_library(dependencies INTERFACE)
-    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib Catch2::Catch2 concurrentqueue)
+    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib concurrentqueue)
 endif ()
