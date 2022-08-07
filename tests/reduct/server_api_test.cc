@@ -19,7 +19,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   auto [info, err] = ctx.client->GetInfo();
 
   REQUIRE(err == Error::kOk);
-  REQUIRE(info.version >= "0.6.0");
+  REQUIRE(info.version >= "0.7.0");
 
   REQUIRE(info.bucket_count == 2);
   REQUIRE(info.usage == 36);
@@ -27,7 +27,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(info.oldest_record.time_since_epoch() == s(1));
   REQUIRE(info.latest_record.time_since_epoch() == s(6));
 
-  REQUIRE(*info.defaults.bucket.max_block_size == 67108864);
+  REQUIRE(*info.defaults.bucket.max_block_size == 64000000);
   REQUIRE(*info.defaults.bucket.max_block_records == 1024);
   REQUIRE(*info.defaults.bucket.quota_type == IBucket::QuotaType::kNone);
   REQUIRE(*info.defaults.bucket.quota_size == 0);

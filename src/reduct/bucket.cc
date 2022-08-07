@@ -3,17 +3,49 @@
 #include "reduct/bucket.h"
 #define FMT_HEADER_ONLY 1
 #include <fmt/core.h>
+#if CONAN
+#include <moodycamel/concurrentqueue.h>
+#else
+#include <concurrentqueue.h>
+#endif
+
 #include <nlohmann/json.hpp>
+
+#include <future>
+#include <mutex>
+#include <queue>
+#include <thread>
 
 #include "reduct/internal/http_client.h"
 #include "reduct/internal/serialisation.h"
 
 namespace reduct {
 
+using internal::IHttpClient;
+
 class Bucket : public IBucket {
  public:
-  Bucket(std::string_view url, std::string_view name, const HttpOptions& options) : path_(fmt::format("/b/{}", name)) {
-    client_ = internal::IHttpClient::Build(url, options);
+  Bucket(std::string_view url, std::string_view name, const HttpOptions& options)
+      : path_(fmt::format("/b/{}", name)), stop_{} {
+    client_ = IHttpClient::Build(url, options);
+
+    worker_ = std::thread([this] {
+      while (!stop_) {
+        Task task;
+        if (task_queue_.try_dequeue(task)) {
+          task();
+        } else {
+          std::this_thread::sleep_for(std::chrono::microseconds(100));
+        }
+      }
+    });
+  }
+
+  ~Bucket() {
+    stop_ = true;
+    if (worker_.joinable()) {
+      worker_.join();
+    }
   }
 
   Result<Settings> GetSettings() const noexcept override {
@@ -120,9 +152,11 @@ class Bucket : public IBucket {
 
   Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept override {
     if (ts) {
-      return client_->Get(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)), std::move(callback));
+      return client_->Get(
+          fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)), [](auto h) {}, std::move(callback));
     } else {
-      return client_->Get(fmt::format("{}/{}", path_, entry_name), std::move(callback));
+      return client_->Get(
+          fmt::format("{}/{}", path_, entry_name), [](auto h) {}, std::move(callback));
     }
   }
 
@@ -149,6 +183,88 @@ class Bucket : public IBucket {
     return {records, Error::kOk};
   }
 
+  Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
+              std::optional<QueryOptions> options, NextRecordCallback callback) const noexcept override {
+    auto url = fmt::format("{}/{}/q?", path_, entry_name);
+
+    if (start) {
+      url += fmt::format("start={}&", ToMicroseconds(*start));
+    }
+
+    if (stop) {
+      url += fmt::format("stop={}&", ToMicroseconds(*stop));
+    }
+
+    if (options) {
+      url += fmt::format("ttl={}", options->ttl.count());
+    }
+
+    auto [body, err] = client_->Get(url);
+    if (err) {
+      return err;
+    }
+
+    std::string id;
+    try {
+      auto data = nlohmann::json::parse(body);
+      id = data.at("id");
+    } catch (const std::exception& ex) {
+      return Error{.code = -1, .message = ex.what()};
+    }
+
+    bool last = false;
+    while (!last) {
+      Record record;
+      moodycamel::ConcurrentQueue<std::string> data;
+      std::future<void> future;
+
+      err = client_->Get(
+          fmt::format("{}/{}?q={}", path_, entry_name, id),
+          [&record, &last, &data, &callback, &future, this](IHttpClient::Headers&& headers) {
+            last = std::stoi(headers["x-reduct-last"]);
+            record.last = last;
+            record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
+            record.size = std::stoi(headers["content-length"]);
+
+            record.Read = [&](auto record_callback) {
+              while (true) {
+                std::string chunk;
+                if (data.try_dequeue(chunk)) {
+                  if (chunk.empty()) {
+                    break;
+                  }
+
+                  if (!record_callback(std::move(chunk))) {
+                    break;
+                  }
+                } else {
+                  std::this_thread::sleep_for(std::chrono::microseconds(100));
+                }
+              }
+
+              return Error::kOk;
+            };
+
+            Task task([&record, &callback, &last] { last = !callback(std::move(record)) || last; });
+            future = task.get_future();
+            task_queue_.enqueue(std::move(task));
+          },
+          [&data](auto chunk) {
+            data.enqueue(std::string(chunk));
+            return true;
+          });
+
+      data.enqueue("");
+      future.wait();
+
+      if (err) {
+        return err;
+      }
+    }
+
+    return Error::kOk;
+  }
+
  private:
   static int64_t ToMicroseconds(const Time& ts) {
     return std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
@@ -158,6 +274,11 @@ class Bucket : public IBucket {
 
   std::unique_ptr<internal::IHttpClient> client_;
   std::string path_;
+  std::thread worker_;
+
+  using Task = std::packaged_task<void()>;
+  mutable moodycamel::ConcurrentQueue<Task> task_queue_;
+  std::atomic<bool> stop_;
 };
 
 std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name,

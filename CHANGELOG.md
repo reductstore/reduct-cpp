@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support HTTP API v0.7, [PR-36](https://github.com/reduct-storage/reduct-cpp/pull/36)
+
 ### Fixed
 
 - Cmake Fetch_Content integration, [PR-33](https://github.com/reduct-storage/reduct-cpp/pull/33)
+
+
+### Changed
+
+- `IBucket::List` is deprecated, [PR-36](https://github.com/reduct-storage/reduct-cpp/pull/36)
 
 ## [0.6.0] - 2022-06-29
 
@@ -71,4 +80,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.3.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/reduct-storage/reduct-cpp/releases/tag/v0.1.0
-
