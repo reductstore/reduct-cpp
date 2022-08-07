@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2022-08-07
+
 ### Added
 
 - Support HTTP API v0.7, [PR-36](https://github.com/reduct-storage/reduct-cpp/pull/36)
@@ -17,11 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Cmake doesn't build test and examples by default, [PR-37](https://github.com/reduct-storage/reduct-cpp/pull/37)
-
-### Changed
-
 - `IBucket::List` is deprecated, [PR-36](https://github.com/reduct-storage/reduct-cpp/pull/36)
+- Cmake doesn't build test and examples by default, [PR-37](https://github.com/reduct-storage/reduct-cpp/pull/37)
 
 ## [0.6.0] - 2022-06-29
 
@@ -76,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -  Initial implementation of Reduct Storage API v0.1.0U
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v0.7.0...HEAD
+[0.6.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.3.0...v0.4.0
