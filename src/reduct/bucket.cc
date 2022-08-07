@@ -3,7 +3,12 @@
 #include "reduct/bucket.h"
 #define FMT_HEADER_ONLY 1
 #include <fmt/core.h>
+#if CONAN
 #include <moodycamel/concurrentqueue.h>
+#else
+#include <concurrentqueue.h>
+#endif
+
 #include <nlohmann/json.hpp>
 
 #include <future>

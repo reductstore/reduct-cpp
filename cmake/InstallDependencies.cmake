@@ -20,6 +20,8 @@ if (CONAN_CMD)
 
     add_library(dependencies INTERFACE)
     target_link_libraries(dependencies INTERFACE ${CONAN_LIBS})
+    target_compile_definitions(dependencies INTERFACE CONAN)
+
 else ()
     message(STATUS "Conan not found. Fetch dependencies")
     include(FetchContent)
@@ -47,7 +49,13 @@ else ()
             URL_HASH MD5=78148e1a75aea786038fb8d21b9455f2
     )
 
-    FetchContent_MakeAvailable(fmt nlohmann_json httplib Catch2)
+    FetchContent_Declare(
+            concurrentqueue
+            URL https://github.com/cameron314/concurrentqueue/archive/refs/tags/v1.0.3.zip
+            URL_HASH MD5=6e879b14c833df7c011be5959e70cef7
+    )
+
+    FetchContent_MakeAvailable(fmt nlohmann_json httplib Catch2 concurrentqueue)
     add_library(dependencies INTERFACE)
-    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib Catch2::Catch2)
+    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib Catch2::Catch2 concurrentqueue)
 endif ()
