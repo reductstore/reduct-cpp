@@ -20,7 +20,10 @@ class IHttpClient {
   virtual Result<std::string> Get(std::string_view path) const noexcept = 0;
 
   using ReadCallback = std::function<bool(std::string_view)>;
-  virtual Error Get(std::string_view path, ReadCallback) const noexcept = 0;
+  using Headers = std::unordered_map<std::string, std::string>;
+  using ResponseCallback = std::function<void(Headers&&)>;
+
+  virtual Error Get(std::string_view path, ResponseCallback, ReadCallback) const noexcept = 0;
 
   virtual Error Head(std::string_view path) const noexcept = 0;
 

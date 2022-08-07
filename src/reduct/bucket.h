@@ -20,6 +20,8 @@ namespace reduct {
  */
 class IBucket {
  public:
+  virtual ~IBucket() = default;
+
   enum class QuotaType { kNone, kFifo };
 
   /**
@@ -130,6 +132,42 @@ class IBucket {
   virtual Error Write(std::string_view entry_name, std::optional<Time> ts, size_t content_length,
                       WriteCallback callback) const noexcept = 0;
 
+  struct QueryOptions {
+    std::chrono::milliseconds ttl;
+  };
+
+  /**
+   * Record
+   */
+  struct Record {
+    Time timestamp;
+    size_t size;
+    bool last;
+
+    /**
+     * Function to receive data in chunks
+     */
+    std::function<Error(ReadCallback)> Read;
+  };
+
+  /**
+   * Callback for Bucket::Query
+   */
+  using NextRecordCallback = std::function<bool(Record&& record)>;
+
+  /**
+   * Query data for time interval
+   * @param entry_name
+   * @param start start time point ,if nullopt then from very beginning
+   * @param stop stop time point, if nullopt then until the last record
+   * @param options
+   * @param callback return  next record If you want to stop querying, return false
+   * @return
+   */
+  [[nodiscard]] virtual Error Query(
+      std::string_view entry_name, std::optional<Time> start = std::nullopt, std::optional<Time> stop = std::nullopt,
+      std::optional<QueryOptions> options = std::nullopt,
+      NextRecordCallback callback = [](auto) { return false; }) const noexcept = 0;
   /**
    * @brief Get settings by HTTP request
    * @return settings or HTTP error

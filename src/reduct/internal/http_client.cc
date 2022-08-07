@@ -6,6 +6,8 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
+
 namespace reduct::internal {
 
 using httplib::DataSink;
@@ -26,16 +28,25 @@ class HttpClient : public IHttpClient {
     return {std::move(res->body), Error::kOk};
   }
 
-  Error Get(std::string_view path, ReadCallback callback) const noexcept override {
+  Error Get(std::string_view path, ResponseCallback resp_callback, ReadCallback read_callback) const noexcept override {
     Error err = Error::kOk;
     std::string err_body;
-    auto res = AuthWrapper([this, &err, &err_body, path, clb = std::move(callback)] {
+    auto res = AuthWrapper([this, &err, &err_body, path, resp_cb = resp_callback, read_cb = std::move(read_callback)] {
       return client_->Get(
           path.data(),
           [&](const auto& response) {
             if (response.status != 200) {
               err.code = response.status;
             }
+
+            Headers headers;
+            for (auto& [k, v] : response.headers) {
+              std::string lowcase_header = k;
+              std::transform(k.begin(), k.end(), lowcase_header.begin(), [](auto ch) { return std::tolower(ch); });
+              headers[lowcase_header] = v;
+            }
+
+            resp_cb(std::move(headers));
             return true;
           },
           [&](const char* data, size_t size) {
@@ -44,7 +55,7 @@ class HttpClient : public IHttpClient {
               return true;
             }
 
-            return clb(std::string_view(data, size));
+            return read_cb(std::string_view(data, size));
           });
     });
     return CheckRequest(res, err_body);
