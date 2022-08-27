@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support HTTP API v0.8, [PR-39](https://github.com/reduct-storage/reduct-cpp/pull/39)
+
 ## [0.7.0] - 2022-08-07
 
 ### Added
