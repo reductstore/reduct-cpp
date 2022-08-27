@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2022-08-27
+
 ### Added
 
 - Support HTTP API v0.8, [PR-39](https://github.com/reduct-storage/reduct-cpp/pull/39)
@@ -79,8 +81,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 -  Initial implementation of Reduct Storage API v0.1.0U
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v0.7.0...HEAD
-[0.6.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.6.0...v0.7.0
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.3.0...v0.4.0
