@@ -68,26 +68,6 @@ class IBucket {
     friend std::ostream& operator<<(std::ostream& os, const EntryInfo& info);
   };
 
-  /**
-   * Information about a record
-   */
-  struct RecordInfo {
-    Time timestamp;
-    size_t size{};
-
-    bool operator<=>(const RecordInfo&) const noexcept = default;
-    friend std::ostream& operator<<(std::ostream& os, const RecordInfo& settings);
-  };
-
-  /**
-   * Returns list of records for a time interval
-   * @param entry_name name of the entry
-   * @param start start time point in the interval
-   * @param stop stop time point in the interval
-   * @return the list or communication error
-   */
-  [[nodiscard, deprecated("Will be deleted in v1.0.0. Use IBucket::Query")]] virtual Result<std::vector<RecordInfo>>
-  List(std::string_view entry_name, Time start, Time stop) const noexcept = 0;
 
   /**
    * Write an object to the storage with timestamp

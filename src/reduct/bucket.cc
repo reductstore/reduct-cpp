@@ -160,29 +160,6 @@ class Bucket : public IBucket {
     }
   }
 
-  Result<std::vector<RecordInfo>> List(std::string_view entry_name, Time start, Time stop) const noexcept override {
-    auto [body, err] = client_->Get(
-        fmt::format("{}/{}/list?start={}&stop={}", path_, entry_name, ToMicroseconds(start), ToMicroseconds(stop)));
-    if (err) {
-      return {{}, std::move(err)};
-    }
-
-    std::vector<RecordInfo> records;
-    try {
-      auto data = nlohmann::json::parse(body);
-      auto json_records = data.at("records");
-      records.resize(json_records.size());
-      for (int i = 0; i < records.size(); ++i) {
-        records[i].timestamp = FromMicroseconds(json_records[i].at("ts"));
-        records[i].size = std::stoul(json_records[i].at("size").get<std::string>());
-      }
-    } catch (const std::exception& ex) {
-      return {{}, Error{.code = -1, .message = ex.what()}};
-    }
-
-    return {records, Error::kOk};
-  }
-
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
               std::optional<QueryOptions> options, NextRecordCallback callback) const noexcept override {
     auto url = fmt::format("{}/{}/q?", path_, entry_name);
@@ -289,13 +266,6 @@ std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string
 // Settings
 std::ostream& operator<<(std::ostream& os, const reduct::IBucket::Settings& settings) {
   os << internal::BucketSettingToJsonString(settings).dump();
-  return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const IBucket::RecordInfo& record) {
-  os << fmt::format("<RecordInfo ts={}, size={}>",
-                    std::chrono::duration_cast<std::chrono::microseconds>(record.timestamp.time_since_epoch()).count(),
-                    record.size);
   return os;
 }
 
