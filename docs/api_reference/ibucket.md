@@ -57,21 +57,6 @@ bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
 });
 ```
 
-### List (Deprecated)
-
-The `IClient::List`method returns a list of timestamps and sizes of records for some time interval:
-
-```cpp
-auto now = IBucket::Time::clock::now();
-auto [records, _] = bucket->List("entry-1", now - std::chrono::hours(1), now);
-for (auto&& record : records) {
-  auto [blob, read_err] = bucket->Read("entry-1", record.timestamp);
-  if (!read_err) {
-    std::cout << "Read blob: " <<  blob;
-  }
-}
-```
-
 ### Query
 
 The `IClient::Quert` method allows to iterate records for a time interval:

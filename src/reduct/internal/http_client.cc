@@ -3,6 +3,7 @@
 #include "reduct/internal/http_client.h"
 #undef CPPHTTPLIB_BROTLI_SUPPORT
 
+#include <fmt/format.h>
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
@@ -23,7 +24,7 @@ class HttpClient : public IHttpClient {
   }
 
   Result<std::string> Get(std::string_view path) const noexcept override {
-    auto res = client_->Get(path.data());
+    auto res = client_->Get(AddApiPrefix(path).data());
     if (auto err = CheckRequest(res)) {
       return {{}, std::move(err)};
     }
@@ -35,7 +36,7 @@ class HttpClient : public IHttpClient {
     Error err = Error::kOk;
     std::string err_body;
     auto res = client_->Get(
-        path.data(),
+        AddApiPrefix(path).data(),
         [&](const auto& response) {
           if (response.status != 200) {
             err.code = response.status;
@@ -63,19 +64,19 @@ class HttpClient : public IHttpClient {
   }
 
   Error Head(std::string_view path) const noexcept override {
-    auto res = client_->Head(path.data());
+    auto res = client_->Head(AddApiPrefix(path).data());
     return CheckRequest(res);
   }
 
   Error Post(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
-    auto res = client_->Post(path.data(), body.data(), mime.data());
+    auto res = client_->Post(AddApiPrefix(path).data(), body.data(), mime.data());
     return CheckRequest(res);
   }
 
   Error Post(std::string_view path, std::string_view mime, size_t content_length,
              WriteCallback callback) const noexcept override {
     auto res = client_->Post(
-        path.data(), content_length,
+        AddApiPrefix(path).data(), content_length,
         [&](size_t offset, size_t size, DataSink& sink) {
           auto [ok, data] = callback(offset, size);
           sink.write(data.data(), data.size());
@@ -86,12 +87,12 @@ class HttpClient : public IHttpClient {
   }
 
   Error Put(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
-    auto res = client_->Put(path.data(), std::string(body), mime.data());
+    auto res = client_->Put(AddApiPrefix(path).data(), std::string(body), mime.data());
     return CheckRequest(res);
   }
 
   Error Delete(std::string_view path) const noexcept override {
-    auto res = client_->Delete(path.data());
+    auto res = client_->Delete(AddApiPrefix(path).data());
     return CheckRequest(res);
   }
 
@@ -125,6 +126,8 @@ class HttpClient : public IHttpClient {
 
     return Error::kOk;
   }
+
+  static std::string AddApiPrefix(std::string_view path) { return fmt::format("{}{}", kApiPrefix, path); }
 
   std::unique_ptr<httplib::Client> client_;
   std::string api_token_;
