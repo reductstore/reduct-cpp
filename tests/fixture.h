@@ -29,14 +29,15 @@ struct Fixture {
     }
 
     bucket_1 = client->CreateBucket("bucket_1").result;
-    [[maybe_unused]] auto ret = bucket_1->Write("entry-1", "data-1", IBucket::Time() + s(1));
-    ret = bucket_1->Write("entry-1", "data-2", IBucket::Time() + s(2));
-    ret = bucket_1->Write("entry-2", "data-3", IBucket::Time() + s(3));
-    ret = bucket_1->Write("entry-2", "data-4", IBucket::Time() + s(4));
+    [[maybe_unused]] auto ret =
+        bucket_1->Write("entry-1", IBucket::Time() + s(1), [](auto rec) { rec->WriteAll("data-1"); });
+    ret = bucket_1->Write("entry-1", IBucket::Time() + s(2), [](auto rec) { rec->WriteAll("data-2"); });
+    ret = bucket_1->Write("entry-2", IBucket::Time() + s(3), [](auto rec) { rec->WriteAll("data-3"); });
+    ret = bucket_1->Write("entry-2", IBucket::Time() + s(4), [](auto rec) { rec->WriteAll("data-4"); });
 
     bucket_2 = client->CreateBucket("bucket_2").result;
-    ret = bucket_2->Write("entry-1", "data-5", IBucket::Time() + s(5));
-    ret = bucket_2->Write("entry-1", "data-6", IBucket::Time() + s(6));
+    ret = bucket_2->Write("entry-1", IBucket::Time() + s(5), [](auto rec) { rec->WriteAll("data-5"); });
+    ret = bucket_2->Write("entry-1", IBucket::Time() + s(6), [](auto rec) { rec->WriteAll("data-6"); });
   }
 
   std::unique_ptr<reduct::IClient> client;

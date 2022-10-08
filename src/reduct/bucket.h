@@ -95,19 +95,33 @@ class IBucket {
   };
 
   /**
-   * Callback to receive a record
+   * Callback to receive a readable record
    */
-  using RecordCallback = std::function<bool(const ReadableRecord& record)>;
+  using ReadRecordCallback = std::function<bool(const ReadableRecord& record)>;
 
-  /**
-   * Write an object to the storage with timestamp
-   * @param entry_name entry in bucket
-   * @param data an object ot store
-   * @param ts timestamp, if it is nullopt, if it is nullpot the method uses current time
-   * @return HTTP or communication error
-   */
-  virtual Error Write(std::string_view entry_name, std::string_view data,
-                      std::optional<Time> ts = std::nullopt) const noexcept = 0;
+  struct WritableRecord {
+    /**
+     * @returns last flag and data to write
+     */
+    using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
+
+    WriteCallback callback_ = [](auto offset, auto size) { return std::pair{true, ""}; };
+    size_t content_length_;
+
+    void Write(size_t content_length, WriteCallback&& cb) {
+      content_length_ = content_length;
+      callback_ = std::move(cb);
+    }
+
+    void WriteAll(std::string data) {
+      content_length_ = data.size();
+      callback_ = [data = std::move(data)](size_t offset, size_t size) {
+        return std::pair{data.size() <= offset + size, data.substr(offset, size)};
+      };
+    }
+  };
+
+  using WriteRecordCallback = std::function<void(WritableRecord*)>;
 
   /**
    * Read a record by chunks
@@ -116,20 +130,18 @@ class IBucket {
    * @param callback called with calback. To continue receiving it should return true
    * @return HTTP or communication error
    */
-  virtual Error Read(std::string_view entry_name, std::optional<Time> ts, RecordCallback callback) const noexcept = 0;
-
-  using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
+  virtual Error Read(std::string_view entry_name, std::optional<Time> ts,
+                     ReadRecordCallback callback) const noexcept = 0;
 
   /**
    * Write a record by chunks
    * @param entry_name entry in bucket
    * @param ts timestamp, if it is nullopt, the method returns the latest record
-   * @param content_length the size of the record
    * @param callback
    * @return HTTP or communication error
    */
-  virtual Error Write(std::string_view entry_name, std::optional<Time> ts, size_t content_length,
-                      WriteCallback callback) const noexcept = 0;
+  virtual Error Write(std::string_view entry_name, std::optional<Time> ts,
+                      WriteRecordCallback callback) const noexcept = 0;
 
   struct QueryOptions {
     std::chrono::milliseconds ttl;
@@ -147,7 +159,7 @@ class IBucket {
   [[nodiscard]] virtual Error Query(
       std::string_view entry_name, std::optional<Time> start = std::nullopt, std::optional<Time> stop = std::nullopt,
       std::optional<QueryOptions> options = std::nullopt,
-      RecordCallback callback = [](auto) { return false; }) const noexcept = 0;
+      ReadRecordCallback callback = [](auto) { return false; }) const noexcept = 0;
   /**
    * @brief Get settings by HTTP request
    * @return settings or HTTP error

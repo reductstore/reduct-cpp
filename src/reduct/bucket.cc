@@ -121,22 +121,18 @@ class Bucket : public IBucket {
 
   Error Remove() const noexcept override { return client_->Delete(path_); }
 
-  Error Write(std::string_view entry_name, std::string_view data, std::optional<Time> ts) const noexcept override {
-    return Write(entry_name, ts, data.size(), [&data](auto offset, auto size) -> std::pair<bool, std::string> {
-      return {true, std::string(data.substr(offset, size))};
-    });
-  }
-
-  Error Write(std::string_view entry_name, std::optional<Time> ts, size_t content_length,
-              WriteCallback callback) const noexcept override {
+  Error Write(std::string_view entry_name, std::optional<Time> ts,
+              WriteRecordCallback callback) const noexcept override {
     if (!ts) {
       ts = Time::clock::now();
     }
+    WritableRecord record;
+    callback(&record);
     return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)), "application/octet-stream",
-                         content_length, std::move(callback));
+                         record.content_length_, std::move(record.callback_));
   }
 
-  Error Read(std::string_view entry_name, std::optional<Time> ts, RecordCallback callback) const noexcept override {
+  Error Read(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
     auto path = fmt::format("{}/{}", path_, entry_name);
     if (ts) {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
@@ -147,7 +143,7 @@ class Bucket : public IBucket {
   }
 
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
-              std::optional<QueryOptions> options, RecordCallback callback) const noexcept override {
+              std::optional<QueryOptions> options, ReadRecordCallback callback) const noexcept override {
     auto url = fmt::format("{}/{}/q?", path_, entry_name);
 
     if (start) {
@@ -191,7 +187,7 @@ class Bucket : public IBucket {
   }
 
  private:
-  Result<bool> ReadRecord(std::string&& path, const RecordCallback& callback) const noexcept {
+  Result<bool> ReadRecord(std::string&& path, const ReadRecordCallback& callback) const noexcept {
     moodycamel::ConcurrentQueue<std::string> data;
     std::future<void> future;
     bool last;

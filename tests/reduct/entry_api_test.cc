@@ -22,8 +22,8 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   REQUIRE(bucket);
 
   IBucket::Time ts = IBucket::Time() + std::chrono::microseconds(123109210);
-  std::string_view blob("some blob of data");
-  REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
+  std::string blob = "some blob of data";
+  REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
 
   std::string received_data;
   err = bucket->Read("entry", ts, [&received_data, ts](auto record) {
@@ -53,9 +53,9 @@ TEST_CASE("reduct::IBucket should read the latest record", "[entry_api]") {
 
   using us = std::chrono::microseconds;
   IBucket::Time ts{};
-  REQUIRE(bucket->Write("entry", "some_data1", ts) == Error::kOk);
-  REQUIRE(bucket->Write("entry", "some_data2", ts + us(1)) == Error::kOk);
-  REQUIRE(bucket->Write("entry", "some_data3", ts + us(2)) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts + us(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts + us(2), [](auto rec) { rec->WriteAll("some_data3"); }) == Error::kOk);
 
   auto err = bucket->Read("entry", {}, [ts](auto record) {
     REQUIRE(record.size == 10);
@@ -77,7 +77,7 @@ TEST_CASE("reduct::IBucket should read a record in chunks", "[entry_api]") {
 
   IBucket::Time ts = IBucket::Time::clock::now();
   const std::string blob(10'000, 'x');
-  REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
 
   std::string received;
   REQUIRE(bucket->Read("entry", ts, [&received](auto record) {
@@ -102,8 +102,13 @@ TEST_CASE("reduct::IBucket should write a record in chunks", "[entry_api]") {
 
   IBucket::Time ts = IBucket::Time::clock::now();
   const std::string blob(10'000, 'x');
-  REQUIRE(bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
-    return std::pair{true, blob.substr(offset, size)};
+  REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) {
+    rec->Write(blob.size(), [&](auto offset, auto size) {
+      return std::pair{
+          true,
+          blob.substr(offset, size),
+      };
+    });
   }) == Error::kOk);
 
   err = bucket->Read("entry", ts, [&blob](auto record) {
@@ -124,9 +129,9 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
 
   using us = std::chrono::microseconds;
   IBucket::Time ts{};
-  REQUIRE(bucket->Write("entry", "some_data1", ts) == Error::kOk);
-  REQUIRE(bucket->Write("entry", "some_data2", ts + us(1)) == Error::kOk);
-  REQUIRE(bucket->Write("entry", "some_data3", ts + us(2)) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts + us(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts + us(2), [](auto rec) { rec->WriteAll("some_data3"); }) == Error::kOk);
 
   std::string all_data;
   SECTION("receive all data") {
@@ -179,7 +184,7 @@ TEST_CASE("reduct::IBucket should query records (huge blob)", "[entry_api]") {
   using us = std::chrono::microseconds;
   IBucket::Time ts{};
   std::string blob(100000, 'x');
-  REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
 
   std::string received_data;
   auto err = bucket->Query("entry", ts, ts + us(3), {}, [&received_data](auto record) {

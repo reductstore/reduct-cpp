@@ -112,8 +112,9 @@ TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
 
   auto t = IBucket::Time();
-  REQUIRE(bucket->Write("entry-1", "some_data", t) == Error::kOk);
-  REQUIRE(bucket->Write("entry-2", "some_data", t + std::chrono::seconds(1)) == Error::kOk);
+  REQUIRE(bucket->Write("entry-1", t, [](auto record) { record->WriteAll("some_data"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-2", t + std::chrono::seconds(1), [](auto record) { record->WriteAll("some_data"); }) ==
+          Error::kOk);
 
   auto [info, err] = bucket->GetInfo();
   REQUIRE(err == Error::kOk);
