@@ -49,7 +49,9 @@ class HttpClient : public IHttpClient {
             headers[lowcase_header] = v;
           }
 
-          resp_callback(std::move(headers));
+          if (!err) {
+            resp_callback(std::move(headers));
+          }
           return true;
         },
         [&](const char* data, size_t size) {

@@ -12,7 +12,6 @@
 #include <nlohmann/json.hpp>
 
 #include <future>
-#include <iostream>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -140,7 +139,7 @@ class Bucket : public IBucket {
   Error Read(std::string_view entry_name, std::optional<Time> ts, RecordCallback callback) const noexcept override {
     auto path = fmt::format("{}/{}", path_, entry_name);
     if (ts) {
-      path.append(fmt::format("?ts={}",  ToMicroseconds(*ts)));
+      path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
     auto [_, record_err] = ReadRecord(std::move(path), std::move(callback));
@@ -177,7 +176,7 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      auto [last, record_err] = ReadRecord(fmt::format("{}/{}?q={}", path_, entry_name, id), std::move(callback));
+      auto [last, record_err] = ReadRecord(fmt::format("{}/{}?q={}", path_, entry_name, id), callback);
 
       if (record_err) {
         return record_err;
@@ -192,23 +191,22 @@ class Bucket : public IBucket {
   }
 
  private:
-  Result<bool> ReadRecord(std::string&& path, RecordCallback&& callback) const noexcept {
-    ReadableRecord record;
+  Result<bool> ReadRecord(std::string&& path, const RecordCallback& callback) const noexcept {
     moodycamel::ConcurrentQueue<std::string> data;
     std::future<void> future;
     bool last;
 
     auto err = client_->Get(
         path,
-        [&path, &record, &last, &data, callback = std::move(callback), &future, this](IHttpClient::Headers&& headers) {
-          std::cout << path << std::endl;
+        [&last, &data, callback = std::move(callback), &future, this](IHttpClient::Headers&& headers) {
+          ReadableRecord record;
 
-          last = std::stoi(headers["x-reduct-last"]);
+          last = headers["x-reduct-last"] == "1";
           record.last = last;
           record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
           record.size = std::stoi(headers["content-length"]);
 
-          record.Read = [&](auto record_callback) {
+          record.Read = [&data](auto record_callback) {
             while (true) {
               std::string chunk;
               if (data.try_dequeue(chunk)) {
@@ -227,7 +225,7 @@ class Bucket : public IBucket {
             return Error::kOk;
           };
 
-          Task task([&record, &callback, &last] { last = !callback(std::move(record)) || last; });
+          Task task([record = std::move(record), &callback, &last] { last = !callback(record) || last; });
           future = task.get_future();
           task_queue_.enqueue(std::move(task));
         },
@@ -236,10 +234,12 @@ class Bucket : public IBucket {
           return true;
         });
 
-    data.enqueue("");
-    future.wait();
+    if (!err) {
+      data.enqueue("");
+      future.wait();
+    }
 
-    return {err, last};
+    return {last, err};
   }
 
   static int64_t ToMicroseconds(const Time& ts) {

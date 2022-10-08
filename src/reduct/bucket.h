@@ -97,7 +97,7 @@ class IBucket {
   /**
    * Callback to receive a record
    */
-  using RecordCallback = std::function<bool(ReadableRecord&& record)>;
+  using RecordCallback = std::function<bool(const ReadableRecord& record)>;
 
   /**
    * Write an object to the storage with timestamp

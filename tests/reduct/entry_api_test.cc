@@ -21,13 +21,13 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   REQUIRE(err == Error::kOk);
   REQUIRE(bucket);
 
-  IBucket::Time ts = IBucket::Time::clock::now();
+  IBucket::Time ts = IBucket::Time() + std::chrono::microseconds(123109210);
   std::string_view blob("some blob of data");
   REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
 
   std::string received_data;
   err = bucket->Read("entry", ts, [&received_data, ts](auto record) {
-    REQUIRE(record.size == 10);
+    REQUIRE(record.size == 17);
     REQUIRE(record.timestamp == ts);
     REQUIRE(record.last);
 
@@ -41,7 +41,7 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   REQUIRE(received_data == blob);
 
   SECTION("http errors") {
-    REQUIRE(bucket->Read("entry", IBucket::Time(), [](auto) { return false; }) ==
+    REQUIRE(bucket->Read("entry", IBucket::Time(), [](auto) { return true; }) ==
             Error{.code = 404, .message = "No records for this timestamp"});
   }
 }
