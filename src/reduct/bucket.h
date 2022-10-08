@@ -68,6 +68,36 @@ class IBucket {
     friend std::ostream& operator<<(std::ostream& os, const EntryInfo& info);
   };
 
+  /**
+   * ReadableRecord
+   */
+  struct ReadableRecord {
+    Time timestamp;
+    size_t size;
+    bool last;
+
+    using ReadCallback = std::function<bool(std::string_view)>;
+
+    /**
+     * Function to receive data in chunks
+     */
+    std::function<Error(ReadCallback)> Read;
+
+    Result<std::string> ReadAll() const {
+      std::string data;
+      auto err = Read([&data](auto chunk) {
+        data.append(chunk);
+        return true;
+      });
+
+      return {std::move(data), std::move(err)};
+    }
+  };
+
+  /**
+   * Callback to receive a record
+   */
+  using RecordCallback = std::function<bool(ReadableRecord&& record)>;
 
   /**
    * Write an object to the storage with timestamp
@@ -80,24 +110,13 @@ class IBucket {
                       std::optional<Time> ts = std::nullopt) const noexcept = 0;
 
   /**
-   * Read a record by timestamp
-   * @param entry_name entry in bucket
-   * @param ts timestamp, if it is nullopt, the method returns the latest record
-   * @return HTTP or communication error
-   */
-  virtual Result<std::string> Read(std::string_view entry_name,
-                                   std::optional<Time> ts = std::nullopt) const noexcept = 0;
-
-  using ReadCallback = std::function<bool(std::string_view)>;
-
-  /**
    * Read a record by chunks
    * @param entry_name entry in bucket
    * @param ts timestamp, if it is nullopt, the method returns the latest record
-   * @param callback called with received chunk. To continue receiving it should return true
+   * @param callback called with calback. To continue receiving it should return true
    * @return HTTP or communication error
    */
-  virtual Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept = 0;
+  virtual Error Read(std::string_view entry_name, std::optional<Time> ts, RecordCallback callback) const noexcept = 0;
 
   using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
 
@@ -117,25 +136,6 @@ class IBucket {
   };
 
   /**
-   * Record
-   */
-  struct Record {
-    Time timestamp;
-    size_t size;
-    bool last;
-
-    /**
-     * Function to receive data in chunks
-     */
-    std::function<Error(ReadCallback)> Read;
-  };
-
-  /**
-   * Callback for Bucket::Query
-   */
-  using NextRecordCallback = std::function<bool(Record&& record)>;
-
-  /**
    * Query data for time interval
    * @param entry_name
    * @param start start time point ,if nullopt then from very beginning
@@ -147,7 +147,7 @@ class IBucket {
   [[nodiscard]] virtual Error Query(
       std::string_view entry_name, std::optional<Time> start = std::nullopt, std::optional<Time> stop = std::nullopt,
       std::optional<QueryOptions> options = std::nullopt,
-      NextRecordCallback callback = [](auto) { return false; }) const noexcept = 0;
+      RecordCallback callback = [](auto) { return false; }) const noexcept = 0;
   /**
    * @brief Get settings by HTTP request
    * @return settings or HTTP error

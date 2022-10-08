@@ -24,10 +24,25 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   IBucket::Time ts = IBucket::Time::clock::now();
   std::string_view blob("some blob of data");
   REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
-  REQUIRE(bucket->Read("entry", ts).result == blob);
+
+  std::string received_data;
+  err = bucket->Read("entry", ts, [&received_data, ts](auto record) {
+    REQUIRE(record.size == 10);
+    REQUIRE(record.timestamp == ts);
+    REQUIRE(record.last);
+
+    auto [data, read_err] = record.ReadAll();
+    received_data = std::move(data);
+    REQUIRE(read_err == Error::kOk);
+    return true;
+  });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(received_data == blob);
 
   SECTION("http errors") {
-    REQUIRE(bucket->Read("entry", IBucket::Time()) == Error{.code = 404, .message = "No records for this timestamp"});
+    REQUIRE(bucket->Read("entry", IBucket::Time(), [](auto) { return false; }) ==
+            Error{.code = 404, .message = "No records for this timestamp"});
   }
 }
 
@@ -42,12 +57,18 @@ TEST_CASE("reduct::IBucket should read the latest record", "[entry_api]") {
   REQUIRE(bucket->Write("entry", "some_data2", ts + us(1)) == Error::kOk);
   REQUIRE(bucket->Write("entry", "some_data3", ts + us(2)) == Error::kOk);
 
-  auto [latest_record, err] = bucket->Read("entry");
+  auto err = bucket->Read("entry", {}, [ts](auto record) {
+    REQUIRE(record.size == 10);
+    REQUIRE(record.timestamp == ts + us(2));
+    REQUIRE(record.last);
+
+    return true;
+  });
+
   REQUIRE(err == Error::kOk);
-  REQUIRE(latest_record == "some_data3");
 }
 
-TEST_CASE("reduct::IBucket should read a record by chunks", "[entry_api]") {
+TEST_CASE("reduct::IBucket should read a record in chunks", "[entry_api]") {
   Fixture ctx;
   auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
 
@@ -59,15 +80,20 @@ TEST_CASE("reduct::IBucket should read a record by chunks", "[entry_api]") {
   REQUIRE(bucket->Write("entry", blob, ts) == Error::kOk);
 
   std::string received;
-  REQUIRE(bucket->Read("entry", ts, [&received](auto data) {
-    received.append(data);
+  REQUIRE(bucket->Read("entry", ts, [&received](auto record) {
+    auto record_err = record.Read([&received](auto data) {
+      received.append(data);
+      return true;
+    });
+
+    REQUIRE(record_err == Error::kOk);
     return true;
   }) == Error::kOk);
 
   REQUIRE(received == blob);
 }
 
-TEST_CASE("reduct::IBucket should write a record by chunks", "[entry_api]") {
+TEST_CASE("reduct::IBucket should write a record in chunks", "[entry_api]") {
   Fixture ctx;
   auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
 
@@ -80,9 +106,15 @@ TEST_CASE("reduct::IBucket should write a record by chunks", "[entry_api]") {
     return std::pair{true, blob.substr(offset, size)};
   }) == Error::kOk);
 
-  auto [received, read_err] = bucket->Read("entry", ts);
-  REQUIRE(read_err == Error::kOk);
-  REQUIRE(received == blob);
+  err = bucket->Read("entry", ts, [&blob](auto record) {
+    auto [data, read_err] = record.ReadAll();
+    REQUIRE(read_err == Error::kOk);
+    REQUIRE(data == blob);
+
+    return true;
+  });
+
+  REQUIRE(err == Error::kOk);
 }
 
 TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
@@ -108,6 +140,7 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
       return true;
     });
 
+    REQUIRE(err == Error::kOk);
     REQUIRE(all_data == "some_data1some_data2some_data3");
   }
 
@@ -122,6 +155,7 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
       return false;
     });
 
+    REQUIRE(err == Error::kOk);
     REQUIRE(all_data == "some_data1");
   }
 
@@ -132,6 +166,8 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
       REQUIRE(record.last);
       return true;
     });
+
+    REQUIRE(err == Error::kOk);
   }
 }
 
@@ -156,5 +192,6 @@ TEST_CASE("reduct::IBucket should query records (huge blob)", "[entry_api]") {
     return false;
   });
 
+  REQUIRE(err == Error::kOk);
   REQUIRE(received_data == blob);
 }
