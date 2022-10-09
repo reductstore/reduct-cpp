@@ -9,7 +9,7 @@ endif ()
 include(${CMAKE_BINARY_DIR}/conan.cmake)
 
 find_program(CONAN_CMD conan)
-if (CONAN_CMD)
+if (CONAN_CMD AND ${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     conan_cmake_autodetect(settings)
     conan_cmake_install(PATH_OR_REFERENCE ${CMAKE_CURRENT_SOURCE_DIR}/conanfile.py
             BUILD missing
@@ -23,7 +23,7 @@ if (CONAN_CMD)
     target_compile_definitions(dependencies INTERFACE CONAN)
 
 else ()
-    message(STATUS "Conan not found. Fetch dependencies")
+    message(STATUS "Conan not found or it is fetched content. Fetch dependencies")
     include(FetchContent)
     FetchContent_Declare(
             fmt
