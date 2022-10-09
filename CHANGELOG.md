@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Bucket.list`,  [PR-42](https://github.com/reduct-storage/reduct-cpp/pull/42)
 
+
+### Changed
+
+- Refactor Bucket.Write and Bucket.Read methods, [PR-43](https://github.com/reduct-storage/reduct-cpp/pull/43)
+
 ## [0.8.0] - 2022-08-27
 
 ### Added
