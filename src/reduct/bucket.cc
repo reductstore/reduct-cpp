@@ -41,7 +41,7 @@ class Bucket : public IBucket {
     });
   }
 
-  ~Bucket() {
+  ~Bucket() override {
     stop_ = true;
     if (worker_.joinable()) {
       worker_.join();
@@ -121,47 +121,29 @@ class Bucket : public IBucket {
 
   Error Remove() const noexcept override { return client_->Delete(path_); }
 
-  Error Write(std::string_view entry_name, std::string_view data, std::optional<Time> ts) const noexcept override {
-    return Write(entry_name, ts, data.size(), [&data](auto offset, auto size) -> std::pair<bool, std::string> {
-      return {true, std::string(data.substr(offset, size))};
-    });
-  }
-
-  Error Write(std::string_view entry_name, std::optional<Time> ts, size_t content_length,
-              WriteCallback callback) const noexcept override {
+  Error Write(std::string_view entry_name, std::optional<Time> ts,
+              WriteRecordCallback callback) const noexcept override {
     if (!ts) {
       ts = Time::clock::now();
     }
+    WritableRecord record;
+    callback(&record);
     return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)), "application/octet-stream",
-                         content_length, std::move(callback));
+                         record.content_length_, std::move(record.callback_));
   }
 
-  Result<std::string> Read(std::string_view entry_name, std::optional<Time> ts) const noexcept override {
-    std::string data;
-    auto err = Read(entry_name, ts, [&data](auto chunk) {
-      data.append(chunk);
-      return true;
-    });
-
-    if (err) {
-      return {{}, err};
-    }
-
-    return {std::move(data), Error::kOk};
-  }
-
-  Error Read(std::string_view entry_name, std::optional<Time> ts, ReadCallback callback) const noexcept override {
+  Error Read(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
+    auto path = fmt::format("{}/{}", path_, entry_name);
     if (ts) {
-      return client_->Get(
-          fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)), [](auto h) {}, std::move(callback));
-    } else {
-      return client_->Get(
-          fmt::format("{}/{}", path_, entry_name), [](auto h) {}, std::move(callback));
+      path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
+
+    auto [_, record_err] = ReadRecord(std::move(path), std::move(callback));
+    return record_err;
   }
 
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
-              std::optional<QueryOptions> options, NextRecordCallback callback) const noexcept override {
+              std::optional<QueryOptions> options, ReadRecordCallback callback) const noexcept override {
     auto url = fmt::format("{}/{}/q?", path_, entry_name);
 
     if (start) {
@@ -189,53 +171,15 @@ class Bucket : public IBucket {
       return Error{.code = -1, .message = ex.what()};
     }
 
-    bool last = false;
-    while (!last) {
-      Record record;
-      moodycamel::ConcurrentQueue<std::string> data;
-      std::future<void> future;
+    while (true) {
+      auto [last, record_err] = ReadRecord(fmt::format("{}/{}?q={}", path_, entry_name, id), callback);
 
-      err = client_->Get(
-          fmt::format("{}/{}?q={}", path_, entry_name, id),
-          [&record, &last, &data, &callback, &future, this](IHttpClient::Headers&& headers) {
-            last = std::stoi(headers["x-reduct-last"]);
-            record.last = last;
-            record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
-            record.size = std::stoi(headers["content-length"]);
+      if (record_err) {
+        return record_err;
+      }
 
-            record.Read = [&](auto record_callback) {
-              while (true) {
-                std::string chunk;
-                if (data.try_dequeue(chunk)) {
-                  if (chunk.empty()) {
-                    break;
-                  }
-
-                  if (!record_callback(std::move(chunk))) {
-                    break;
-                  }
-                } else {
-                  std::this_thread::sleep_for(std::chrono::microseconds(100));
-                }
-              }
-
-              return Error::kOk;
-            };
-
-            Task task([&record, &callback, &last] { last = !callback(std::move(record)) || last; });
-            future = task.get_future();
-            task_queue_.enqueue(std::move(task));
-          },
-          [&data](auto chunk) {
-            data.enqueue(std::string(chunk));
-            return true;
-          });
-
-      data.enqueue("");
-      future.wait();
-
-      if (err) {
-        return err;
+      if (last) {
+        break;
       }
     }
 
@@ -243,6 +187,57 @@ class Bucket : public IBucket {
   }
 
  private:
+  Result<bool> ReadRecord(std::string&& path, const ReadRecordCallback& callback) const noexcept {
+    moodycamel::ConcurrentQueue<std::string> data;
+    std::future<void> future;
+    bool last;
+
+    auto err = client_->Get(
+        path,
+        [&last, &data, callback = std::move(callback), &future, this](IHttpClient::Headers&& headers) {
+          ReadableRecord record;
+
+          last = headers["x-reduct-last"] == "1";
+          record.last = last;
+          record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
+          record.size = std::stoi(headers["content-length"]);
+
+          record.Read = [&data](auto record_callback) {
+            while (true) {
+              std::string chunk;
+              if (data.try_dequeue(chunk)) {
+                if (chunk.empty()) {
+                  break;
+                }
+
+                if (!record_callback(std::move(chunk))) {
+                  break;
+                }
+              } else {
+                std::this_thread::sleep_for(std::chrono::microseconds(100));
+              }
+            }
+
+            return Error::kOk;
+          };
+
+          Task task([record = std::move(record), &callback, &last] { last = !callback(record) || last; });
+          future = task.get_future();
+          task_queue_.enqueue(std::move(task));
+        },
+        [&data](auto chunk) {
+          data.enqueue(std::string(chunk));
+          return true;
+        });
+
+    if (!err) {
+      data.enqueue("");
+      future.wait();
+    }
+
+    return {last, err};
+  }
+
   static int64_t ToMicroseconds(const Time& ts) {
     return std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
   }

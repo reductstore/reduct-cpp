@@ -45,21 +45,23 @@ The interface provides method`IClient::Write` to write some data to an entry:
 
 ```cpp
 IBucket::Time ts = IBucket::Time::clock::now();
-[[maybe_unused]] auto write_err = bucket->Write("entry-1", "some_data1", ts);
+[[maybe_unused]] auto write_err = bucket->Write("entry-1", ts, [](auto rec) { rec->WriteAll("some_data1"); });
 ```
 
 You also can write a big blob by chunks:
 
 ```cpp
 const std::string blob(10'000, 'x');
-bucket->Write("entry", ts, blob.size(), [&blob](auto offset, auto size) {
-    return std::pair{true, blob.substr(offset, size)};
+bucket->Write("entry", ts, [](auto rec) {
+    rec->Write(blob.size(), [&blob](auto offset, auto size) {
+        return std::pair{true, blob.substr(offset, size)};
+    });
 });
 ```
 
 ### Query
 
-The `IClient::Quert` method allows to iterate records for a time interval:
+The `IClient::Query` method allows to iterate records for a time interval:
 
 ```cpp
   err = bucket->Query("entry-1", start, IBucket::Time::clock::now(), std::nullopt, [](auto&& record) {
