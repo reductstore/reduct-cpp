@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Sending data in chunks, [PR-44](https://github.com/reduct-storage/reduct-cpp/pull/44)
+
 ## [1.0.0] - 2022-10-09
 
 ### Added
