@@ -8,7 +8,8 @@ Reduct Storage C++ SDK is written in C++20 and uses cmake as a build system. To 
 * cmake 3.18 or higher
 * conan 1.40 or higher (it is optional, but [**conan**](https://conan.io) is cool!)
 
-Currently, we test only Linux AMD64, but if you need to port it to another OS or platform, feel free to make an [issue](https://github.com/reduct-storage/reduct-cpp/issues/new/choose).
+Currently, we test only Linux AMD64, but if you need to port it to another OS or platform, feel free to make
+an [issue](https://github.com/reduct-storage/reduct-cpp/issues/new/choose).
 
 ## Installing
 
@@ -25,13 +26,15 @@ sudo cmake --build . --target install
 
 ## Simple Application
 
-Let's create a simple C++ application which connects to the storage, creates a bucket and writes/reads some data. We need two files:
+Let's create a simple C++ application which connects to the storage, creates a bucket and writes/reads some data. We
+need two files:
 
 ```
 touch CMakeLists.txt main.cc
 ```
 
-I'm sure you're familiar to cmake, so I don't have to explain all the detail. The `CMakeLists.txt` should look like this:
+I'm sure you're familiar to cmake, so I don't have to explain all the detail. The `CMakeLists.txt` should look like
+this:
 
 ```cmake
 cmake_minimum_required(VERSION 3.18)
@@ -71,7 +74,7 @@ int main() {
 
   // Write some data
   IBucket::Time ts = IBucket::Time::clock::now();
-  [[maybe_unused]] auto write_err = bucket->Write("entry-1", "some_data1", ts);
+  [[maybe_unused]] auto write_err = bucket->Write("entry-1", ts, [](auto rec) { rec->WriteAll("some_data1"); });
 
   // Read data
   auto [blob, read_err] = bucket->Read("entry-1", ts);
@@ -92,7 +95,7 @@ cmake --build .
 Let's run the code, but before you need to run the storage. For this, we have to run it as a Docker container:
 
 ```
-docker run -p 8383:8383  ghcr.io/reduct-storage/reduct-storage:main
+docker run -p 8383:8383  reductstorage/engine:latest
 ```
 
 Now you can launch the example:

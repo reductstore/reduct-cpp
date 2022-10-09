@@ -76,6 +76,9 @@ class IBucket {
     size_t size;
     bool last;
 
+    /**
+     * Called when HTTP Client received a chunk with data. It may return false to stop transferring
+     */
     using ReadCallback = std::function<bool(std::string_view)>;
 
     /**
@@ -83,6 +86,10 @@ class IBucket {
      */
     std::function<Error(ReadCallback)> Read;
 
+    /**
+     * Read all data
+     * @return received string
+     */
     Result<std::string> ReadAll() const {
       std::string data;
       auto err = Read([&data](auto chunk) {
@@ -99,8 +106,12 @@ class IBucket {
    */
   using ReadRecordCallback = std::function<bool(const ReadableRecord& record)>;
 
+  /**
+   * WritableRecord
+   */
   struct WritableRecord {
     /**
+     * A write callback is called when HTTP Client is ready to send a chunk with data.
      * @returns last flag and data to write
      */
     using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
@@ -108,11 +119,20 @@ class IBucket {
     WriteCallback callback_ = [](auto offset, auto size) { return std::pair{true, ""}; };
     size_t content_length_;
 
+    /**
+     * Recevies write callback and content length to pass it to HTTP client
+     * @param content_length
+     * @param cb
+     */
     void Write(size_t content_length, WriteCallback&& cb) {
       content_length_ = content_length;
       callback_ = std::move(cb);
     }
 
+    /**
+     * Sends the whole blob to write
+     * @param data
+     */
     void WriteAll(std::string data) {
       content_length_ = data.size();
       callback_ = [data = std::move(data)](size_t offset, size_t size) {
