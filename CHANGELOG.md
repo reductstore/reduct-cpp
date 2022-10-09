@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support HTTP API v0.8, [PR-42](https://github.com/reduct-storage/reduct-cpp/pull/42)
+- Support HTTP API v1.0, [PR-42](https://github.com/reduct-storage/reduct-cpp/pull/42)
 
 ### Removed
 
