@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2022-10-09
+
 ### Fixed
 
 - Sending data in chunks, [PR-44](https://github.com/reduct-storage/reduct-cpp/pull/44)
@@ -99,7 +101,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.0.1...HEAD
+
+[1.0.1]: https://github.com/reduct-storage/reduct-cpp/compare/v1.0.0...1.0.1
 
 [1.0.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.8.0...1.0.0
 
