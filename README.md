@@ -33,14 +33,14 @@ int main() {
 
   // Write some data
   IBucket::Time ts = IBucket::Time::clock::now();
-  [[maybe_unused]] auto write_err = bucket->Write("entry-1", "some_data1", ts);
+  [[maybe_unused]] auto write_err = bucket->Write("entry-1", ts, [](auto rec) { rec->WriteAll("some_data1"); });
 
   // Read data via timestamp
   auto [blob, read_err] = bucket->Read("entry-1", ts);
   if (!read_err) {
     std::cout << "Read blob: " <<  blob << std::endl;
   }
-  
+
   // Walk through the data
   err = bucket->Query("entry-1", std::nullopt, IBucket::Time::clock::now(), std::nullopt, [](auto&& record) {
     std::string blob;
