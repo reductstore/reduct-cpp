@@ -13,6 +13,8 @@ namespace reduct::internal {
 
 using httplib::DataSink;
 
+constexpr size_t kMaxChunkSize = 1'000'000;
+
 class HttpClient : public IHttpClient {
  public:
   explicit HttpClient(std::string_view url, const HttpOptions& options)
@@ -80,8 +82,9 @@ class HttpClient : public IHttpClient {
     auto res = client_->Post(
         AddApiPrefix(path).data(), content_length,
         [&](size_t offset, size_t size, DataSink& sink) {
+          size = std::min<size_t>(size, kMaxChunkSize);
           auto [ok, data] = callback(offset, size);
-          sink.write(data.data(), data.size());
+          sink.write(data.data(), size);
           return ok;
         },
         mime.data());
