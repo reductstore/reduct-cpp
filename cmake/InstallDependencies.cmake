@@ -15,7 +15,7 @@ if (CONAN_CMD)
             BUILD missing
             SETTINGS ${settings})
 
-    include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+    include(${CMAKE_CURRENT_BINARY_DIR}/conanbuildinfo.cmake)
     conan_basic_setup()
 
     add_library(dependencies INTERFACE)
