@@ -63,7 +63,7 @@ markdown_extensions:
 # Repository
 repo_name: reduct-storage/reduct-cpp
 repo_url: https://github.com/reduct-storage/reduct-cpp
-edit_uri: edit/main/docs
+edit_uri: edit/main/
 
 extra:
   version:
