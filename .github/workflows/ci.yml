@@ -17,9 +17,9 @@ jobs:
       - name: Check code in /src
         run: find src/ -name "*.cc" -o -name "*.h"  | xargs cpplint
       - name: Check code in /tests
-        run: find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint.py
+        run: find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint
       - name: Check code in /exampes
-        run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint.py
+        run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint
   build:
     runs-on: ubuntu-latest
     needs: cpplint
