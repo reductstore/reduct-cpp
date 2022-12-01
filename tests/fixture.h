@@ -34,10 +34,11 @@ struct Fixture {
       }
     }
 
-    auto [bucket_1, err] = client->CreateBucket("bucket_1");
+    auto [bucket, err] = client->CreateBucket("bucket_1");
     if (err != reduct::Error::kOk) {
       throw std::runtime_error(fmt::format("Failed to create bucket_1: {}", err.ToString()));
     }
+    bucket_1 = std::move(bucket);
     [[maybe_unused]] auto ret =
         bucket_1->Write("entry-1", IBucket::Time() + s(1), [](auto rec) { rec->WriteAll("data-1"); });
     ret = bucket_1->Write("entry-1", IBucket::Time() + s(2), [](auto rec) { rec->WriteAll("data-2"); });
