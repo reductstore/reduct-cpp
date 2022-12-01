@@ -156,12 +156,9 @@ class Client : public IClient {
           FullTokenInfo{
               .name = data.at("name"),
               .created_at = created_at,
-              .permissions =
-                  {
-                      .full_access = data.at("permissions").at("full_access"),
-                      .read = data.at("permissions").at("read"),
-                      .write = data.at("permissions").at("write"),
-                  },
+              .permissions = {.full_access = data.at("permissions").at("full_access"),
+                              .read = data.at("permissions").at("read"),
+                              .write = data.at("permissions").at("write")},
           },
           Error::kOk,
       };
