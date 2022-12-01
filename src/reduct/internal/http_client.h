@@ -21,7 +21,7 @@ class IHttpClient {
 
   using ReadCallback = std::function<bool(std::string_view)>;
   using Headers = std::unordered_map<std::string, std::string>;
-  using ResponseCallback = std::function<void(Headers&&)>;
+  using ResponseCallback = std::function<void(Headers &&)>;
 
   virtual Error Get(std::string_view path, ResponseCallback, ReadCallback) const noexcept = 0;
 
@@ -29,6 +29,9 @@ class IHttpClient {
 
   virtual Error Post(std::string_view path, std::string_view body,
                      std::string_view mime = "application/json") const noexcept = 0;
+
+  virtual Result<std::string> PostWithResponse(std::string_view path, std::string_view body,
+                                               std::string_view mime = "application/json") const noexcept = 0;
 
   using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
   virtual Error Post(std::string_view path, std::string_view mime, size_t content_length,

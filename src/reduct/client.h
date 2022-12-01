@@ -82,6 +82,68 @@ class IClient {
                                                 IBucket::Settings settings = {}) const noexcept = 0;
 
   /**
+   * API Token for authentication
+   */
+  struct Token {
+    std::string name;  // name of token
+    Time created_at;   // creation time
+
+    bool operator<=>(const IClient::Token&) const = default;
+  };
+
+  /**
+   * Token permissions
+   */
+  struct Permissions {
+    bool full_access = false;        // full access to manage tokens and buckets
+    std::vector<std::string> read;   // list of buckets with read access
+    std::vector<std::string> write;  // list of buckets with write access
+
+    bool operator<=>(const IClient::Permissions&) const = default;
+  };
+
+  /**
+   * Token with permissions
+   */
+  struct FullTokenInfo {
+    std::string name;  // name of token
+    Time created_at;   // creation time
+
+    Permissions permissions;
+
+    bool operator<=>(const IClient::FullTokenInfo&) const = default;
+  };
+
+  /**
+   * @brief Get list of tokens
+   * @return the list or an error
+   */
+  virtual Result<std::vector<Token>> GetTokenList() const noexcept = 0;
+
+  /**
+   * @brief Get information about token
+   * @param name name of token
+   * @return token info or an error
+   */
+  virtual Result<FullTokenInfo> GetToken(std::string_view name) const noexcept = 0;
+
+  /**
+   * @brief Create a new token
+   * @param name name of token
+   * @param permissions permissions for token
+   * @return token value or an error
+   */
+  virtual Result<std::string> CreateToken(std::string_view name, Permissions permissions) const noexcept = 0;
+
+  /**
+   * @brief Update token permissions
+   * @param name name of token
+   * @param permissions permissions for token
+   * @return  an error
+   */
+  virtual Error RemoveToken(std::string_view name) const noexcept = 0;
+
+  /**
    * @brief Build a client
    * @param url URL of React Storage
    * @return

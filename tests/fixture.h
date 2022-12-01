@@ -28,7 +28,16 @@ struct Fixture {
       [[maybe_unused]] auto ret = bucket->Remove();
     }
 
-    bucket_1 = client->CreateBucket("bucket_1").result;
+    for (auto&& t : client->GetTokenList().result) {
+      if (t.name != "init-token") {
+        [[maybe_unused]] auto ret = client->RemoveToken(t.name);
+      }
+    }
+
+    auto [bucket_1, err] = client->CreateBucket("bucket_1");
+    if (err != reduct::Error::kOk) {
+      throw std::runtime_error(fmt::format("Failed to create bucket_1: {}", err.ToString()));
+    }
     [[maybe_unused]] auto ret =
         bucket_1->Write("entry-1", IBucket::Time() + s(1), [](auto rec) { rec->WriteAll("data-1"); });
     ret = bucket_1->Write("entry-1", IBucket::Time() + s(2), [](auto rec) { rec->WriteAll("data-2"); });

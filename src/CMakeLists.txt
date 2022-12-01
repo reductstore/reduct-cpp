@@ -4,7 +4,7 @@ set(SRC_FILES
         reduct/bucket.cc
         reduct/client.cc
         reduct/error.cc
-        )
+        reduct/internal/date.h ../3dparty/date/date.h)
 
 set(PUBLIC_HEADERS
         reduct/bucket.h
