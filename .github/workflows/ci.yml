@@ -59,7 +59,12 @@ jobs:
   tests:
     strategy:
       matrix:
-        token: ["", "TOKEN"]
+        token: [ "", "TOKEN" ]
+        include:
+          - token: ""
+            tags: "~[token_api]"
+          - token: "TOKEN"
+            tags: ""
     needs:
       - build
       - test-pkg-with-conan
@@ -75,3 +80,4 @@ jobs:
       - uses: ./.github/actions/run-tests
         with:
           api-token: ${{matrix.token}}
+          tags: ${{matrix.tags}}
