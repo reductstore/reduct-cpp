@@ -49,7 +49,12 @@ else ()
             URL_HASH MD5=6e879b14c833df7c011be5959e70cef7
     )
 
-    FetchContent_MakeAvailable(fmt nlohmann_json httplib concurrentqueue)
+    FetchContent_Declare(
+            date
+            URL https://github.com/HowardHinnant/date/archive/refs/tags/v3.0.1.zip
+            URL_HASH MD5=cf556cc376d15055b8235b05b2fc6253)
+
+    FetchContent_MakeAvailable(fmt nlohmann_json httplib concurrentqueue date)
     add_library(dependencies INTERFACE)
-    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib concurrentqueue)
+    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib concurrentqueue date)
 endif ()
