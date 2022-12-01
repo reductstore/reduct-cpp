@@ -73,8 +73,18 @@ class HttpClient : public IHttpClient {
   }
 
   Error Post(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
+    auto [_, error] = PostWithResponse(path, body.data(), mime.data());
+    return error;
+  }
+
+  Result<std::string> PostWithResponse(std::string_view path, std::string_view body,
+                                       std::string_view mime) const noexcept override {
     auto res = client_->Post(AddApiPrefix(path).data(), body.data(), mime.data());
-    return CheckRequest(res);
+    if (auto err = CheckRequest(res)) {
+      return {{}, std::move(err)};
+    }
+
+    return {std::move(res->body), Error::kOk};
   }
 
   Error Post(std::string_view path, std::string_view mime, size_t content_length,

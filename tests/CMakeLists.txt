@@ -16,8 +16,8 @@ set(SRC_FILES
         reduct/bucket_api_test.cc
         reduct/entry_api_test.cc
         reduct/server_api_test.cc
-        test.cc)
+        test.cc reduct/token_api_test.cc)
 
 add_executable(reduct-tests ${SRC_FILES})
 
-target_link_libraries(reduct-tests ${CMAKE_PROJECT_NAME} Catch2::Catch2)
+target_link_libraries(reduct-tests ${CMAKE_PROJECT_NAME} dependencies Catch2::Catch2)

@@ -13,13 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build cpplint image
-        run: docker build cpplint/ -t cpplint
+        run: pip install cpplint
       - name: Check code in /src
-        run: docker run -v ${PWD}:/app cpplint bash -c "find src/ -name "*.cc" -o -name "*.h"  | xargs cpplint.py"
+        run: find src/ -name "*.cc" -o -name "*.h"  | xargs cpplint
       - name: Check code in /tests
-        run: docker run -v ${PWD}:/app cpplint bash -c "find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint.py"
+        run: find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint
       - name: Check code in /exampes
-        run: docker run -v ${PWD}:/app cpplint bash -c "find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint.py"
+        run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint
   build:
     runs-on: ubuntu-latest
     needs: cpplint
@@ -59,7 +59,12 @@ jobs:
   tests:
     strategy:
       matrix:
-        token: ["", "TOKEN"]
+        token: [ "", "TOKEN" ]
+        include:
+          - token: ""
+            tags: "~[token_api]"
+          - token: "TOKEN"
+            tags: ""
     needs:
       - build
       - test-pkg-with-conan
@@ -75,3 +80,4 @@ jobs:
       - uses: ./.github/actions/run-tests
         with:
           api-token: ${{matrix.token}}
+          tags: ${{matrix.tags}}

@@ -2,7 +2,7 @@
 
 The SDK has a few interfaces to communicate with [Reduct Storage via HTTP](https://docs.reduct-storage.dev/http-api).
 
-!!! info 
+!!! info
     The SDK is written in a way to hide all dependencies and implementation in .cc files. So, the user works only
     with abstract interfaces and factory methods.
 
@@ -28,7 +28,7 @@ std::cout << ret;
 
 ## IClient
 
-Interface to manage buckets and the storage
+Interface to manage buckets, tokens and the storage.
 
 [IClient](iclient.md){ .md-button }
 

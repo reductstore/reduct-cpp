@@ -2,6 +2,7 @@
 
 #include "reduct/client.h"
 
+#include <date/date.h>
 #include <fmt/core.h>
 #include <nlohmann/json.hpp>
 
@@ -109,6 +110,84 @@ class Client : public IClient {
     }
 
     return ret;
+  }
+  Result<std::vector<Token>> GetTokenList() const noexcept override {
+    auto [body, err] = client_->Get("/tokens");
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    std::vector<Token> token_list;
+    try {
+      nlohmann::json data;
+      data = nlohmann::json::parse(body);
+
+      auto json_tokens = data.at("tokens");
+      token_list.reserve(json_tokens.size());
+      for (const auto& token : json_tokens) {
+        Time created_at;
+        std::istringstream(token.at("created_at").get<std::string>()) >> date::parse("%FT%TZ", created_at);
+
+        token_list.push_back(Token{
+            .name = token.at("name"),
+            .created_at = created_at,
+        });
+      }
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+
+    return {token_list, Error::kOk};
+  }
+
+  Result<FullTokenInfo> GetToken(std::string_view name) const noexcept override {
+    auto [body, err] = client_->Get(fmt::format("/tokens/{}", name));
+    if (err) {
+      return {{}, std::move(err)};
+    }
+    try {
+      nlohmann::json data;
+      data = nlohmann::json::parse(body);
+
+      Time created_at;
+      std::istringstream(data.at("created_at").get<std::string>()) >> date::parse("%FT%TZ", created_at);
+
+      return {
+          FullTokenInfo{
+              .name = data.at("name"),
+              .created_at = created_at,
+              .permissions = {.full_access = data.at("permissions").at("full_access"),
+                              .read = data.at("permissions").at("read"),
+                              .write = data.at("permissions").at("write")},
+          },
+          Error::kOk,
+      };
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+  }
+
+  Result<std::string> CreateToken(std::string_view name, Permissions permissions) const noexcept override {
+    nlohmann::json json_data;
+    json_data["full_access"] = permissions.full_access;
+    json_data["read"] = std::move(permissions.read);
+    json_data["write"] = std::move(permissions.write);
+
+    auto [body, err] = client_->PostWithResponse(fmt::format("/tokens/{}", name), json_data.dump());
+    if (err) {
+      return Result<std::string>{{}, std::move(err)};
+    }
+
+    try {
+      nlohmann::json data;
+      data = nlohmann::json::parse(body);
+      return {data.at("value").get<std::string>(), Error::kOk};
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+  }
+  Error RemoveToken(std::string_view name) const noexcept override {
+    return client_->Delete(fmt::format("/tokens/{}", name));
   }
 
  private:
