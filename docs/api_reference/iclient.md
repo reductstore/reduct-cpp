@@ -66,7 +66,7 @@ To get a list of buckets and their statistic information, you can use `GetBucket
 auto [list, err] = client->GetBucketList();
 for (auto& bucket : list) {
     std::cout << bucket.name;
-} 
+}
 ```
 
 See `IClient::BucketInfo` structure for more information.
@@ -100,4 +100,71 @@ if (err) {
 }
 
 std::cout << bucket->GetSettings(); // bucket has type std::unique_ptr<IBucket>
+```
+
+## Token API
+
+Since 1.1.0 version, the storage supports token API. It allows you to create a token for a bucket and use it to access
+the bucket. The token can be used to access the bucket from any client.
+
+### CreateToken
+
+To create a new token, you should use `CreateToken` method with `IClient::Permissions`:
+
+```cpp
+IClient::Permissions permissions{
+  .full_access = true,
+  .read = {"bucket_1"},
+  .write = {"bucket_2"},
+};
+
+
+auto [token, err] = client->CreateToken("bucket", std::move(permissions));
+if (err) {
+  std::cerr << "Error: " << err;
+  return;
+}
+
+std::cout << token;
+```
+
+### GetTokenList
+
+To get a list of tokens, you should use `GetTokenList` method:
+
+```cpp
+auto [list, err] = client->GetTokenList();
+for (auto& token : list) {
+    std::cout << token.name;
+}
+```
+
+See `IClient::Token` structure for more information.
+
+### GetToken
+
+You can get full information about token by using `GetToken` method:
+
+```cpp
+auto [token, err] = client->GetToken("token");
+if (err) {
+  std::cerr << "Error: " << err;
+  return;
+}
+
+std::cout << token.permissions.read;
+```
+
+See `IClient::FullTokenInfo` structure for more information.
+
+### DeleteToken
+
+To delete a token, you can `DeleteToken` method:
+
+```cpp
+auto err = client->DeleteToken("token");
+if (err) {
+  std::cerr << "Error: " << err;
+  return;
+}
 ```
