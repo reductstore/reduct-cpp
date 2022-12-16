@@ -22,6 +22,7 @@ theme:
   font:
     text: Roboto
     code: JetBrains Mono
+  custom_dir: docs/overrides
   features:
     - navigation.instant
     - navigation.tracking
