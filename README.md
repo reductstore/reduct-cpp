@@ -1,7 +1,7 @@
 # Reduct Storage Client SDK for C++
 
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/reduct-storage/reduct-cpp)
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/reduct-storage/reduct-cpp/ci)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/reduct-storage/reduct-cpp/ci.yml?branch=main)
 
 Open source client for [Reduct Storage](https://reduct-storage.dev) written in C++20.
 
