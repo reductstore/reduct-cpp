@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Updated
+
+- Improve mkdocs documentation [PR-46](https://github.com/reduct-storage/reduct-cpp/pull/46)
+
 ## [1.1.0] - 2021-12-02
 
 ### Added
