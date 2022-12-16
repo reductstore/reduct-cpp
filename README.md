@@ -3,17 +3,21 @@
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/reduct-storage/reduct-cpp)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/reduct-storage/reduct-cpp/ci.yml?branch=main)
 
-Open source client for [Reduct Storage](https://reduct-storage.dev) written in C++20.
+The Reduct Storage Client SDK for C++ is an open source client for [Reduct Storage](https://reduct-storage.dev) written
+in C++20. It allows developers to easily interact with the database from their C++ applications.
 
 ## Features
 
 * Written in C++20
-* Implement Reduct Storage HTTP API v1.0
+* Support Reduct Storage HTTP API v1.1
 * Support HTTP and HTTPS protocols
 * Exception free
 * Support Linux AMD64
 
 ## Example
+
+Here is a simple example of how to use the Reduct Storage Client SDK for C++ to create a bucket, write data to it, and
+read the data back:
 
 ```cpp
 #include <reduct/client.h>
@@ -68,6 +72,8 @@ int main() {
 * OpenSSL 1.1 or 3.0
 * Conan 1.40 (optionally)
 
+To build the library, follow these steps:
+
 ```shell
 git clone https://github.com/reduct-storage/reduct-cpp.git
 cd reduct-cpp
@@ -77,7 +83,7 @@ cmake --build .
 sudo cmake --build . --target install
 ```
 
-CMake tries to use package manager `conan` if it is installed. If it isn't, it downloads all the dependencies by using
+CMake tries to use the `conan` package manager if it is installed. If it isn't, it downloads all the dependencies by using
 FetchContent. To use Reduct Storage SDK you need only to use `find_pacakge` in your cmake lists:
 
 ```cmake
