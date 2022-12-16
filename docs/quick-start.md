@@ -1,19 +1,22 @@
 # 💡 Quick Start
 
+This guide will help you get started with the Reduct Storage C++ SDK.
+
 ## Requirements
 
-Reduct Storage C++ SDK is written in C++20 and uses cmake as a build system. To install it, you need:
+The Reduct Storage C++ SDK is written in C++20 and uses CMake as a build system. To install it, you will need:
 
 * C++ compiler with C++20 support (we use GCC-11.2)
 * cmake 3.18 or higher
-* conan 1.40 or higher (it is optional, but [**conan**](https://conan.io) is cool!)
+* conan 1.40 or higher (it is optional, but [**conan**](https://conan.io) ia convenient package manager)
 
-Currently, we test only Linux AMD64, but if you need to port it to another OS or platform, feel free to make
-an [issue](https://github.com/reduct-storage/reduct-cpp/issues/new/choose).
+Currently, we have only tested the SDK on Linux AMD64, but if you need to port it to another
+operating system or platform, you can create an [issue](https://github.com/reduct-storage/reduct-cpp/issues/new/choose)
+for assistance.
 
 ## Installing
 
-To install the SDK, you should use the classical approach:
+To install the Reduct Storage C++ SDK, follow these steps:
 
 ```
 git clone https://github.com/reduct-storage/reduct-cpp.git
@@ -26,65 +29,26 @@ sudo cmake --build . --target install
 
 ## Simple Application
 
-Let's create a simple C++ application which connects to the storage, creates a bucket and writes/reads some data. We
-need two files:
+Let's create a simple C++ application that connects to the storage, creates a bucket, and writes and reads some data. We
+will need two files: `CMakeLists.txt` and `main.cc`.
 
 ```
 touch CMakeLists.txt main.cc
 ```
 
-I'm sure you're familiar to cmake, so I don't have to explain all the detail. The `CMakeLists.txt` should look like
-this:
+Here is the `CMakeLists.txt` file:
 
-```cmake
-cmake_minimum_required(VERSION 3.18)
-
-project(ReductCppExamples)
-set(CMAKE_CXX_STANDARD 20)
-
-
-find_package(ReductCpp 0.5.0)
-find_package(ZLIB)
-find_package(OpenSSL)
-
-add_executable(usage-example usage_example.cc)
-target_link_libraries(usage-example ${REDUCT_CPP_LIBRARIES} ${ZLIB_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
-
+```cmake title="CMakelists.txt"
+--8<-- "../examples/CMakeLists.txt:"
 ```
 
-And now the code in `main.cc`:
+And here is the code in `main.cc`:
 
-```cpp
-#include <reduct/client.h>
-
-#include <iostream>
-
-using reduct::IBucket;
-using reduct::IClient;
-
-int main() {
-  auto client = IClient::Build("http://127.0.0.1:8383");
-  // Create a bucket
-  auto [bucket, create_err] =
-      client->CreateBucket("bucket");
-  if (create_err) {
-    std::cerr << "Error: " << create_err;
-    return -1;
-  }
-
-  // Write some data
-  IBucket::Time ts = IBucket::Time::clock::now();
-  [[maybe_unused]] auto write_err = bucket->Write("entry-1", ts, [](auto rec) { rec->WriteAll("some_data1"); });
-
-  // Read data
-  auto [blob, read_err] = bucket->Read("entry-1", ts);
-  if (!read_err) {
-    std::cout << "Read blob: " <<  blob << std::endl;
-  }
-}
+```cpp title="main.cc"
+--8<-- "../examples/usage_example.cc:"
 ```
 
-To compile the example, we use the same idiom:
+To compile the example, use the following commands:
 
 ```
 mkdir build && cd build
@@ -92,14 +56,20 @@ cmake ..
 cmake --build .
 ```
 
-Let's run the code, but before you need to run the storage. For this, we have to run it as a Docker container:
+Before you can run the example, you will need to start the storage as a Docker container:
 
 ```
 docker run -p 8383:8383  reductstorage/engine:latest
 ```
 
-Now you can launch the example:
+You can then run the example with the following command:
 
 ```
 ./usage-example
 ```
+
+## Next Steps
+
+You can find more detailed documentation and examples in [the Reference API section](docs/api_reference/). You can also
+refer to the [Reduct Storage HTTP API](https://docs.reduct-storage.dev/http-api) documentation for a complete reference
+of the available API calls.
