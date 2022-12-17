@@ -69,8 +69,6 @@ repo_url: https://github.com/reduct-storage/reduct-cpp
 edit_uri: edit/main/
 
 extra:
-  version:
-    provider: mike
   analytics:
     provider: google
     property: G-20G64DGXYZ
