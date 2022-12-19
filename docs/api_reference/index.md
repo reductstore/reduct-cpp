@@ -1,6 +1,6 @@
 # 📒 API Reference
 
-The SDK has a few interfaces to communicate with [Reduct Storage via HTTP](https://docs.reduct-storage.dev/http-api).
+The SDK has a few interfaces to communicate with [ReductStore via HTTP](https://docs.reduct.store).
 
 !!! info
     The SDK is written in a way to hide all dependencies and implementation in .cc files. So, the user works only

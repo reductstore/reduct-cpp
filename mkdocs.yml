@@ -1,5 +1,5 @@
-site_name: Reduct Storage Client SDK for C++
-site_url: "https://reduct-cpp.readthedocs.io"
+site_name: ReductStore Client SDK for C++
+site_url: "https://cpp.reduct.store"
 docs_dir: .
 nav:
   - Home:
@@ -9,7 +9,7 @@ nav:
       - docs/api_reference/index.md
       - docs/api_reference/iclient.md
       - docs/api_reference/ibucket.md
-  - Reduct Storage: 'https://reduct-storage.dev'
+  - ReductStore: 'https://reduct.store'
 
 # Configuration
 theme:
@@ -17,7 +17,7 @@ theme:
   language: en
   palette:
     primary: indigo
-  logo: docs/img/logo.png
+  logo: docs/img/favicon.png
   favicon: docs/img/favicon.png
   font:
     text: Roboto
@@ -64,8 +64,8 @@ markdown_extensions:
       format: svg
 
 # Repository
-repo_name: reduct-storage/reduct-cpp
-repo_url: https://github.com/reduct-storage/reduct-cpp
+repo_name: reductstore/reduct-cpp
+repo_url: https://github.com/reductstore/reduct-cpp
 edit_uri: edit/main/
 
 extra:
