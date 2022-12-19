@@ -157,7 +157,7 @@ class IClient {
  * if (err) {
  *   std::cerr << err << std::endl;
  * } else {
- *   std::cout << token_info.id << std::endl;
+ *   std::cout << token_info.name << std::endl;
  * }
    */
   virtual Result<FullTokenInfo> Me() const noexcept = 0;
