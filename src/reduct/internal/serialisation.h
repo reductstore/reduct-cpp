@@ -5,6 +5,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "reduct/client.h"
 #include "reduct/bucket.h"
 
 namespace reduct::internal {
@@ -21,6 +22,14 @@ nlohmann::json BucketSettingToJsonString(const IBucket::Settings& settings) noex
  * @return
  */
 Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) noexcept;
+
+/**
+ * @brief Parse Bucket Info from JSON string
+ * @param json
+ * @return
+ */
+Result<IClient::FullTokenInfo> ParseTokenInfo(const nlohmann::json& json) noexcept;
+
 };  // namespace reduct::internal
 
 #endif  // REDUCTCPP_SERIALISATION_H

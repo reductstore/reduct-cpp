@@ -12,9 +12,9 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Run Reduct Storage
+    - name: Run Reduct Store
       shell: bash
-      run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{inputs.api-token}} -d ghcr.io/reduct-storage/reduct-storage:latest
+      run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{inputs.api-token}} -d ghcr.io/reductstore/reductstore:latest
 
     - name: Load image with tests
       shell: bash

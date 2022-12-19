@@ -144,6 +144,25 @@ class IClient {
   virtual Error RemoveToken(std::string_view name) const noexcept = 0;
 
   /**
+ * @brief Returns information about the currently authenticated token.
+ *
+ * Makes a GET request to the '/me' endpoint using the client object stored as a member variable.
+ *
+ * @return A Result object containing a FullTokenInfo object or an Error object.
+ *
+ * Example:
+ *
+ * MyClass obj;
+ * auto [token_info, err] = obj.Me();
+ * if (err) {
+ *   std::cerr << err << std::endl;
+ * } else {
+ *   std::cout << token_info.id << std::endl;
+ * }
+   */
+  virtual Result<FullTokenInfo> Me() const noexcept = 0;
+
+  /**
    * @brief Build a client
    * @param url URL of React Storage
    * @return

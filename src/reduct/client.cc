@@ -6,6 +6,8 @@
 #include <fmt/core.h>
 #include <nlohmann/json.hpp>
 
+#include <iostream>
+
 #include "reduct/internal/http_client.h"
 #include "reduct/internal/serialisation.h"
 
@@ -27,8 +29,7 @@ class Client : public IClient {
     }
 
     try {
-      nlohmann::json data;
-      data = nlohmann::json::parse(body);
+      nlohmann::json data = nlohmann::json::parse(body);
       auto as_ul = [&data](std::string_view key) { return std::stoul(data.at(key.data()).get<std::string>()); };
 
       auto [default_bucket_settings, def_err] = internal::ParseBucketSettings(data.at("defaults").at("bucket"));
@@ -58,8 +59,7 @@ class Client : public IClient {
 
     std::vector<IBucket::BucketInfo> bucket_list;
     try {
-      nlohmann::json data;
-      data = nlohmann::json::parse(body);
+      nlohmann::json data = nlohmann::json::parse(body);
 
       auto json_buckets = data.at("buckets");
       bucket_list.reserve(json_buckets.size());
@@ -119,8 +119,7 @@ class Client : public IClient {
 
     std::vector<Token> token_list;
     try {
-      nlohmann::json data;
-      data = nlohmann::json::parse(body);
+      nlohmann::json data = nlohmann::json::parse(body);
 
       auto json_tokens = data.at("tokens");
       token_list.reserve(json_tokens.size());
@@ -145,23 +144,10 @@ class Client : public IClient {
     if (err) {
       return {{}, std::move(err)};
     }
+
     try {
-      nlohmann::json data;
-      data = nlohmann::json::parse(body);
-
-      Time created_at;
-      std::istringstream(data.at("created_at").get<std::string>()) >> date::parse("%FT%TZ", created_at);
-
-      return {
-          FullTokenInfo{
-              .name = data.at("name"),
-              .created_at = created_at,
-              .permissions = {.full_access = data.at("permissions").at("full_access"),
-                              .read = data.at("permissions").at("read"),
-                              .write = data.at("permissions").at("write")},
-          },
-          Error::kOk,
-      };
+      nlohmann::json data = nlohmann::json::parse(body);
+      return internal::ParseTokenInfo(data);
     } catch (const std::exception& e) {
       return {{}, Error{.code = -1, .message = e.what()}};
     }
@@ -179,15 +165,29 @@ class Client : public IClient {
     }
 
     try {
-      nlohmann::json data;
-      data = nlohmann::json::parse(body);
+      nlohmann::json data = nlohmann::json::parse(body);
       return {data.at("value").get<std::string>(), Error::kOk};
     } catch (const std::exception& e) {
       return {{}, Error{.code = -1, .message = e.what()}};
     }
   }
+
   Error RemoveToken(std::string_view name) const noexcept override {
     return client_->Delete(fmt::format("/tokens/{}", name));
+  }
+
+  Result<FullTokenInfo> Me() const noexcept override {
+    auto [body, err] = client_->Get("/me");
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      nlohmann::json data = nlohmann::json::parse(body);
+      return internal::ParseTokenInfo(data);
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
   }
 
  private:
