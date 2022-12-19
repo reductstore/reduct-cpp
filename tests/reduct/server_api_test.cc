@@ -57,3 +57,14 @@ TEST_CASE("reduct::Client should return error", "[server_api]") {
 
   REQUIRE(err == Error{.code = -1, .message = "Connection"});
 }
+
+TEST_CASE("reduct::Client should return current token name and permissions") {
+  Fixture ctx;
+  auto [token, err] = ctx.client->Me();
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(token.name == "init-token");
+  REQUIRE(token.permissions.full_access == true);
+  REQUIRE(token.permissions.read.empty());
+  REQUIRE(token.permissions.write.empty());
+}

@@ -144,6 +144,12 @@ class IClient {
   virtual Error RemoveToken(std::string_view name) const noexcept = 0;
 
   /**
+   * @brief Get current token name and permissions
+   * @return Token info or an error
+   */
+  virtual Result<FullTokenInfo> Me() const noexcept = 0;
+
+  /**
    * @brief Build a client
    * @param url URL of React Storage
    * @return
