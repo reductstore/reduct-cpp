@@ -7,15 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2022-12-20
+
 ### Added
 
-- IClient::Me method to get current token name and permission, [PR-48]https://github.com/reductstore/reduct-cpp/pull/48
+- Support HTTP API v1.2 with IClient::Me method to get current token name and
+  permission, [PR-48](https://github.com/reductstore/reduct-cpp/pull/48)
 
 ### Updated
 
 - Improve mkdocs documentation [PR-46](https://github.com/reduct-storage/reduct-cpp/pull/46)
 
-## [1.1.0] - 2021-12-02
+## [1.1.0] - 2022-12-02
 
 ### Added
 
@@ -115,7 +118,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.2.0...HEAD
+
+[1.2.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.1.0...1.2.0
+
+[1.1.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.0.1...1.1.0
 
 [1.0.1]: https://github.com/reduct-storage/reduct-cpp/compare/v1.0.0...1.0.1
 

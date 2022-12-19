@@ -3,7 +3,7 @@ from conans import ConanFile, CMake
 
 class DriftFrameworkConan(ConanFile):
     name = "reduct-cpp"
-    version = "1.1.0"
+    version = "1.2.0"
     license = "MIT"
     author = "Alexey Timin"
     url = "https://github.com/reduct-storage/reduct-cpp"

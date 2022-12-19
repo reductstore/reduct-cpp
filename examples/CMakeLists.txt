@@ -4,7 +4,7 @@ project(ReductCppExamples)
 set(CMAKE_CXX_STANDARD 20)
 
 
-find_package(ReductCpp 1.1.0)
+find_package(ReductCpp 1.2.0)
 find_package(ZLIB)
 find_package(OpenSSL)
 
