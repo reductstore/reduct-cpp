@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- IClient::Me method to get current token name and permission, [PR-48]https://github.com/reductstore/reduct-cpp/pull/48
+
 ### Updated
 
 - Improve mkdocs documentation [PR-46](https://github.com/reduct-storage/reduct-cpp/pull/46)
