@@ -1,17 +1,14 @@
 # 📒 API Reference
 
-The SDK has a few interfaces to communicate with [ReductStore via HTTP](https://docs.reduct.store).
-
-!!! info
-    The SDK is written in a way to hide all dependencies and implementation in .cc files. So, the user works only
-    with abstract interfaces and factory methods.
+The API reference for the SDK provides information on how to communicate
+with [ReductStore via HTTP]((https://docs.reduct.store). The SDK is designed
+to hide implementation details in .cc files, allowing users to work with abstract interfaces and factory methods.
 
 ## Error Handling
 
-The SDK doesn't use exceptions for error handling. Instead of them, all methods return `Error` or `Result`, which
-contains the result of function and `Error`.
-
-The example of the error handling:
+Error handling in the SDK is done through the use of `Error` or `Result` objects, rather than exceptions. These objects
+contain the result of a function as well as an `Error` object, which can be checked for success or failure. An example of
+error handling with the SDK:
 
 ```cpp
 reduct::Result<int> Foo() {

@@ -8,8 +8,8 @@
 #include "reduct/client.h"
 
 using reduct::Error;
-using reduct::IClient;
 using reduct::IBucket;
+using reduct::IClient;
 using s = std::chrono::seconds;
 
 TEST_CASE("reduct::Client should get info", "[server_api]") {
@@ -58,7 +58,7 @@ TEST_CASE("reduct::Client should return error", "[server_api]") {
   REQUIRE(err == Error{.code = -1, .message = "Connection"});
 }
 
-TEST_CASE("reduct::Client should return current token name and permissions") {
+TEST_CASE("reduct::Client should return current token name and permissions", "[server_api][token_api]") {
   Fixture ctx;
   auto [token, err] = ctx.client->Me();
 
