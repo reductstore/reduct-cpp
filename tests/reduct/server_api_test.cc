@@ -52,7 +52,7 @@ TEST_CASE("reduct::Client should list buckets", "[server_api]") {
 }
 
 TEST_CASE("reduct::Client should return error", "[server_api]") {
-  auto client = IClient::Build("http://128.11.1.1:8383");
+  auto client = IClient::Build("http://127.0.0.1:99999");
   auto [info, err] = client->GetInfo();
 
   REQUIRE(err == Error{.code = -1, .message = "Connection"});

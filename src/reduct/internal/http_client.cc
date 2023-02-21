@@ -20,6 +20,7 @@ class HttpClient : public IHttpClient {
   explicit HttpClient(std::string_view url, const HttpOptions& options)
       : client_(std::make_unique<httplib::Client>(std::string(url))), api_token_(options.api_token) {
     client_->enable_server_certificate_verification(options.ssl_verification);
+
     if (!options.api_token.empty()) {
       client_->set_bearer_token_auth(options.api_token.data());
     }
@@ -87,10 +88,14 @@ class HttpClient : public IHttpClient {
     return {std::move(res->body), Error::kOk};
   }
 
-  Error Post(std::string_view path, std::string_view mime, size_t content_length,
+  Error Post(std::string_view path, std::string_view mime, size_t content_length, Headers headers,
              WriteCallback callback) const noexcept override {
+    httplib::Headers httplib_headers;
+    for (auto& [k, v] : headers) {
+      httplib_headers.emplace(k, v);
+    }
     auto res = client_->Post(
-        AddApiPrefix(path).data(), content_length,
+        AddApiPrefix(path).data(), httplib_headers, content_length,
         [&](size_t offset, size_t size, DataSink& sink) {
           size = std::min<size_t>(size, kMaxChunkSize);
           auto [ok, data] = callback(offset, size);

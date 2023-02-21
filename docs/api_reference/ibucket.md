@@ -33,7 +33,7 @@ If you need to receive a big blob of data, you can receive it by chunks:
 
 ```cpp
 std::ofstream file("some.blob");
-auto err = bucket->Read("entry", ts, [&file](auto data) {
+auto err = bucket->Read("entry", time, [&file](auto data) {
     file << data;
     return true;
 });
@@ -44,15 +44,15 @@ auto err = bucket->Read("entry", ts, [&file](auto data) {
 The interface provides method`IClient::Write` to write some data to an entry:
 
 ```cpp
-IBucket::Time ts = IBucket::Time::clock::now();
-[[maybe_unused]] auto write_err = bucket->Write("entry-1", ts, [](auto rec) { rec->WriteAll("some_data1"); });
+IBucket::Time time = IBucket::Time::clock::now();
+[[maybe_unused]] auto write_err = bucket->Write("entry-1", time, [](auto rec) { rec->WriteAll("some_data1"); });
 ```
 
 You also can write a big blob by chunks:
 
 ```cpp
 const std::string blob(10'000, 'x');
-bucket->Write("entry", ts, [](auto rec) {
+bucket->Write("entry", time, [](auto rec) {
     rec->Write(blob.size(), [&blob](auto offset, auto size) {
         return std::pair{true, blob.substr(offset, size)};
     });

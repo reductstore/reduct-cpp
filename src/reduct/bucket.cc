@@ -123,13 +123,24 @@ class Bucket : public IBucket {
 
   Error Write(std::string_view entry_name, std::optional<Time> ts,
               WriteRecordCallback callback) const noexcept override {
-    if (!ts) {
-      ts = Time::clock::now();
-    }
+    return Write(entry_name, {.timestamp = ts}, std::move(callback));
+  }
+
+  Error Write(std::string_view entry_name, const WriteOptions& options,
+              WriteRecordCallback callback) const noexcept override {
     WritableRecord record;
     callback(&record);
-    return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(*ts)), "application/octet-stream",
-                         record.content_length_, std::move(record.callback_));
+
+    const auto time = options.timestamp ? ToMicroseconds(*options.timestamp) : ToMicroseconds(Time::clock::now());
+    const auto content_type = options.content_type.empty() ? "application/octet-stream" : options.content_type;
+
+    IHttpClient::Headers headers;
+    for (const auto& [key, value] : options.labels) {
+      headers.emplace(fmt::format("x-reduct-label-{}", key), value);
+    }
+
+    return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, time), content_type, record.content_length_,
+                         std::move(headers), std::move(record.callback_));
   }
 
   Error Read(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
@@ -201,6 +212,13 @@ class Bucket : public IBucket {
           record.last = last;
           record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
           record.size = std::stoi(headers["content-length"]);
+          record.content_type = headers["content-type"];
+
+          for (const auto& [key, value] : headers) {
+            if (key.starts_with("x-reduct-label-")) {
+              record.labels.emplace(key.substr(15), value);
+            }
+          }
 
           record.Read = [&data](auto record_callback) {
             while (true) {
