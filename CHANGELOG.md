@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for labels and content type, [PR-50](https://github.com/reductstore/reduct-cpp/pull/50)
+- Use `x-reduct-error` header for error responses, [PR-51](https://github.com/reductstore/reduct-cpp/pull/51)
 
 ## [1.2.0] - 2022-12-20
 

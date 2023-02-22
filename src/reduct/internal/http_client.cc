@@ -65,7 +65,7 @@ class HttpClient : public IHttpClient {
 
           return read_callback(std::string_view(data, size));
         });
-    return CheckRequest(res, err_body);
+    return CheckRequest(res);
   }
 
   Error Head(std::string_view path) const noexcept override {
@@ -117,31 +117,19 @@ class HttpClient : public IHttpClient {
   }
 
  private:
-  static Error CheckRequest(const httplib::Result& res, std::string_view body = {}) {
-    auto parse_detail = [](int status, std::string_view body) -> Error {
-      try {
-        nlohmann::json data;
-        data = nlohmann::json::parse(body);
-        return Error{.code = status, .message = data["detail"]};
-      } catch (const std::exception& e) {
-        return Error{.code = -1, .message = e.what()};
-      }
-    };
-
+  static Error CheckRequest(const httplib::Result& res) {
     if (res.error() != httplib::Error::Success) {
       return Error{.code = -1, .message = httplib::to_string(res.error())};
     }
 
     auto status = res->status;
     if (status != 200) {
-      if (!body.empty()) {
-        return parse_detail(status, body);
-      }
-      if (res->body.empty()) {
-        return {.code = res->status, .message = "HTTP Error"};
+      auto msg = res->headers.find("x-reduct-error");
+      if (msg != res->headers.end()) {
+        return Error{.code = status, .message = msg->second};
       }
 
-      return parse_detail(status, res->body);
+      return Error{.code = status, .message = "Unknown error"};
     }
 
     return Error::kOk;
