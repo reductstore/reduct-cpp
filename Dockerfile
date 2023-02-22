@@ -1,7 +1,8 @@
 FROM ubuntu:22.04 AS builder
 RUN apt update && apt install -y build-essential cmake python3-pip
 
-RUN pip3 install conan
+RUN pip3 install conan==1.58.0
+RUN conan profile new default --detect
 
 WORKDIR /src
 

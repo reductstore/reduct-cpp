@@ -23,12 +23,20 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
 
   IBucket::Time ts = IBucket::Time() + std::chrono::microseconds(123109210);
   std::string blob = "some blob of data";
-  REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry",
+                        IBucket::WriteOptions{
+                            .timestamp = ts,
+                            .labels = {{"label1", "value1"}, {"label2", "value2"}},
+                            .content_type = "text/plain",
+                        },
+                        [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
 
   std::string received_data;
   err = bucket->Read("entry", ts, [&received_data, ts](auto record) {
     REQUIRE(record.size == 17);
     REQUIRE(record.timestamp == ts);
+    REQUIRE(record.labels == std::map<std::string, std::string>{{"label1", "value1"}, {"label2", "value2"}});
+    REQUIRE(record.content_type == "text/plain");
     REQUIRE(record.last);
 
     auto [data, read_err] = record.ReadAll();
@@ -129,7 +137,12 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
 
   using us = std::chrono::microseconds;
   IBucket::Time ts{};
-  REQUIRE(bucket->Write("entry", ts, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry",
+                        IBucket::WriteOptions{
+                            .timestamp = ts,
+                            .labels = {{"label1", "value1"}},
+                        },
+                        [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
   REQUIRE(bucket->Write("entry", ts + us(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
   REQUIRE(bucket->Write("entry", ts + us(2), [](auto rec) { rec->WriteAll("some_data3"); }) == Error::kOk);
 
@@ -173,6 +186,39 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
     });
 
     REQUIRE(err == Error::kOk);
+  }
+
+  SECTION("include labels") {
+    auto err = bucket->Query("entry", ts, ts + us(3), IBucket::QueryOptions{.include = {{"label1", "value1"}}},
+                             [&all_data](auto record) {
+                               auto read_err = record.Read([&all_data](auto data) {
+                                 all_data.append(data);
+                                 return true;
+                               });
+
+                               REQUIRE(read_err == Error::kOk);
+                               REQUIRE(record.last);
+                               return true;
+                             });
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(all_data == "some_data1");
+  }
+
+  SECTION("exclude labels") {
+    auto err = bucket->Query("entry", ts, ts + us(3), IBucket::QueryOptions{.exclude = {{"label1", "value1"}}},
+                             [&all_data](auto record) {
+                               auto read_err = record.Read([&all_data](auto data) {
+                                 all_data.append(data);
+                                 return true;
+                               });
+
+                               REQUIRE(read_err == Error::kOk);
+                               return true;
+                             });
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(all_data == "some_data2some_data3");
   }
 }
 

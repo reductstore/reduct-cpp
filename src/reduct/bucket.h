@@ -1,9 +1,10 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2023 Alexey Timin
 #ifndef REDUCT_CPP_BUCKET_H
 #define REDUCT_CPP_BUCKET_H
 
 #include <chrono>
 #include <functional>
+#include <map>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -68,6 +69,8 @@ class IBucket {
     friend std::ostream& operator<<(std::ostream& os, const EntryInfo& info);
   };
 
+  using LabelMap = std::map<std::string, std::string>;
+
   /**
    * ReadableRecord
    */
@@ -75,6 +78,8 @@ class IBucket {
     Time timestamp;
     size_t size;
     bool last;
+    LabelMap labels;
+    std::string content_type;
 
     /**
      * Called when HTTP Client received a chunk with data. It may return false to stop transferring
@@ -120,7 +125,7 @@ class IBucket {
     size_t content_length_;
 
     /**
-     * Recevies write callback and content length to pass it to HTTP client
+     * Receives write callback and content length to pass it to HTTP client
      * @param content_length
      * @param cb
      */
@@ -144,7 +149,7 @@ class IBucket {
   using WriteRecordCallback = std::function<void(WritableRecord*)>;
 
   /**
-   * Read a record by chunks
+   * Read a record in chunks
    * @param entry_name entry in bucket
    * @param ts timestamp, if it is nullopt, the method returns the latest record
    * @param callback called with calback. To continue receiving it should return true
@@ -154,7 +159,7 @@ class IBucket {
                      ReadRecordCallback callback) const noexcept = 0;
 
   /**
-   * Write a record by chunks
+   * Write a record
    * @param entry_name entry in bucket
    * @param ts timestamp, if it is nullopt, the method returns the latest record
    * @param callback
@@ -163,12 +168,33 @@ class IBucket {
   virtual Error Write(std::string_view entry_name, std::optional<Time> ts,
                       WriteRecordCallback callback) const noexcept = 0;
 
-  struct QueryOptions {
-    std::chrono::milliseconds ttl;
+  /**
+   * Options for writing a record
+   */
+  struct WriteOptions {
+    std::optional<Time> timestamp;
+    LabelMap labels;
+    std::string content_type;
   };
 
   /**
-   * Query data for time interval
+   * Write a record (extended version)
+   * @param entry_name entry in bucket
+   * @param options options with timestamp, labels and content type
+   * @param callback
+   * @return HTTP or communication error
+   */
+  virtual Error Write(std::string_view entry_name, const WriteOptions& options,
+                      WriteRecordCallback callback) const noexcept = 0;
+
+  struct QueryOptions {
+    std::optional<std::chrono::milliseconds> ttl;
+    LabelMap include;
+    LabelMap exclude;
+  };
+
+  /**
+   * Query data for a time interval
    * @param entry_name
    * @param start start time point ,if nullopt then from very beginning
    * @param stop stop time point, if nullopt then until the last record
@@ -177,8 +203,7 @@ class IBucket {
    * @return
    */
   [[nodiscard]] virtual Error Query(
-      std::string_view entry_name, std::optional<Time> start = std::nullopt, std::optional<Time> stop = std::nullopt,
-      std::optional<QueryOptions> options = std::nullopt,
+      std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
       ReadRecordCallback callback = [](auto) { return false; }) const noexcept = 0;
   /**
    * @brief Get settings by HTTP request
