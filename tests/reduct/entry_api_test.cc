@@ -188,7 +188,7 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
     REQUIRE(err == Error::kOk);
   }
 
-  SECTION("filter by labels") {
+  SECTION("include labels") {
     auto err = bucket->Query("entry", ts, ts + us(3), IBucket::QueryOptions{.include = {{"label1", "value1"}}},
                              [&all_data](auto record) {
                                auto read_err = record.Read([&all_data](auto data) {
@@ -203,6 +203,22 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
 
     REQUIRE(err == Error::kOk);
     REQUIRE(all_data == "some_data1");
+  }
+
+  SECTION("exclude labels") {
+    auto err = bucket->Query("entry", ts, ts + us(3), IBucket::QueryOptions{.exclude = {{"label1", "value1"}}},
+                             [&all_data](auto record) {
+                               auto read_err = record.Read([&all_data](auto data) {
+                                 all_data.append(data);
+                                 return true;
+                               });
+
+                               REQUIRE(read_err == Error::kOk);
+                               return true;
+                             });
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(all_data == "some_data2some_data3");
   }
 }
 
