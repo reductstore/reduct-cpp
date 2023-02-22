@@ -27,9 +27,10 @@ int main() {
 
   // Write some data
   IBucket::Time start = IBucket::Time::clock::now();
-  [[maybe_unused]] auto write_err = bucket->Write("entry-1", {}, [](auto rec) { rec->WriteAll("some_data1"); });
-  write_err = bucket->Write("entry-1", {}, [](auto rec) { rec->WriteAll("some_data2"); });
-  write_err = bucket->Write("entry-1", {}, [](auto rec) { rec->WriteAll("some_data3"); });
+  [[maybe_unused]] auto write_err =
+      bucket->Write("entry-1", std::nullopt, [](auto rec) { rec->WriteAll("some_data1"); });
+  write_err = bucket->Write("entry-1", std::nullopt, [](auto rec) { rec->WriteAll("some_data2"); });
+  write_err = bucket->Write("entry-1", std::nullopt, [](auto rec) { rec->WriteAll("some_data3"); });
 
   // Walk through the data
   err = bucket->Query("entry-1", start, IBucket::Time::clock::now(), std::nullopt, [](auto&& record) {
