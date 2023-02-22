@@ -47,7 +47,7 @@ int main() {
 
 
   // Walk through the data
-  err = bucket->Query("entry-1", std::nullopt, IBucket::Time::clock::now(), std::nullopt, [](auto&& record) {
+  err = bucket->Query("entry-1", std::nullopt, IBucket::Time::clock::now(), {}, [](auto&& record) {
     std::string blob;
 
     auto read_err = record.Read([&blob](auto chunk) {
@@ -70,7 +70,7 @@ int main() {
 * CMake 3.18 or higher
 * ZLib
 * OpenSSL 1.1 or 3.0
-* Conan 1.40 (optionally)
+* Conan 1.58 (optionally)
 
 To build the library, follow these steps:
 
