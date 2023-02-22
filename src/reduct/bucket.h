@@ -188,7 +188,9 @@ class IBucket {
                       WriteRecordCallback callback) const noexcept = 0;
 
   struct QueryOptions {
-    std::chrono::milliseconds ttl;
+    std::optional<std::chrono::milliseconds> ttl;
+    LabelMap include;
+    LabelMap exclude;
   };
 
   /**
@@ -201,8 +203,7 @@ class IBucket {
    * @return
    */
   [[nodiscard]] virtual Error Query(
-      std::string_view entry_name, std::optional<Time> start = std::nullopt, std::optional<Time> stop = std::nullopt,
-      std::optional<QueryOptions> options = std::nullopt,
+      std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
       ReadRecordCallback callback = [](auto) { return false; }) const noexcept = 0;
   /**
    * @brief Get settings by HTTP request

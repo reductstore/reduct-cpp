@@ -153,8 +153,8 @@ class Bucket : public IBucket {
     return record_err;
   }
 
-  Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
-              std::optional<QueryOptions> options, ReadRecordCallback callback) const noexcept override {
+  Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
+              ReadRecordCallback callback) const noexcept override {
     auto url = fmt::format("{}/{}/q?", path_, entry_name);
 
     if (start) {
@@ -165,8 +165,16 @@ class Bucket : public IBucket {
       url += fmt::format("stop={}&", ToMicroseconds(*stop));
     }
 
-    if (options) {
-      url += fmt::format("ttl={}", options->ttl.count());
+    if (options.ttl) {
+      url += fmt::format("ttl={}", options.ttl->count());
+    }
+
+    for (const auto& [key, value] : options.include) {
+      url += fmt::format("&include-{}={}", key, value);
+    }
+
+    for (const auto& [key, value] : options.exclude) {
+      url += fmt::format("&exclude-{}={}", key, value);
     }
 
     auto [body, err] = client_->Get(url);
