@@ -39,7 +39,7 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) noexce
   IBucket::Settings settings;
   try {
     if (json.contains("max_block_size")) {
-      settings.max_block_size = std::stoul(json["max_block_size"].get<std::string>());
+      settings.max_block_size = json["max_block_size"];
     }
 
     if (json.contains("quota_type")) {
@@ -51,11 +51,11 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) noexce
     }
 
     if (json.contains("quota_size")) {
-      settings.quota_size = std::stoul(json["quota_size"].get<std::string>());
+      settings.quota_size = json["quota_size"];
     }
 
     if (json.contains("max_block_records")) {
-      settings.max_block_records = std::stoul(json["max_block_records"].get<std::string>());
+      settings.max_block_records = json["max_block_records"];
     }
   } catch (const std::exception& ex) {
     return {{}, Error{.code = -1, .message = ex.what()}};

@@ -30,19 +30,17 @@ class Client : public IClient {
 
     try {
       nlohmann::json data = nlohmann::json::parse(body);
-      auto as_ul = [&data](std::string_view key) { return std::stoul(data.at(key.data()).get<std::string>()); };
-
       auto [default_bucket_settings, def_err] = internal::ParseBucketSettings(data.at("defaults").at("bucket"));
       if (def_err) {
         return {{}, def_err};
       }
       return {
           ServerInfo{.version = data.at("version"),
-                     .bucket_count = as_ul("bucket_count"),
-                     .usage = as_ul("usage"),
-                     .uptime = std::chrono::seconds(as_ul("uptime")),
-                     .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
-                     .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
+                     .bucket_count = data.at("bucket_count"),
+                     .usage = data.at("usage"),
+                     .uptime = std::chrono::seconds(data.at("uptime")),
+                     .oldest_record = Time() + std::chrono::microseconds(data.at("oldest_record")),
+                     .latest_record = Time() + std::chrono::microseconds(data.at("latest_record")),
                      .defaults = {.bucket = default_bucket_settings}},
           Error::kOk,
       };
@@ -64,13 +62,12 @@ class Client : public IClient {
       auto json_buckets = data.at("buckets");
       bucket_list.reserve(json_buckets.size());
       for (const auto& bucket : json_buckets) {
-        auto as_ul = [&bucket](std::string_view key) { return std::stoul(bucket.at(key.data()).get<std::string>()); };
         bucket_list.push_back({
             .name = bucket.at("name"),
-            .entry_count = as_ul("entry_count"),
-            .size = as_ul("size"),
-            .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
-            .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
+            .entry_count = bucket.at("entry_count"),
+            .size = bucket.at("size"),
+            .oldest_record = Time() + std::chrono::microseconds(bucket.at("oldest_record")),
+            .latest_record = Time() + std::chrono::microseconds(bucket.at("latest_record")),
         });
       }
     } catch (const std::exception& e) {
