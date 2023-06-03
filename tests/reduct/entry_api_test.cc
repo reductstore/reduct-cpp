@@ -50,7 +50,7 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
 
   SECTION("http errors") {
     REQUIRE(bucket->Read("entry", IBucket::Time(), [](auto) { return true; }) ==
-            Error{.code = 404, .message = "No records for this timestamp"});
+            Error{.code = 404, .message = "No record with timestamp 0"});
   }
 }
 

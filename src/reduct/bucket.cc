@@ -74,14 +74,13 @@ class Bucket : public IBucket {
 
     try {
       auto info = nlohmann::json::parse(body).at("info");
-      auto as_ul = [&info](std::string_view key) { return std::stoul(info.at(key.data()).get<std::string>()); };
       return {
           BucketInfo{
               .name = info.at("name"),
-              .entry_count = as_ul("entry_count"),
-              .size = as_ul("size"),
-              .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
-              .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
+              .entry_count = info.at("entry_count"),
+              .size = info.at("size"),
+              .oldest_record = Time() + std::chrono::microseconds(info.at("oldest_record")),
+              .latest_record = Time() + std::chrono::microseconds(info.at("latest_record")),
           },
           Error::kOk,
       };
@@ -101,15 +100,13 @@ class Bucket : public IBucket {
       std::vector<EntryInfo> entries(json_entries.size());
       for (int i = 0; i < entries.size(); ++i) {
         auto entry = json_entries[i];
-        auto as_ul = [&entry](std::string_view key) { return std::stoul(entry.at(key.data()).get<std::string>()); };
-
         entries[i] = EntryInfo{
             .name = entry.at("name"),
-            .record_count = as_ul("record_count"),
-            .block_count = as_ul("block_count"),
-            .size = as_ul("size"),
-            .oldest_record = Time() + std::chrono::microseconds(as_ul("oldest_record")),
-            .latest_record = Time() + std::chrono::microseconds(as_ul("latest_record")),
+            .record_count = entry.at("record_count"),
+            .block_count = entry.at("block_count"),
+            .size = entry.at("size"),
+            .oldest_record = Time() + std::chrono::microseconds(entry.at("oldest_record")),
+            .latest_record = Time() + std::chrono::microseconds(entry.at("latest_record")),
         };
       }
 
@@ -149,7 +146,7 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto [_, record_err] = ReadRecord(std::move(path), std::move(callback));
+    auto record_err = ReadRecord(std::move(path), std::move(callback));
     return record_err;
   }
 
@@ -182,7 +179,7 @@ class Bucket : public IBucket {
       return err;
     }
 
-    std::string id;
+    uint64_t id;
     try {
       auto data = nlohmann::json::parse(body);
       id = data.at("id");
@@ -191,14 +188,18 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      auto [last, record_err] = ReadRecord(fmt::format("{}/{}?q={}", path_, entry_name, id), callback);
+      auto [stopped, record_err] = ReadRecord(fmt::format("{}/{}?q={}", path_, entry_name, id), callback);
 
-      if (record_err) {
-        return record_err;
+      if (stopped) {
+        break;
       }
 
-      if (last) {
-        break;
+      if (record_err) {
+        if (record_err.code == 204) {
+          break;
+        }
+
+        return record_err;
       }
     }
 
@@ -209,15 +210,13 @@ class Bucket : public IBucket {
   Result<bool> ReadRecord(std::string&& path, const ReadRecordCallback& callback) const noexcept {
     moodycamel::ConcurrentQueue<std::string> data;
     std::future<void> future;
-    bool last;
+    bool stopped;
 
     auto err = client_->Get(
         path,
-        [&last, &data, callback = std::move(callback), &future, this](IHttpClient::Headers&& headers) {
+        [&stopped, &data, callback = std::move(callback), &future, this](IHttpClient::Headers&& headers) {
           ReadableRecord record;
 
-          last = headers["x-reduct-last"] == "1";
-          record.last = last;
           record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
           record.size = std::stoi(headers["content-length"]);
           record.content_type = headers["content-type"];
@@ -247,7 +246,7 @@ class Bucket : public IBucket {
             return Error::kOk;
           };
 
-          Task task([record = std::move(record), &callback, &last] { last = !callback(record) || last; });
+          Task task([record = std::move(record), &callback, &stopped] { stopped = !callback(record); });
           future = task.get_future();
           task_queue_.enqueue(std::move(task));
         },
@@ -261,7 +260,7 @@ class Bucket : public IBucket {
       future.wait();
     }
 
-    return {last, err};
+    return {stopped, err};
   }
 
   static int64_t ToMicroseconds(const Time& ts) {
