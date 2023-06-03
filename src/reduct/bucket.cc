@@ -146,7 +146,7 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err= ReadRecord(std::move(path), std::move(callback));
+    auto record_err = ReadRecord(std::move(path), std::move(callback));
     return record_err;
   }
 
@@ -188,7 +188,7 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      auto  [stopped, record_err] = ReadRecord(fmt::format("{}/{}?q={}", path_, entry_name, id), callback);
+      auto [stopped, record_err] = ReadRecord(fmt::format("{}/{}?q={}", path_, entry_name, id), callback);
 
       if (stopped) {
         break;
