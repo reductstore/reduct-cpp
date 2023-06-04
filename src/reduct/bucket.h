@@ -191,7 +191,7 @@ class IBucket {
    * Query options
    */
   struct QueryOptions {
-    std::optional<std::chrono::milliseconds> ttl; ///< time to live
+    std::optional<std::chrono::milliseconds> ttl;    ///< time to live
     LabelMap include;   ///< include labels
     LabelMap exclude;   ///< exclude labels
     bool continuous;    ///< continuous query. If true, the method returns the latest record and waits for the next one
