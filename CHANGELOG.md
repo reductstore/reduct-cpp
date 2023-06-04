@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2023-06-04
+
 ### Added
 
 - Implement continuous querying, [PR-53](https://github.com/reductstore/reduct-cpp/pull/53)
@@ -133,7 +135,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.4.0...HEAD
+
+[1.4.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.3.0...1.4.0
 
 [1.3.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.2.0...1.3.0
 
