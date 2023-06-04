@@ -19,7 +19,7 @@ runs:
     - name: Run examples
       shell: bash
       run: |
-        run: docker run -p 8383:8383 -d reduct/store:main
+        docker run -p 8383:8383 -d reduct/store:main
         cd examples/build
         ./usage-example
         ./subscription
