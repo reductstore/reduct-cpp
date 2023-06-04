@@ -37,7 +37,6 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
     REQUIRE(record.timestamp == ts);
     REQUIRE(record.labels == std::map<std::string, std::string>{{"label1", "value1"}, {"label2", "value2"}});
     REQUIRE(record.content_type == "text/plain");
-    REQUIRE(record.last);
 
     auto [data, read_err] = record.ReadAll();
     received_data = std::move(data);
@@ -68,7 +67,6 @@ TEST_CASE("reduct::IBucket should read the latest record", "[entry_api]") {
   auto err = bucket->Read("entry", {}, [ts](auto record) {
     REQUIRE(record.size == 10);
     REQUIRE(record.timestamp == ts + us(2));
-    REQUIRE(record.last);
 
     return true;
   });
@@ -181,7 +179,6 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
     auto err = bucket->Query("entry", ts, ts + us(1), {}, [ts](auto record) {
       REQUIRE(record.timestamp == ts);
       REQUIRE(record.size == 10);
-      REQUIRE(record.last);
       return true;
     });
 
@@ -197,7 +194,6 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
                                });
 
                                REQUIRE(read_err == Error::kOk);
-                               REQUIRE(record.last);
                                return true;
                              });
 

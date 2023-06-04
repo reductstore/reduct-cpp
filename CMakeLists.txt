@@ -10,7 +10,6 @@ project(reductcpp VERSION ${REDUCT_CPP_FULL_VERSION})
 message(STATUS "Version ${REDUCT_CPP_FULL_VERSION}")
 
 set(REDUCT_CPP_ENABLE_TESTS OFF CACHE BOOL "Compile tests")
-set(REDUCT_CPP_ENABLE_EXAMPLES OFF CACHE BOOL "Compile examples")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -25,3 +24,4 @@ add_subdirectory(src)
 if (REDUCT_CPP_ENABLE_TESTS)
     add_subdirectory(tests)
 endif ()
+
