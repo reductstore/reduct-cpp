@@ -20,6 +20,7 @@ runs:
       shell: bash
       run: |
         docker run -p 8383:8383 -d reduct/store:main
+        sleep 3
         cd examples/build
         ./usage-example
         ./subscription
