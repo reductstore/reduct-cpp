@@ -16,3 +16,9 @@ runs:
         cd examples/build
         cmake ..
         cmake --build .
+    - name: Run examples
+      shell: bash
+      run: |
+        cd examples/build
+        ./usage-example
+        ./subscription
