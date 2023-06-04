@@ -47,15 +47,21 @@ int main() {
   };
 
   // Continuously read messages until we get 3 good ones
-  bucket->Query("entry-1", IBucket::Time::clock::now(), std::nullopt, opts, [&good_count](auto &&record) {
-    auto [msg, read_err] = record.ReadAll();
-    if (read_err) {
-      std::cerr << "Error: " << read_err;
-      return false;
-    }
-    std::cout << "Read: " << msg << std::endl;
-    return ++good_count != 3;
-  });
+  auto query_err =
+      bucket->Query("entry-1", IBucket::Time::clock::now(), std::nullopt, opts, [&good_count](auto &&record) {
+        auto [msg, read_err] = record.ReadAll();
+        if (read_err) {
+          std::cerr << "Error: " << read_err;
+          return false;
+        }
+        std::cout << "Read: " << msg << std::endl;
+        return ++good_count != 3;
+      });
 
   writer.join();
+
+  if (query_err) {
+    std::cerr << "Query error:" << query_err;
+    return -1;
+  }
 }

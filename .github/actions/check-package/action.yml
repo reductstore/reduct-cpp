@@ -16,6 +16,9 @@ runs:
         cd examples/build
         cmake ..
         cmake --build .
+    - name: Run ReductStore
+      shell: bash
+      run: docker run -p 8383:8383 -v ${PWD}/data:/data  -d reduct/store:main
     - name: Run examples
       shell: bash
       run: |
