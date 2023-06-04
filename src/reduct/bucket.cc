@@ -146,7 +146,7 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), std::move(callback));
+    auto record_err = ReadRecord(std::move(path), callback);
     return record_err;
   }
 
@@ -163,7 +163,11 @@ class Bucket : public IBucket {
     }
 
     if (options.ttl) {
-      url += fmt::format("ttl={}", options.ttl->count());
+      url += fmt::format("ttl={}&", options.ttl->count());
+    }
+
+    if (options.continuous) {
+      url += "continuous=true&";
     }
 
     for (const auto& [key, value] : options.include) {
@@ -196,6 +200,10 @@ class Bucket : public IBucket {
 
       if (record_err) {
         if (record_err.code == 204) {
+          if (options.continuous) {
+            std::this_thread::sleep_for(options.poll_interval);
+            continue;
+          }
           break;
         }
 
@@ -214,7 +222,7 @@ class Bucket : public IBucket {
 
     auto err = client_->Get(
         path,
-        [&stopped, &data, callback = std::move(callback), &future, this](IHttpClient::Headers&& headers) {
+        [&stopped, &data, callback = callback, &future, this](IHttpClient::Headers&& headers) {
           ReadableRecord record;
 
           record.timestamp = FromMicroseconds(headers["x-reduct-time"]);

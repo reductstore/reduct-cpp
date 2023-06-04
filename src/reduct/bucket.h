@@ -77,7 +77,7 @@ class IBucket {
   struct ReadableRecord {
     Time timestamp;
     size_t size;
-    bool last;
+    [[deprecated]] bool last;  //< @deprecated, unreliable flag
     LabelMap labels;
     std::string content_type;
 
@@ -187,10 +187,15 @@ class IBucket {
   virtual Error Write(std::string_view entry_name, const WriteOptions& options,
                       WriteRecordCallback callback) const noexcept = 0;
 
+  /**
+   * Query options
+   */
   struct QueryOptions {
-    std::optional<std::chrono::milliseconds> ttl;
-    LabelMap include;
-    LabelMap exclude;
+    std::optional<std::chrono::milliseconds> ttl; ///< time to live
+    LabelMap include;   ///< include labels
+    LabelMap exclude;   ///< exclude labels
+    bool continuous;    ///< continuous query. If true, the method returns the latest record and waits for the next one
+    std::chrono::milliseconds poll_interval;  ///< poll interval for continuous query
   };
 
   /**
