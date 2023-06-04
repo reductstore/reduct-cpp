@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Implement continuous querying, [PR-53](https://github.com/reductstore/reduct-cpp/pull/53)
+
 ### Update
 
 - Adapt to the new API v1.4, [PR-52](https://github.com/reductstore/reduct-cpp/pull/52)
