@@ -146,7 +146,7 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), callback);
+    auto record_err = ReadRecord(std::move(path), false, callback);
     return record_err;
   }
 
@@ -227,9 +227,9 @@ class Bucket : public IBucket {
         [&stopped, &data, callback = callback, &future, batched, this](IHttpClient::Headers&& headers) {
           std::vector<ReadableRecord> records;
           if (batched) {
-            records = ParseAndBuildBatchedRecords(data, std::move(headers));
+            records = ParseAndBuildBatchedRecords(&data, std::move(headers));
           } else {
-            records.push_back(ParseAndBuildSingleRecord(data, std::move(headers)));
+            records.push_back(ParseAndBuildSingleRecord(&data, std::move(headers)));
           }
 
           for (auto& record : records) {
@@ -251,7 +251,7 @@ class Bucket : public IBucket {
     return {stopped, err};
   }
 
-  static ReadableRecord ParseAndBuildSingleRecord(moodycamel::ConcurrentQueue<std::string>& data,
+  static ReadableRecord ParseAndBuildSingleRecord(moodycamel::ConcurrentQueue<std::string>* data,
                                                   IHttpClient::Headers&& headers) {
     ReadableRecord record;
 
@@ -265,10 +265,10 @@ class Bucket : public IBucket {
       }
     }
 
-    record.Read = [&data](auto record_callback) {
+    record.Read = [data](auto record_callback) {
       while (true) {
         std::string chunk;
-        if (data.try_dequeue(chunk)) {
+        if (data->try_dequeue(chunk)) {
           if (chunk.empty()) {
             break;
           }
@@ -286,7 +286,7 @@ class Bucket : public IBucket {
     return record;
   }
 
-  static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(moodycamel::ConcurrentQueue<std::string>& data,
+  static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(moodycamel::ConcurrentQueue<std::string>* data,
                                                                  IHttpClient::Headers&& headers) {
     std::vector<ReadableRecord> records;
     return records;
