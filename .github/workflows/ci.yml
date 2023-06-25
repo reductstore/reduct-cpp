@@ -60,6 +60,7 @@ jobs:
     strategy:
       matrix:
         token: [ "", "TOKEN" ]
+        reductstore_version: [ "main", "latest" ]
         include:
           - token: ""
             tags: "~[token_api]"
@@ -81,3 +82,4 @@ jobs:
         with:
           api-token: ${{matrix.token}}
           tags: ${{matrix.tags}}
+          reductstore-version: ${{matrix.reductstore_version}}

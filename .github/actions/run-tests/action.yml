@@ -9,12 +9,16 @@ inputs:
     description: 'Tags for tests'
     required: false
     default: ""
+  reductstore-version: # id of input
+    description: 'Reduct Store version'
+    required: false
+    default: "main"
 runs:
   using: "composite"
   steps:
     - name: Run Reduct Store
       shell: bash
-      run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{inputs.api-token}} -d reduct/store:main
+      run: docker run -p 8383:8383 -v ${PWD}/data:/data --env RS_API_TOKEN=${{inputs.api-token}} -d reduct/store:${{inputs.reductstore-version}}
 
     - name: Load image with tests
       shell: bash
