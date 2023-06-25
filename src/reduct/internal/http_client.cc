@@ -116,8 +116,10 @@ class HttpClient : public IHttpClient {
     return CheckRequest(res);
   }
 
+  std::string_view api_version() const noexcept override { return api_version_; }
+
  private:
-  static Error CheckRequest(const httplib::Result& res) {
+  Error CheckRequest(const httplib::Result& res) const noexcept {
     if (res.error() != httplib::Error::Success) {
       return Error{.code = -1, .message = httplib::to_string(res.error())};
     }
@@ -132,6 +134,10 @@ class HttpClient : public IHttpClient {
       return Error{.code = status, .message = "Unknown error"};
     }
 
+    if (auto api_version = res->headers.find("x-reduct-api"); api_version != res->headers.end()) {
+      api_version_ = api_version->second;
+    }
+
     return Error::kOk;
   }
 
@@ -140,6 +146,7 @@ class HttpClient : public IHttpClient {
   std::unique_ptr<httplib::Client> client_;
   std::string api_token_;
   mutable std::string access_token_;
+  mutable std::string api_version_;
 };
 
 std::unique_ptr<IHttpClient> IHttpClient::Build(std::string_view url, const HttpOptions& options) {

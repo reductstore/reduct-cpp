@@ -192,7 +192,9 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      auto [stopped, record_err] = ReadRecord(fmt::format("{}/{}?q={}", path_, entry_name, id), callback);
+      bool batched = client_->api_version() >= "1.5";
+      auto [stopped, record_err] =
+          ReadRecord(fmt::format("{}/{}{}?q={}", path_, entry_name, batched ? "/batch" : "", id), batched, callback);
 
       if (stopped) {
         break;
@@ -215,48 +217,26 @@ class Bucket : public IBucket {
   }
 
  private:
-  Result<bool> ReadRecord(std::string&& path, const ReadRecordCallback& callback) const noexcept {
+  Result<bool> ReadRecord(std::string&& path, bool batched, const ReadRecordCallback& callback) const noexcept {
     moodycamel::ConcurrentQueue<std::string> data;
     std::future<void> future;
     bool stopped;
 
     auto err = client_->Get(
         path,
-        [&stopped, &data, callback = callback, &future, this](IHttpClient::Headers&& headers) {
-          ReadableRecord record;
-
-          record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
-          record.size = std::stoi(headers["content-length"]);
-          record.content_type = headers["content-type"];
-
-          for (const auto& [key, value] : headers) {
-            if (key.starts_with("x-reduct-label-")) {
-              record.labels.emplace(key.substr(15), value);
-            }
+        [&stopped, &data, callback = callback, &future, batched, this](IHttpClient::Headers&& headers) {
+          std::vector<ReadableRecord> records;
+          if (batched) {
+            records = ParseAndBuildBatchedRecords(data, std::move(headers));
+          } else {
+            records.push_back(ParseAndBuildSingleRecord(data, std::move(headers)));
           }
 
-          record.Read = [&data](auto record_callback) {
-            while (true) {
-              std::string chunk;
-              if (data.try_dequeue(chunk)) {
-                if (chunk.empty()) {
-                  break;
-                }
-
-                if (!record_callback(std::move(chunk))) {
-                  break;
-                }
-              } else {
-                std::this_thread::sleep_for(std::chrono::microseconds(100));
-              }
-            }
-
-            return Error::kOk;
-          };
-
-          Task task([record = std::move(record), &callback, &stopped] { stopped = !callback(record); });
-          future = task.get_future();
-          task_queue_.enqueue(std::move(task));
+          for (auto& record : records) {
+            Task task([record = std::move(record), &callback, &stopped] { stopped = !callback(record); });
+            future = task.get_future();
+            task_queue_.enqueue(std::move(task));
+          }
         },
         [&data](auto chunk) {
           data.enqueue(std::string(chunk));
@@ -269,6 +249,47 @@ class Bucket : public IBucket {
     }
 
     return {stopped, err};
+  }
+
+  static ReadableRecord ParseAndBuildSingleRecord(moodycamel::ConcurrentQueue<std::string>& data,
+                                                  IHttpClient::Headers&& headers) {
+    ReadableRecord record;
+
+    record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
+    record.size = std::stoi(headers["content-length"]);
+    record.content_type = headers["content-type"];
+
+    for (const auto& [key, value] : headers) {
+      if (key.starts_with("x-reduct-label-")) {
+        record.labels.emplace(key.substr(15), value);
+      }
+    }
+
+    record.Read = [&data](auto record_callback) {
+      while (true) {
+        std::string chunk;
+        if (data.try_dequeue(chunk)) {
+          if (chunk.empty()) {
+            break;
+          }
+
+          if (!record_callback(std::move(chunk))) {
+            break;
+          }
+        } else {
+          std::this_thread::sleep_for(std::chrono::microseconds(100));
+        }
+      }
+
+      return Error::kOk;
+    };
+    return record;
+  }
+
+  static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(moodycamel::ConcurrentQueue<std::string>& data,
+                                                                 IHttpClient::Headers&& headers) {
+    std::vector<ReadableRecord> records;
+    return records;
   }
 
   static int64_t ToMicroseconds(const Time& ts) {
