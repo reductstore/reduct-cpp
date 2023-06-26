@@ -218,40 +218,54 @@ class Bucket : public IBucket {
 
  private:
   Result<bool> ReadRecord(std::string&& path, bool batched, const ReadRecordCallback& callback) const noexcept {
-    moodycamel::ConcurrentQueue<std::string> data;
+    std::deque<std::string> data;
+    std::mutex data_mutex;
     std::future<void> future;
-    bool stopped;
+    bool stopped = false;
 
     auto err = client_->Get(
         path,
-        [&stopped, &data, callback = callback, &future, batched, this](IHttpClient::Headers&& headers) {
+        [&stopped, &data, &data_mutex, &callback, &future, batched, this](IHttpClient::Headers&& headers) {
           std::vector<ReadableRecord> records;
           if (batched) {
-            records = ParseAndBuildBatchedRecords(&data, std::move(headers));
+            records = ParseAndBuildBatchedRecords(&data, &data_mutex, std::move(headers));
           } else {
-            records.push_back(ParseAndBuildSingleRecord(&data, std::move(headers)));
+            records.push_back(ParseAndBuildSingleRecord(&data, &data_mutex, std::move(headers)));
           }
 
           for (auto& record : records) {
-            Task task([record = std::move(record), &callback, &stopped] { stopped = !callback(record); });
+            Task task([record = std::move(record), &callback, &stopped] {
+              if (stopped) {
+                return;
+              }
+              stopped = !callback(record);
+              if (!stopped) {
+                stopped = record.last;
+              }
+            });
+
             future = task.get_future();
             task_queue_.enqueue(std::move(task));
           }
         },
-        [&data](auto chunk) {
-          data.enqueue(std::string(chunk));
+        [&data, &data_mutex](auto chunk) {
+          std::lock_guard lock(data_mutex);
+          data.push_back(std::string(chunk));
           return true;
         });
 
     if (!err) {
-      data.enqueue("");
+      {
+        std::lock_guard lock(data_mutex);
+        data.emplace_back("");
+      }
       future.wait();
     }
 
     return {stopped, err};
   }
 
-  static ReadableRecord ParseAndBuildSingleRecord(moodycamel::ConcurrentQueue<std::string>* data,
+  static ReadableRecord ParseAndBuildSingleRecord(std::deque<std::string>* data, std::mutex* mutex,
                                                   IHttpClient::Headers&& headers) {
     ReadableRecord record;
 
@@ -265,19 +279,27 @@ class Bucket : public IBucket {
       }
     }
 
-    record.Read = [data](auto record_callback) {
+    record.Read = [data, mutex](auto record_callback) {
       while (true) {
-        std::string chunk;
-        if (data->try_dequeue(chunk)) {
-          if (chunk.empty()) {
-            break;
+        std::optional<std::string> chunk;
+        {
+          std::lock_guard lock(*mutex);
+          if (!data->empty()) {
+            chunk = std::move(data->front());
           }
+        }
 
-          if (!record_callback(std::move(chunk))) {
-            break;
-          }
-        } else {
+        if (!chunk) {
           std::this_thread::sleep_for(std::chrono::microseconds(100));
+          continue;
+        }
+
+        if (chunk->empty()) {
+          break;
+        }
+
+        if (!record_callback(std::move(*chunk))) {
+          break;
         }
       }
 
@@ -286,9 +308,108 @@ class Bucket : public IBucket {
     return record;
   }
 
-  static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(moodycamel::ConcurrentQueue<std::string>* data,
+  static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(std::deque<std::string>* data, std::mutex* mutex,
                                                                  IHttpClient::Headers&& headers) {
+    auto parse_csv = [](const std::string& csv) {
+      std::vector<std::string> items;
+      std::string escaped, item;
+      std::stringstream ss(csv);
+
+      while (std::getline(ss, item, ',')) {
+        if (item.starts_with("\"") && escaped.empty()) {
+          escaped = item.substr(1);
+        }
+
+        if (!escaped.empty()) {
+          if (item.ends_with("\"")) {
+            escaped = escaped.substr(0, escaped.size() - 2);
+            items.push_back(escaped);
+            escaped = "";
+          } else {
+            escaped += item;
+          }
+        } else {
+          items.push_back(item);
+        }
+      }
+
+      auto size = std::stoll(items[0]);
+      // eslint-disable-next-line prefer-destructuring
+      auto content_type = items[1];
+      LabelMap labels = {};
+
+      for (auto i = 2; i < items.size(); i++) {
+        auto pos = items[i].find('=');
+        if (pos == std::string::npos) {
+          continue;
+        }
+
+        auto key = items[i].substr(0, pos);
+        labels[key] = items[i].substr(pos + 1);
+      }
+
+      return std::tuple{
+          size,
+          content_type,
+          labels,
+      };
+    };
+
     std::vector<ReadableRecord> records;
+    size_t total_records = std::count_if(headers.begin(), headers.end(),
+                                         [](const auto& header) { return header.first.starts_with("x-reduct-time-"); });
+
+    for (auto header = headers.begin(); header != headers.end(); ++header) {
+      if (!header->first.starts_with("x-reduct-time-")) {
+        continue;
+      }
+
+      auto [size, content_type, labels] = parse_csv(header->second);
+
+      ReadableRecord record;
+      record.timestamp = FromMicroseconds(header->first.substr(14));
+      record.size = size;
+      record.content_type = content_type;
+      record.labels = labels;
+      record.Read = [data, mutex, size](auto record_callback) {
+        size_t total = 0;
+        while (true) {
+          std::optional<std::string> chunk;
+          {
+            std::lock_guard lock(*mutex);
+            if (!data->empty()) {
+              chunk = std::move(data->front());
+
+              if (chunk->size() > size - total) {
+                auto tmp = chunk->substr(0, size - total);
+                data->push_front(chunk->substr(size - total));
+                chunk = std::move(tmp);
+              }
+            }
+          }
+
+          if (!chunk) {
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+            continue;
+          }
+
+          if (chunk->empty()) {
+            break;
+          }
+
+          total += chunk->size();
+          if (!record_callback(std::move(*chunk))) {
+            break;
+          }
+        }
+
+        return Error::kOk;
+      };
+
+      record.last = (records.size() == total_records - 1 && headers["x-reduct-last"] == "true");
+      records.push_back(std::move(record));
+    }
+
     return records;
   }
 
