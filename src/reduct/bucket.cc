@@ -362,7 +362,8 @@ class Bucket : public IBucket {
     size_t total_records = std::count_if(headers.begin(), headers.end(),
                                          [](const auto& header) { return header.first.starts_with("x-reduct-time-"); });
 
-    for (auto header = headers.begin(); header != headers.end(); ++header) {
+    std::map<std::string , std::string> ordered_headers(headers.begin(), headers.end());
+    for (auto header = ordered_headers.begin(); header != ordered_headers.end(); ++header) {
       if (!header->first.starts_with("x-reduct-time-")) {
         continue;
       }
