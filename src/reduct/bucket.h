@@ -77,7 +77,7 @@ class IBucket {
   struct ReadableRecord {
     Time timestamp;
     size_t size;
-    [[deprecated]] bool last;  //< @deprecated, unreliable flag
+    bool last;
     LabelMap labels;
     std::string content_type;
 

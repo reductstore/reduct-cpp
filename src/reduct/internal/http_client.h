@@ -42,6 +42,8 @@ class IHttpClient {
 
   virtual Error Delete(std::string_view path) const noexcept = 0;
 
+  [[nodiscard]] virtual std::string_view api_version() const noexcept = 0;
+
   static std::unique_ptr<IHttpClient> Build(std::string_view url, const HttpOptions &options);
 };
 

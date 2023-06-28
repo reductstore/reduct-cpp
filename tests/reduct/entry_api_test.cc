@@ -218,27 +218,32 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
   }
 }
 
-TEST_CASE("reduct::IBucket should query records (huge blob)", "[entry_api]") {
+TEST_CASE("reduct::IBucket should query records (huge blobs)", "[entry_api]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
   REQUIRE(bucket);
 
+  auto size = GENERATE(10, 100, 10'000, 1'000'000);
+  CAPTURE(size);
+
   using us = std::chrono::microseconds;
   IBucket::Time ts{};
-  std::string blob(100000, 'x');
-  REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
+  std::string blob1(size, 'x');
+  REQUIRE(bucket->Write("entry", ts, [&blob1](auto rec) { rec->WriteAll(blob1); }) == Error::kOk);
 
-  std::string received_data;
+  std::string blob2(size - 7, 'y');
+  REQUIRE(bucket->Write("entry", ts + us(1), [&blob2](auto rec) { rec->WriteAll(blob2); }) == Error::kOk);
+
+  std::vector<std::string> received_data;
   auto err = bucket->Query("entry", ts, ts + us(3), {}, [&received_data](auto record) {
-    auto read_err = record.Read([&received_data](auto data) {
-      received_data.append(data);
-      return true;
-    });
+    auto [data, read_err] = record.ReadAll();
 
+    received_data.push_back(data);
     REQUIRE(read_err == Error::kOk);
-    return false;
+    return true;
   });
 
   REQUIRE(err == Error::kOk);
-  REQUIRE(received_data == blob);
+  REQUIRE(received_data[0] == blob1);
+  REQUIRE(received_data[1] == blob2);
 }
