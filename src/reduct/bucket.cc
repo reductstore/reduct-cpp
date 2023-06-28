@@ -274,6 +274,7 @@ class Bucket : public IBucket {
     record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
     record.size = std::stoi(headers["content-length"]);
     record.content_type = headers["content-type"];
+    record.last = headers["x-reduct-last"] == "1";
 
     for (const auto& [key, value] : headers) {
       if (key.starts_with("x-reduct-label-")) {
@@ -362,7 +363,7 @@ class Bucket : public IBucket {
     size_t total_records = std::count_if(headers.begin(), headers.end(),
                                          [](const auto& header) { return header.first.starts_with("x-reduct-time-"); });
 
-    std::map<std::string , std::string> ordered_headers(headers.begin(), headers.end());
+    std::map<std::string, std::string> ordered_headers(headers.begin(), headers.end());
     for (auto header = ordered_headers.begin(); header != ordered_headers.end(); ++header) {
       if (!header->first.starts_with("x-reduct-time-")) {
         continue;
