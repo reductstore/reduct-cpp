@@ -218,7 +218,7 @@ class Bucket : public IBucket {
 
  private:
   Result<bool> ReadRecord(std::string&& path, bool batched, const ReadRecordCallback& callback) const noexcept {
-    std::deque<std::string> data;
+    std::deque<std::optional<std::string>> data;
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
@@ -249,15 +249,17 @@ class Bucket : public IBucket {
           }
         },
         [&data, &data_mutex](auto chunk) {
-          std::lock_guard lock(data_mutex);
-          data.push_back(std::string(chunk));
+          {
+            std::lock_guard lock(data_mutex);
+            data.emplace_back(std::string(chunk));
+          }
           return true;
         });
 
     if (!err) {
       {
         std::lock_guard lock(data_mutex);
-        data.emplace_back("");
+        data.emplace_back(std::nullopt);
       }
       future.wait();
     }
@@ -265,7 +267,7 @@ class Bucket : public IBucket {
     return {stopped, err};
   }
 
-  static ReadableRecord ParseAndBuildSingleRecord(std::deque<std::string>* data, std::mutex* mutex,
+  static ReadableRecord ParseAndBuildSingleRecord(std::deque<std::optional<std::string>>* data, std::mutex* mutex,
                                                   IHttpClient::Headers&& headers) {
     ReadableRecord record;
 
@@ -281,21 +283,22 @@ class Bucket : public IBucket {
 
     record.Read = [data, mutex](auto record_callback) {
       while (true) {
-        std::optional<std::string> chunk;
+        std::optional<std::string> chunk = "";
         {
           std::lock_guard lock(*mutex);
           if (!data->empty()) {
             chunk = std::move(data->front());
+            data->pop_front();
           }
         }
 
         if (!chunk) {
-          std::this_thread::sleep_for(std::chrono::microseconds(100));
-          continue;
+          break;
         }
 
         if (chunk->empty()) {
-          break;
+          std::this_thread::sleep_for(std::chrono::microseconds(100));
+          continue;
         }
 
         if (!record_callback(std::move(*chunk))) {
@@ -308,8 +311,8 @@ class Bucket : public IBucket {
     return record;
   }
 
-  static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(std::deque<std::string>* data, std::mutex* mutex,
-                                                                 IHttpClient::Headers&& headers) {
+  static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(std::deque<std::optional<std::string>>* data,
+                                                                 std::mutex* mutex, IHttpClient::Headers&& headers) {
     auto parse_csv = [](const std::string& csv) {
       std::vector<std::string> items;
       std::string escaped, item;
@@ -374,11 +377,12 @@ class Bucket : public IBucket {
       record.Read = [data, mutex, size](auto record_callback) {
         size_t total = 0;
         while (true) {
-          std::optional<std::string> chunk;
+          std::optional<std::string> chunk = "";
           {
             std::lock_guard lock(*mutex);
             if (!data->empty()) {
               chunk = std::move(data->front());
+              data->pop_front();
 
               if (chunk->size() > size - total) {
                 auto tmp = chunk->substr(0, size - total);
@@ -389,16 +393,20 @@ class Bucket : public IBucket {
           }
 
           if (!chunk) {
+            break;
+          }
+
+          if (chunk->empty()) {
             std::this_thread::sleep_for(std::chrono::microseconds(100));
             continue;
           }
 
-          if (chunk->empty()) {
+          total += chunk->size();
+          if (!record_callback(std::move(*chunk))) {
             break;
           }
 
-          total += chunk->size();
-          if (!record_callback(std::move(*chunk))) {
+          if (total >= size) {
             break;
           }
         }
