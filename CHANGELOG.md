@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2023-06-30
+
 ### Added
 
 - Support for batched records, [PR-54](https://github.com/reductstore/reduct-cpp/pull/54)
@@ -140,7 +142,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.5.0...HEAD
+
+[1.5.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.4.0...1.5.0
 
 [1.4.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.3.0...1.4.0
 
