@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2023 Alexey Timin
 
 #include "reduct/internal/http_client.h"
 #undef CPPHTTPLIB_BROTLI_SUPPORT
@@ -68,9 +68,21 @@ class HttpClient : public IHttpClient {
     return CheckRequest(res);
   }
 
-  Error Head(std::string_view path) const noexcept override {
+  Result<Headers> Head(std::string_view path) const noexcept override {
     auto res = client_->Head(AddApiPrefix(path).data());
-    return CheckRequest(res);
+    auto err = CheckRequest(res);
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    Headers headers;
+    for (auto& [k, v] : res->headers) {
+      std::string lowcase_header = k;
+      std::transform(k.begin(), k.end(), lowcase_header.begin(), [](auto ch) { return std::tolower(ch); });
+      headers[lowcase_header] = v;
+    }
+
+    return {std::move(headers), Error::kOk};
   }
 
   Error Post(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {

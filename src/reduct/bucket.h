@@ -152,12 +152,21 @@ class IBucket {
    * Read a record in chunks
    * @param entry_name entry in bucket
    * @param ts timestamp, if it is nullopt, the method returns the latest record
-   * @param callback called with calback. To continue receiving it should return true
+   * @param callback called with callback. To continue receiving it should return true
    * @return HTTP or communication error
    */
   virtual Error Read(std::string_view entry_name, std::optional<Time> ts,
                      ReadRecordCallback callback) const noexcept = 0;
 
+  /**
+   * Read only metadata of a record
+   * @param entry_name entry in bucket
+   * @param ts timestamp, if it is nullopt, the method returns the latest record
+   * @param callback called with callback. To continue receiving it should return true
+   * @return HTTP or communication error
+   */
+  virtual Error Head(std::string_view entry_name, std::optional<Time> ts,
+                     ReadRecordCallback callback) const noexcept = 0;
   /**
    * Write a record
    * @param entry_name entry in bucket
@@ -196,6 +205,7 @@ class IBucket {
     LabelMap exclude;   ///< exclude labels
     bool continuous;    ///< continuous query. If true, the method returns the latest record and waits for the next one
     std::chrono::milliseconds poll_interval;  ///< poll interval for continuous query
+    bool head_only;     ///< read only metadata
   };
 
   /**

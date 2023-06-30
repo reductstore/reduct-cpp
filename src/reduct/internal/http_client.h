@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2023 Alexey Timin
 
 #ifndef REDUCT_CPP_HTTP_CLIENT_H
 #define REDUCT_CPP_HTTP_CLIENT_H
@@ -25,7 +25,7 @@ class IHttpClient {
 
   virtual Error Get(std::string_view path, ResponseCallback, ReadCallback) const noexcept = 0;
 
-  virtual Error Head(std::string_view path) const noexcept = 0;
+  virtual Result<Headers> Head(std::string_view path) const noexcept = 0;
 
   virtual Error Post(std::string_view path, std::string_view body,
                      std::string_view mime = "application/json") const noexcept = 0;

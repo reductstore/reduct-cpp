@@ -129,6 +129,9 @@ TEST_CASE("reduct::IBucket should write a record in chunks", "[entry_api]") {
 }
 
 TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
+  auto [head, content] = GENERATE(std::make_tuple(false, "some_data1some_data2some_data3"), std::make_tuple(true, ""));
+  CAPTURE(head);
+
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
   REQUIRE(bucket);
@@ -146,7 +149,7 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
 
   std::string all_data;
   SECTION("receive all data") {
-    auto err = bucket->Query("entry", ts, ts + us(3), {}, [&all_data](auto record) {
+    auto err = bucket->Query("entry", ts, ts + us(3), {.head_only = head}, [&all_data](auto record) {
       auto read_err = record.Read([&all_data](auto data) {
         all_data.append(data);
         return true;
@@ -157,7 +160,7 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
     });
 
     REQUIRE(err == Error::kOk);
-    REQUIRE(all_data == "some_data1some_data2some_data3");
+    REQUIRE(all_data == content);
   }
 
   SECTION("stop receiving") {
