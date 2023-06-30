@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2023 Alexey Timin
 
 #include "reduct/bucket.h"
 #define FMT_HEADER_ONLY 1
@@ -146,7 +146,17 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), false, callback);
+    auto record_err = ReadRecord(std::move(path), false, false, callback);
+    return record_err;
+  }
+
+  Error Head(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
+    auto path = fmt::format("{}/{}", path_, entry_name);
+    if (ts) {
+      path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
+    }
+
+    auto record_err = ReadRecord(std::move(path), false, true, callback);
     return record_err;
   }
 
@@ -194,7 +204,8 @@ class Bucket : public IBucket {
     while (true) {
       bool batched = client_->api_version() >= "1.5";
       auto [stopped, record_err] =
-          ReadRecord(fmt::format("{}/{}{}?q={}", path_, entry_name, batched ? "/batch" : "", id), batched, callback);
+          ReadRecord(fmt::format("{}/{}{}?q={}", path_, entry_name, batched ? "/batch" : "", id), batched,
+                     options.head_only, callback);
 
       if (stopped) {
         break;
@@ -217,47 +228,59 @@ class Bucket : public IBucket {
   }
 
  private:
-  Result<bool> ReadRecord(std::string&& path, bool batched, const ReadRecordCallback& callback) const noexcept {
+  Result<bool> ReadRecord(std::string&& path, bool batched, bool head,
+                          const ReadRecordCallback& callback) const noexcept {
     std::deque<std::optional<std::string>> data;
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
 
-    auto err = client_->Get(
-        path,
-        [&stopped, &data, &data_mutex, &callback, &future, batched, this](IHttpClient::Headers&& headers) {
-          std::vector<ReadableRecord> records;
-          if (batched) {
-            records = ParseAndBuildBatchedRecords(&data, &data_mutex, std::move(headers));
-          } else {
-            records.push_back(ParseAndBuildSingleRecord(&data, &data_mutex, std::move(headers)));
-          }
+    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, batched, head,
+                                           this](IHttpClient::Headers&& headers) {
+      std::vector<ReadableRecord> records;
+      if (batched) {
+        records = ParseAndBuildBatchedRecords(&data, &data_mutex, head, std::move(headers));
+      } else {
+        records.push_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(headers)));
+      }
 
-          for (auto& record : records) {
-            Task task([record = std::move(record), &callback, &stopped] {
-              if (stopped) {
-                return;
-              }
-              stopped = !callback(record);
-              if (!stopped) {
-                stopped = record.last;
-              }
-            });
-
-            future = task.get_future();
-            task_queue_.enqueue(std::move(task));
+      for (auto& record : records) {
+        Task task([record = std::move(record), &callback, &stopped] {
+          if (stopped) {
+            return;
           }
-        },
-        [&data, &data_mutex](auto chunk) {
-          {
-            std::lock_guard lock(data_mutex);
-            data.emplace_back(std::string(chunk));
+          stopped = !callback(record);
+          if (!stopped) {
+            stopped = record.last;
           }
-          return true;
         });
 
+        future = task.get_future();
+        task_queue_.enqueue(std::move(task));
+      }
+    };
+
+    Error err;
+    if (head) {
+      auto ret = client_->Head(path);
+      if (ret.error) {
+        err = ret.error;
+      } else {
+        parse_headers_and_receive_data(std::move(ret.result));
+      }
+    } else {
+      err = client_->Get(path, parse_headers_and_receive_data, [&data, &data_mutex](auto chunk) {
+        {
+          std::lock_guard lock(data_mutex);
+          data.emplace_back(std::string(chunk));
+        }
+        return true;
+      });
+    }
+
     if (!err) {
-      {
+      if (!head) {
+        // we use nullptr to indicate the end of the stream
         std::lock_guard lock(data_mutex);
         data.emplace_back(std::nullopt);
       }
@@ -268,7 +291,7 @@ class Bucket : public IBucket {
   }
 
   static ReadableRecord ParseAndBuildSingleRecord(std::deque<std::optional<std::string>>* data, std::mutex* mutex,
-                                                  IHttpClient::Headers&& headers) {
+                                                  bool head, IHttpClient::Headers&& headers) {
     ReadableRecord record;
 
     record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
@@ -282,7 +305,11 @@ class Bucket : public IBucket {
       }
     }
 
-    record.Read = [data, mutex](auto record_callback) {
+    record.Read = [data, mutex, head](auto record_callback) {
+      if (head) {
+        return Error::kOk;
+      }
+
       while (true) {
         std::optional<std::string> chunk = "";
         {
@@ -313,7 +340,8 @@ class Bucket : public IBucket {
   }
 
   static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(std::deque<std::optional<std::string>>* data,
-                                                                 std::mutex* mutex, IHttpClient::Headers&& headers) {
+                                                                 std::mutex* mutex, bool head,
+                                                                 IHttpClient::Headers&& headers) {
     auto parse_csv = [](const std::string& csv) {
       std::vector<std::string> items;
       std::string escaped, item;
@@ -376,45 +404,49 @@ class Bucket : public IBucket {
       record.size = size;
       record.content_type = content_type;
       record.labels = labels;
-      record.Read = [data, mutex, size](auto record_callback) {
-        size_t total = 0;
-        while (true) {
-          std::optional<std::string> chunk = "";
-          {
-            std::lock_guard lock(*mutex);
-            if (!data->empty()) {
-              chunk = std::move(data->front());
-              data->pop_front();
+      record.Read = [data, mutex, size, head](auto record_callback) {
+            if (head) {
+              return Error::kOk;
+            }
 
-              if (chunk->size() > size - total) {
-                auto tmp = chunk->substr(0, size - total);
-                data->push_front(chunk->substr(size - total));
-                chunk = std::move(tmp);
+            size_t total = 0;
+            while (true) {
+              std::optional<std::string> chunk = "";
+              {
+                std::lock_guard lock(*mutex);
+                if (!data->empty()) {
+                  chunk = std::move(data->front());
+                  data->pop_front();
+
+                  if (chunk->size() > size - total) {
+                    auto tmp = chunk->substr(0, size - total);
+                    data->push_front(chunk->substr(size - total));
+                    chunk = std::move(tmp);
+                  }
+                }
+              }
+
+              if (!chunk) {
+                break;
+              }
+
+              if (chunk->empty()) {
+                std::this_thread::sleep_for(std::chrono::microseconds(100));
+                continue;
+              }
+
+              total += chunk->size();
+              if (!record_callback(std::move(*chunk))) {
+                break;
+              }
+
+              if (total >= size) {
+                break;
               }
             }
-          }
 
-          if (!chunk) {
-            break;
-          }
-
-          if (chunk->empty()) {
-            std::this_thread::sleep_for(std::chrono::microseconds(100));
-            continue;
-          }
-
-          total += chunk->size();
-          if (!record_callback(std::move(*chunk))) {
-            break;
-          }
-
-          if (total >= size) {
-            break;
-          }
-        }
-
-        return Error::kOk;
-      };
+            return Error::kOk;
+          };
 
       record.last = (records.size() == total_records - 1 && headers["x-reduct-last"] == "true");
       records.push_back(std::move(record));

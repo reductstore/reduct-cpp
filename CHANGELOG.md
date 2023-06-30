@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for batched records, [PR-54](https://github.com/reductstore/reduct-cpp/pull/54)
+- Option to read only metadata of a record, [PR-55](https://github.com/reductstore/reduct-cpp/pull/55)
 
 ## [1.4.0] - 2023-06-04
 

@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2023 Alexey Timin
 
 #include "reduct/client.h"
 
@@ -78,7 +78,7 @@ class Client : public IClient {
   }
 
   [[nodiscard]] UPtrResult<IBucket> GetBucket(std::string_view name) const noexcept override {
-    auto err = client_->Head(fmt::format("/b/{}", name));
+    auto [_, err] = client_->Head(fmt::format("/b/{}", name));
     if (err) {
       if (err.code == 404) {
         err.message = fmt::format("Bucket '{}' is not found", name);
