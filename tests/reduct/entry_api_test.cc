@@ -250,3 +250,28 @@ TEST_CASE("reduct::IBucket should query records (huge blobs)", "[entry_api]") {
   REQUIRE(received_data[0] == blob1);
   REQUIRE(received_data[1] == blob2);
 }
+
+TEST_CASE("reduct::IBucket should limit records in a query", "[entry_api][1_6]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("bucket_1");
+  REQUIRE(bucket);
+
+  int count;
+  auto err =
+      bucket->Query("entry-1", IBucket::Time{}, IBucket::Time::clock::now(), {.limit = 1}, [&count](auto record) {
+        count++;
+        return true;
+      });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(count == 1);
+
+  count = 0;
+  err = bucket->Query("entry-1", IBucket::Time{}, IBucket::Time::clock::now(), {.limit = 2}, [&count](auto record) {
+    count++;
+    return true;
+  });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(count == 2);
+}
