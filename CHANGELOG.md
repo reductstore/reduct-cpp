@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `IBucket.RemoveEntry` to remove entry from bucket, [PR-57](https://github.com/reductstore/reduct-cpp/pull/57)
+- `QueryOption.limit` to limit the number of records returned by a query, [PR-58](https://github.com/reductstore/reduct-cpp/pull/58)
 
 ## [1.5.0] - 2023-06-30
 

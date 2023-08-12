@@ -184,6 +184,10 @@ class Bucket : public IBucket {
       url += "continuous=true&";
     }
 
+    if (options.limit) {
+      url += fmt::format("limit={}&", *options.limit);
+    }
+
     for (const auto& [key, value] : options.include) {
       url += fmt::format("&include-{}={}", key, value);
     }

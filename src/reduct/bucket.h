@@ -206,6 +206,7 @@ class IBucket {
     bool continuous;    ///< continuous query. If true, the method returns the latest record and waits for the next one
     std::chrono::milliseconds poll_interval;  ///< poll interval for continuous query
     bool head_only;     ///< read only metadata
+    std::optional<size_t> limit;  ///< limit number of records
   };
 
   /**
