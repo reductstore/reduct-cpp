@@ -118,6 +118,10 @@ class Bucket : public IBucket {
 
   Error Remove() const noexcept override { return client_->Delete(path_); }
 
+  Error RemoveEntry(std::string_view entry_name) const noexcept override {
+    return client_->Delete(fmt::format("{}/{}", path_, entry_name));
+  }
+
   Error Write(std::string_view entry_name, std::optional<Time> ts,
               WriteRecordCallback callback) const noexcept override {
     return Write(entry_name, {.timestamp = ts}, std::move(callback));
@@ -405,48 +409,48 @@ class Bucket : public IBucket {
       record.content_type = content_type;
       record.labels = labels;
       record.Read = [data, mutex, size, head](auto record_callback) {
-            if (head) {
-              return Error::kOk;
-            }
+        if (head) {
+          return Error::kOk;
+        }
 
-            size_t total = 0;
-            while (true) {
-              std::optional<std::string> chunk = "";
-              {
-                std::lock_guard lock(*mutex);
-                if (!data->empty()) {
-                  chunk = std::move(data->front());
-                  data->pop_front();
+        size_t total = 0;
+        while (true) {
+          std::optional<std::string> chunk = "";
+          {
+            std::lock_guard lock(*mutex);
+            if (!data->empty()) {
+              chunk = std::move(data->front());
+              data->pop_front();
 
-                  if (chunk->size() > size - total) {
-                    auto tmp = chunk->substr(0, size - total);
-                    data->push_front(chunk->substr(size - total));
-                    chunk = std::move(tmp);
-                  }
-                }
-              }
-
-              if (!chunk) {
-                break;
-              }
-
-              if (chunk->empty()) {
-                std::this_thread::sleep_for(std::chrono::microseconds(100));
-                continue;
-              }
-
-              total += chunk->size();
-              if (!record_callback(std::move(*chunk))) {
-                break;
-              }
-
-              if (total >= size) {
-                break;
+              if (chunk->size() > size - total) {
+                auto tmp = chunk->substr(0, size - total);
+                data->push_front(chunk->substr(size - total));
+                chunk = std::move(tmp);
               }
             }
+          }
 
-            return Error::kOk;
-          };
+          if (!chunk) {
+            break;
+          }
+
+          if (chunk->empty()) {
+            std::this_thread::sleep_for(std::chrono::microseconds(100));
+            continue;
+          }
+
+          total += chunk->size();
+          if (!record_callback(std::move(*chunk))) {
+            break;
+          }
+
+          if (total >= size) {
+            break;
+          }
+        }
+
+        return Error::kOk;
+      };
 
       record.last = (records.size() == total_records - 1 && headers["x-reduct-last"] == "true");
       records.push_back(std::move(record));

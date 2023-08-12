@@ -116,7 +116,7 @@ class IBucket {
    */
   struct WritableRecord {
     /**
-     * A write callback is called when HTTP Client is ready to send a chunk with data.
+     * A write ccallbackallback is called when HTTP Client is ready to send a chunk with data.
      * @returns last flag and data to write
      */
     using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
@@ -250,6 +250,13 @@ class IBucket {
    * @return HTTP or communication error
    */
   virtual Error Remove() const noexcept = 0;
+
+  /**
+   * @brief Remove an entry from the bucket
+   * @param entry_name
+   * @return HTTP or communication error
+   */
+  virtual Error RemoveEntry(std::string_view entry_name) const noexcept = 0;
 
   /**
    * @brief Creates a new bucket

@@ -162,3 +162,17 @@ TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api]") {
   REQUIRE(bucket->Remove() == Error::kOk);
   REQUIRE(bucket->Remove() == Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
 }
+
+TEST_CASE("reduct::IBucket should remove entry", "[bucket_api][1_6]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", t, [](auto record) { record->WriteAll("some_data"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-2", t + std::chrono::seconds(1), [](auto record) { record->WriteAll("some_data"); }) ==
+          Error::kOk);
+
+  REQUIRE(bucket->RemoveEntry("entry-1") == Error::kOk);
+  REQUIRE(bucket->RemoveEntry("entry-1") ==
+          Error{.code = 404, .message = fmt::format("Entry 'entry-1' not found in bucket '{}'", kBucketName)});
+}
