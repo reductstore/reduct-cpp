@@ -63,13 +63,13 @@ jobs:
         reductstore_version: [ "main", "latest" ]
         include:
           - token: ""
-            exclude_api_tag: "~[token_api]"
+            exclude_token_api_tag: "~[token_api]"
           - token: "TOKEN"
-            exclude_api_tag: ""
+            exclude_token_api_tag: ""
           - reductstore_version: "main"
-            exclude_api_tag: ""
+            exclude_api_version_tag: ""
           - reductstore_version: "latest"
-            exclude_api_tag: "~[1_6]"
+            exclude_api_version_tag: "~[1_6]"
 
     needs:
       - build
@@ -86,5 +86,5 @@ jobs:
       - uses: ./.github/actions/run-tests
         with:
           api-token: ${{matrix.token}}
-          tags: "${{matrix.exclude_api_tag}} ${{matrix.exclude_api_tag}}"
+          tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}}"
           reductstore-version: ${{matrix.reductstore_version}}
