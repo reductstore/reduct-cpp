@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `IBucket.RemoveEntry` to remove entry from bucket, [PR-57](https://github.com/reductstore/reduct-cpp/pull/57)
+
 ## [1.5.0] - 2023-06-30
 
 ### Added
