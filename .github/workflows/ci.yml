@@ -63,9 +63,14 @@ jobs:
         reductstore_version: [ "main", "latest" ]
         include:
           - token: ""
-            tags: "~[token_api]"
+            exclude_api_tag: "~[token_api]"
           - token: "TOKEN"
-            tags: ""
+            exclude_api_tag: ""
+          - reductstore_version: "main"
+            exclude_api_tag: ""
+          - reductstore_version: "latest"
+            exclude_api_tag: "1_6"
+
     needs:
       - build
       - test-pkg-with-conan
@@ -81,5 +86,5 @@ jobs:
       - uses: ./.github/actions/run-tests
         with:
           api-token: ${{matrix.token}}
-          tags: ${{matrix.tags}}
+          tags: ${{matrix.exclude_api_tag}} ${{matrix.exclude_api_tag}}
           reductstore-version: ${{matrix.reductstore_version}}
