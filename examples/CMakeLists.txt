@@ -8,10 +8,9 @@ find_package(OpenSSL)
 
 
 
-find_package(ReductCpp 1.4.0)
+find_package(ReductCpp 1.6.0)
 
 add_executable(usage-example usage_example.cc)
 add_executable(subscription subscription.cc)
 target_link_libraries(usage-example ${REDUCT_CPP_LIBRARIES} ${ZLIB_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(subscription ${REDUCT_CPP_LIBRARIES} ${ZLIB_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
-
