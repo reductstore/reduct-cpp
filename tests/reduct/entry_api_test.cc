@@ -13,6 +13,7 @@ using reduct::IBucket;
 using reduct::IClient;
 
 const auto kBucketName = "bucket";
+using us = std::chrono::microseconds;
 
 TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   Fixture ctx;
@@ -136,7 +137,6 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
   REQUIRE(bucket);
 
-  using us = std::chrono::microseconds;
   IBucket::Time ts{};
   REQUIRE(bucket->Write("entry",
                         IBucket::WriteOptions{
@@ -274,4 +274,66 @@ TEST_CASE("reduct::IBucket should limit records in a query", "[entry_api][1_6]")
 
   REQUIRE(err == Error::kOk);
   REQUIRE(count == 2);
+}
+
+TEST_CASE("reduct::IBucket should write batch of records", "[bucket_api][1_7]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket
+              ->WriteBatch(
+                  "entry-1",
+                  [t](IBucket::Batch* batch) {
+                    batch->AddRecord(t, "some_data1");
+                    batch->AddRecord(t + us(1), "some_data2", "text/plain");
+                    batch->AddRecord(t + us(2), "some_data3", "text/plain", {{"key1", "value1"}, {"key2", "value2"}});
+                  })
+              .error == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-1", t, [](auto record) {
+    auto [data, err] = record.ReadAll();
+    REQUIRE(err == Error::kOk);
+    REQUIRE(data == "some_data1");
+    REQUIRE(record.content_type == "application/octet-stream");
+    REQUIRE(record.labels.empty());
+    return true;
+  }) == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) {
+    auto [data, err] = record.ReadAll();
+    REQUIRE(err == Error::kOk);
+    REQUIRE(data == "some_data2");
+    REQUIRE(record.content_type == "text/plain");
+    REQUIRE(record.labels.empty());
+    return true;
+  }) == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) {
+    auto [data, err] = record.ReadAll();
+    REQUIRE(err == Error::kOk);
+    REQUIRE(data == "some_data3");
+    REQUIRE(record.content_type == "text/plain");
+    REQUIRE(record.labels == std::map<std::string, std::string>{{"key1", "value1"}, {"key2", "value2"}});
+    return true;
+  }) == Error::kOk);
+}
+
+TEST_CASE("reduct::IBucket should write batch of records with errors", "[bucket_api][1_7]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+
+  REQUIRE(bucket->Write("entry-1", t, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  auto [record_errors, http_error] = bucket->WriteBatch("entry-1", [t](IBucket::Batch* batch) {
+    batch->AddRecord(t, "some_data1");
+    batch->AddRecord(t + us(1), "some_data2", "text/plain");
+    batch->AddRecord(t + us(2), "some_data3", "text/plain", {{"key1", "value1"}, {"key2", "value2"}});
+  });
+
+  REQUIRE(http_error == Error::kOk);
+  REQUIRE(record_errors.size() == 1);
+  REQUIRE(record_errors[t].code == 409);
+  REQUIRE(record_errors[t].message == "A record with timestamp 0 already exists");
 }

@@ -100,8 +100,8 @@ class HttpClient : public IHttpClient {
     return {std::move(res->body), Error::kOk};
   }
 
-  Error Post(std::string_view path, std::string_view mime, size_t content_length, Headers headers,
-             WriteCallback callback) const noexcept override {
+  Result<Headers> Post(std::string_view path, std::string_view mime, size_t content_length, Headers headers,
+                       WriteCallback callback) const noexcept override {
     httplib::Headers httplib_headers;
     for (auto& [k, v] : headers) {
       httplib_headers.emplace(k, v);
@@ -115,7 +115,19 @@ class HttpClient : public IHttpClient {
           return ok;
         },
         mime.data());
-    return CheckRequest(res);
+
+    if (auto err = CheckRequest(res)) {
+      return {{}, std::move(err)};
+    }
+
+    Headers response_headers;
+    for (auto& [k, v] : res->headers) {
+      std::string lowcase_header = k;
+      std::transform(k.begin(), k.end(), lowcase_header.begin(), [](auto ch) { return std::tolower(ch); });
+      response_headers[lowcase_header] = v;
+    }
+
+    return {std::move(response_headers), Error::kOk};
   }
 
   Error Put(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {

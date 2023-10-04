@@ -53,6 +53,7 @@ TEST_CASE("reduct::Client should get token", "[token_api]") {
   REQUIRE(err == Error::kOk);
   REQUIRE(token.name == "test-token");
   REQUIRE(token.created_at.time_since_epoch().count() > 0);
+  REQUIRE(token.is_provisioned == false);
   REQUIRE(token.permissions.full_access == permissions.full_access);
   REQUIRE(token.permissions.read == permissions.read);
   REQUIRE(token.permissions.write == permissions.write);
