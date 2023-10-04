@@ -7,12 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- support for ReductStore API v1.7 with `IBucket::WriteBatch` and `is_provisioned` field for `BucketInfo` and `Token`
+  structs, [PR-60](https://github.com/reductstore/reduct-cpp/pull/60)
+
 ### [1.6.0] - 2023-08-15
 
 ### Added
 
 - `IBucket.RemoveEntry` to remove entry from bucket, [PR-57](https://github.com/reductstore/reduct-cpp/pull/57)
-- `QueryOption.limit` to limit the number of records returned by a query, [PR-58](https://github.com/reductstore/reduct-cpp/pull/58)
+- `QueryOption.limit` to limit the number of records returned by a
+  query, [PR-58](https://github.com/reductstore/reduct-cpp/pull/58)
 
 ## [1.5.0] - 2023-06-30
 
