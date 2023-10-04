@@ -81,6 +81,7 @@ class Bucket : public IBucket {
               .size = info.at("size"),
               .oldest_record = Time() + std::chrono::microseconds(info.at("oldest_record")),
               .latest_record = Time() + std::chrono::microseconds(info.at("latest_record")),
+              .is_provisioned = info.value("is_provisioned", false),
           },
           Error::kOk,
       };
@@ -490,9 +491,11 @@ std::ostream& operator<<(std::ostream& os, const reduct::IBucket::Settings& sett
 }
 
 std::ostream& operator<<(std::ostream& os, const IBucket::BucketInfo& info) {
-  os << fmt::format("<BucketInfo name={}, entry_count={}, size={}, oldest_record={}, latest_record={}>", info.name,
-                    info.entry_count, info.size, info.oldest_record.time_since_epoch().count() / 1000,
-                    info.latest_record.time_since_epoch().count() / 1000);
+  os << fmt::format(
+      "<BucketInfo name={}, entry_count={}, size={}, "
+      "oldest_record={}, latest_record={}, is_provisioned={}>",
+      info.name, info.entry_count, info.size, info.oldest_record.time_since_epoch().count() / 1000,
+      info.latest_record.time_since_epoch().count() / 1000, info.is_provisioned ? "true" : "false");
   return os;
 }
 

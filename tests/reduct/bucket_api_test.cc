@@ -125,6 +125,7 @@ TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
                       .size = 18,
                       .oldest_record = t,
                       .latest_record = t + std::chrono::seconds(1),
+                      .is_provisioned = false,
                   });
 }
 

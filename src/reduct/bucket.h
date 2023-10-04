@@ -44,11 +44,12 @@ class IBucket {
    * Stats of bucket
    */
   struct BucketInfo {
-    std::string name;    // name of bucket
-    size_t entry_count;  // number of entries in the bucket
-    size_t size;         // size of stored data in the bucket in bytes
-    Time oldest_record;  // timestamp of the oldest record in the bucket
-    Time latest_record;  // timestamp of the latest record in the bucket
+    std::string name;     // name of bucket
+    size_t entry_count;   // number of entries in the bucket
+    size_t size;          // size of stored data in the bucket in bytes
+    Time oldest_record;   // timestamp of the oldest record in the bucket
+    Time latest_record;   // timestamp of the latest record in the bucket
+    bool is_provisioned;  // is bucket provisioned, you can't remove it or change settings
 
     bool operator<=>(const BucketInfo&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const BucketInfo& info);
@@ -200,13 +201,13 @@ class IBucket {
    * Query options
    */
   struct QueryOptions {
-    std::optional<std::chrono::milliseconds> ttl;    ///< time to live
-    LabelMap include;   ///< include labels
-    LabelMap exclude;   ///< exclude labels
-    bool continuous;    ///< continuous query. If true, the method returns the latest record and waits for the next one
+    std::optional<std::chrono::milliseconds> ttl;  ///< time to live
+    LabelMap include;                              ///< include labels
+    LabelMap exclude;                              ///< exclude labels
+    bool continuous;  ///< continuous query. If true, the method returns the latest record and waits for the next one
     std::chrono::milliseconds poll_interval;  ///< poll interval for continuous query
-    bool head_only;     ///< read only metadata
-    std::optional<size_t> limit;  ///< limit number of records
+    bool head_only;                           ///< read only metadata
+    std::optional<size_t> limit;              ///< limit number of records
   };
 
   /**

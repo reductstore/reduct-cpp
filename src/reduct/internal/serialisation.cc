@@ -71,6 +71,7 @@ Result<IClient::FullTokenInfo> ParseTokenInfo(const nlohmann::json& json) noexce
       IClient::FullTokenInfo{
           .name = json.at("name"),
           .created_at = created_at,
+          .is_provisioned = json.value("is_provisioned", false),
           .permissions = {.full_access = json.at("permissions").at("full_access"),
                           .read = json.at("permissions").at("read"),
                           .write = json.at("permissions").at("write")},
