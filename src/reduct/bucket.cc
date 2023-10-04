@@ -145,6 +145,53 @@ class Bucket : public IBucket {
                          std::move(headers), std::move(record.callback_));
   }
 
+  Result<WriteBatchErrors> WriteBatch(std::string_view entry_name,
+                                      WriteBatchCallback callback) const noexcept override {
+    Batch batch;
+    callback(&batch);
+
+    IHttpClient::Headers headers;
+    for (const auto& [time, record] : batch.records()) {
+      std::vector<std::string> labels;
+      for (const auto& [label_key, label_value] : record.labels) {
+        if (label_key.find(',') == std::string::npos) {
+          labels.push_back(fmt::format("{}={}", label_key, label_value));
+        } else {
+          labels.push_back(fmt::format("{}=\"{}\"", label_key, label_value));
+        }
+      }
+
+      const auto key = fmt::format("x-reduct-time-{}", ToMicroseconds(time));
+      const auto value = fmt::format("{},{},{}", record.size, record.content_type, fmt::join(labels, ","));
+      headers.emplace(key, value);
+    }
+
+    const auto content_length = batch.body().size();
+    auto [resp_headers, err] =
+        client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
+                      std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
+                        return std::pair{batch.body().size() <= offset + size, batch.body().substr(offset, size)};
+                      });
+    if (err) {
+      return {{}, err};
+    }
+
+    WriteBatchErrors errors;
+    for (const auto& [key, value] : resp_headers) {
+      if (key.starts_with("x-reduct-error-")) {
+        auto pos = value.find(',');
+        if (pos == std::string::npos) {
+          continue;
+        }
+        auto status = std::stoi(value.substr(0, pos));
+        auto message = value.substr(pos + 1);
+        errors.emplace(FromMicroseconds(key.substr(15)), Error{.code = status, .message = message});
+      }
+    }
+
+    return {errors, Error::kOk};
+  }
+
   Error Read(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
     auto path = fmt::format("{}/{}", path_, entry_name);
     if (ts) {

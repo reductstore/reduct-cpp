@@ -8,6 +8,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "reduct/error.h"
@@ -150,6 +151,42 @@ class IBucket {
   using WriteRecordCallback = std::function<void(WritableRecord*)>;
 
   /**
+   * Batch of records
+   */
+  class Batch {
+   public:
+    struct Record {
+      Time timestamp;
+      size_t size;
+      std::string content_type;
+      LabelMap labels;
+    };
+
+    /**
+     * Add a record to batch
+     * @param timestamp
+     * @param data
+     * @param content_type
+     * @param labels
+     */
+    void AddRecord(Time timestamp, const std::string& data, std::string content_type = "application/octet-stream",
+                   LabelMap labels = {}) {
+      records_[timestamp] = Record{timestamp, data.size(), std::move(content_type), std::move(labels)};
+      body_ += data;
+    }
+
+    [[nodiscard]] const std::map<Time, Record>& records() const { return records_; }
+    [[nodiscard]] const std::string& body() const { return body_; }
+
+   private:
+    std::map<Time, Record> records_;
+    std::string body_;
+  };
+
+  using WriteBatchCallback = std::function<void(Batch*)>;
+  using WriteBatchErrors = std::map<Time, Error>;
+
+  /**
    * Read a record in chunks
    * @param entry_name entry in bucket
    * @param ts timestamp, if it is nullopt, the method returns the latest record
@@ -196,6 +233,15 @@ class IBucket {
    */
   virtual Error Write(std::string_view entry_name, const WriteOptions& options,
                       WriteRecordCallback callback) const noexcept = 0;
+
+  /**
+   * Write a batch of records in one HTTP request
+   * @param entry_name entry in bucket
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  [[nodiscard]] virtual Result<WriteBatchErrors> WriteBatch(std::string_view entry_name,
+                           WriteBatchCallback callback) const noexcept = 0;
 
   /**
    * Query options

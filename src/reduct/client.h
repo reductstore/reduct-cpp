@@ -106,8 +106,8 @@ class IClient {
    * Token with permissions
    */
   struct FullTokenInfo {
-    std::string name;  // name of token
-    Time created_at;   // creation time
+    std::string name;     // name of token
+    Time created_at;      // creation time
     bool is_provisioned;  // true if token is provisioned, you can't remove it or change its permissions
 
     Permissions permissions;
@@ -119,14 +119,14 @@ class IClient {
    * @brief Get list of tokens
    * @return the list or an error
    */
-  virtual Result<std::vector<Token>> GetTokenList() const noexcept = 0;
+  [[nodiscard]] virtual Result<std::vector<Token>> GetTokenList() const noexcept = 0;
 
   /**
    * @brief Get information about token
    * @param name name of token
    * @return token info or an error
    */
-  virtual Result<FullTokenInfo> GetToken(std::string_view name) const noexcept = 0;
+  [[nodiscard]] virtual Result<FullTokenInfo> GetToken(std::string_view name) const noexcept = 0;
 
   /**
    * @brief Create a new token
@@ -134,7 +134,8 @@ class IClient {
    * @param permissions permissions for token
    * @return token value or an error
    */
-  virtual Result<std::string> CreateToken(std::string_view name, Permissions permissions) const noexcept = 0;
+  [[nodiscard]] virtual Result<std::string> CreateToken(std::string_view name,
+                                                        Permissions permissions) const noexcept = 0;
 
   /**
    * @brief Update token permissions
@@ -145,23 +146,23 @@ class IClient {
   virtual Error RemoveToken(std::string_view name) const noexcept = 0;
 
   /**
- * @brief Returns information about the currently authenticated token.
- *
- * Makes a GET request to the '/me' endpoint using the client object stored as a member variable.
- *
- * @return A Result object containing a FullTokenInfo object or an Error object.
- *
- * Example:
- *
- * MyClass obj;
- * auto [token_info, err] = obj.Me();
- * if (err) {
- *   std::cerr << err << std::endl;
- * } else {
- *   std::cout << token_info.name << std::endl;
- * }
+   * @brief Returns information about the currently authenticated token.
+   *
+   * Makes a GET request to the '/me' endpoint using the client object stored as a member variable.
+   *
+   * @return A Result object containing a FullTokenInfo object or an Error object.
+   *
+   * Example:
+   *
+   * MyClass obj;
+   * auto [token_info, err] = obj.Me();
+   * if (err) {
+   *   std::cerr << err << std::endl;
+   * } else {
+   *   std::cout << token_info.name << std::endl;
+   * }
    */
-  virtual Result<FullTokenInfo> Me() const noexcept = 0;
+  [[nodiscard]] virtual Result<FullTokenInfo> Me() const noexcept = 0;
 
   /**
    * @brief Build a client
