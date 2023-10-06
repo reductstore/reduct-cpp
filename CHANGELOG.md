@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - support for ReductStore API v1.7 with `IBucket::WriteBatch` and `is_provisioned` field for `BucketInfo` and `Token`
   structs, [PR-60](https://github.com/reductstore/reduct-cpp/pull/60)
 
+### Fixed
+
+- RTHD build, [PR-61](https://github.com/reductstore/reduct-cpp/pull/61)
+
 ### [1.6.0] - 2023-08-15
 
 ### Added
