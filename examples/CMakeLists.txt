@@ -8,7 +8,7 @@ find_package(OpenSSL)
 
 
 
-find_package(ReductCpp 1.6.0)
+find_package(ReductCpp 1.7.0)
 
 add_executable(usage-example usage_example.cc)
 add_executable(subscription subscription.cc)

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### [1.7.0] - 2023-10-06
+
 ### Added
 
 - support for ReductStore API v1.7 with `IBucket::WriteBatch` and `is_provisioned` field for `BucketInfo` and `Token`
@@ -159,7 +161,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.7.0...HEAD
+
+[1.7.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.6.0...1.7.0
 
 [1.6.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.5.0...1.6.0
 
