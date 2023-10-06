@@ -39,13 +39,13 @@ touch CMakeLists.txt main.cc
 Here is the `CMakeLists.txt` file:
 
 ```cmake title="CMakelists.txt"
---8<-- "../examples/CMakeLists.txt:"
+--8<-- "./examples/CMakeLists.txt:"
 ```
 
 And here is the code in `main.cc`:
 
 ```cpp title="main.cc"
---8<-- "../examples/usage_example.cc:"
+--8<-- "./examples/usage_example.cc:"
 ```
 
 To compile the example, use the following commands:
