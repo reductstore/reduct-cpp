@@ -143,7 +143,7 @@ class IBucket {
     void WriteAll(std::string data) {
       content_length_ = data.size();
       callback_ = [data = std::move(data)](size_t offset, size_t size) {
-        return std::pair{data.size() <= offset + size, data.substr(offset, size)};
+        return std::pair{true, data.substr(offset, size)};
       };
     }
   };
