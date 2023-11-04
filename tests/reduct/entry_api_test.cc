@@ -83,7 +83,7 @@ TEST_CASE("reduct::IBucket should read a record in chunks", "[entry_api]") {
   REQUIRE(bucket);
 
   IBucket::Time ts = IBucket::Time::clock::now();
-  const std::string blob(10'000, 'x');
+  const std::string blob(10'000'000, 'x');
   REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
 
   std::string received;
@@ -108,7 +108,7 @@ TEST_CASE("reduct::IBucket should write a record in chunks", "[entry_api]") {
   REQUIRE(bucket);
 
   IBucket::Time ts = IBucket::Time::clock::now();
-  const std::string blob(10'000, 'x');
+  const std::string blob(10'000'000, 'x');
   REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) {
     rec->Write(blob.size(), [&](auto offset, auto size) {
       return std::pair{

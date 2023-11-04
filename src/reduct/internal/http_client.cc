@@ -13,7 +13,7 @@ namespace reduct::internal {
 
 using httplib::DataSink;
 
-constexpr size_t kMaxChunkSize = 1'000'000;
+constexpr size_t kMaxChunkSize = 512'000;
 
 class HttpClient : public IHttpClient {
  public:
