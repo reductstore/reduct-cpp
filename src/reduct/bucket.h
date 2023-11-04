@@ -208,7 +208,7 @@ class IBucket {
   /**
    * Write a record
    * @param entry_name entry in bucket
-   * @param ts timestamp, if it is nullopt, the method returns the latest record
+   * @param ts timestamp, if it is nullopt, the method will use current time
    * @param callback
    * @return HTTP or communication error
    */
