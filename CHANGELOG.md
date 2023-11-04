@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Fixed:
+
+- RS-68: Fix writing blobs bigger than 512Kb, [PR-62](https://github.com/reductstore/reduct-cpp/pull/62)
+
 ### [1.7.0] - 2023-10-06
 
 ### Added
