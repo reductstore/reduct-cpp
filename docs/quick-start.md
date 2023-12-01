@@ -71,5 +71,5 @@ You can then run the example with the following command:
 ## Next Steps
 
 You can find more detailed documentation and examples in [the Reference API section](docs/api_reference/). You can also
-refer to the [ReductStore HTTP API](https://docs.reduct.store/http-api) documentation for a complete reference
+refer to the [ReductStore HTTP API](https://reduct.store/docs/http-api) documentation for a complete reference
 of the available API calls.
