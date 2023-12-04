@@ -93,4 +93,4 @@ find_package(ReductCpp)
 ## References
 
 * [Documentation](https://cpp.reduct.store)
-* [ReductStore HTTP API](https://docs.reduct.store/http-api)
+* [ReductStore HTTP API](https://reduct.store/docs/http-api)

@@ -1,7 +1,7 @@
 # 📒 API Reference
 
 The API reference for the SDK provides information on how to communicate
-with [ReductStore via HTTP]((https://docs.reduct.store). The SDK is designed
+with [ReductStore via HTTP]((https://reduct.store/docs). The SDK is designed
 to hide implementation details in .cc files, allowing users to work with abstract interfaces and factory methods.
 
 ## Error Handling
