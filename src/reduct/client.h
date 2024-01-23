@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #ifndef REDUCT_CPP_CLIENT_H
 #define REDUCT_CPP_CLIENT_H
@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "diagnostics.h"
 #include "reduct/bucket.h"
 #include "reduct/error.h"
 #include "reduct/http_options.h"
@@ -151,18 +152,39 @@ class IClient {
    * Makes a GET request to the '/me' endpoint using the client object stored as a member variable.
    *
    * @return A Result object containing a FullTokenInfo object or an Error object.
-   *
-   * Example:
-   *
-   * MyClass obj;
-   * auto [token_info, err] = obj.Me();
-   * if (err) {
-   *   std::cerr << err << std::endl;
-   * } else {
-   *   std::cout << token_info.name << std::endl;
-   * }
    */
   [[nodiscard]] virtual Result<FullTokenInfo> Me() const noexcept = 0;
+
+  struct ReplicationInfo {
+    std::string name;  // Replication name
+    bool is_active;  // Remote instance is available and replication is active
+    bool is_provisioned;  // Replication settings
+    uint64_t pending_records;  // Number of records pending replication
+
+    bool operator<=>(const ReplicationInfo&) const = default;
+  };
+
+  struct ReplicationSettings {
+    std::string src_bucket;  // Source bucket
+    std::string dst_bucket;  // Destination bucket
+    std::string dst_host;    // Destination host URL (e.g. https://reductstore.com)
+    std::string dst_token;   // Destination access token
+    std::vector<std::string>
+        entries;                // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
+    IBucket::LabelMap include;  // Labels to include
+    IBucket::LabelMap exclude;  // Labels to exclude
+
+    bool operator<=>(const ReplicationSettings&) const = default;
+  };
+
+  struct ReplicationFullInfo {
+    ReplicationInfo info;  // Replication info
+    ReplicationSettings settings;  // Replication settings
+    Diagnostics diagnostics;  // Diagnostics
+
+    bool operator ==(const ReplicationFullInfo&) const = default;
+  };
+
 
   /**
    * @brief Build a client
