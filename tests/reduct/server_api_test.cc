@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #include <catch2/catch.hpp>
 

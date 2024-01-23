@@ -1,4 +1,4 @@
-// Copyright 2024 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #include <catch2/catch.hpp>
 
@@ -10,11 +10,81 @@
 using reduct::Error;
 using reduct::IClient;
 
+IClient::ReplicationSettings settings{
+    .src_bucket = "test_bucket_1",
+    .dst_bucket = "test_bucket_2",
+    .dst_host = "http://127.0.0.1:8383",
+    .entries = {"entry-1"},
+    .include = {{"label-3", "value-4"}},
+    .exclude = {{"label-1", "value-2"}},
+};
+
 TEST_CASE("reduct::Client should get list of replications", "[replication_api]") {
   Fixture ctx;
-  auto [tokens, err] = ctx.client->GetTokenList();
+  auto [replications, err] = ctx.client->GetReplicationList();
   REQUIRE(err == Error::kOk);
-  REQUIRE(tokens.size() == 1);
-  REQUIRE(tokens[0].name == "init-token");
-  REQUIRE(tokens[0].created_at.time_since_epoch().count() > 0);
+  REQUIRE(replications.size() == 0);
+}
+
+TEST_CASE("reduct::Client should create a replication", "[replication_api]") {
+  Fixture ctx;
+
+  auto err = ctx.client->CreateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [replication, err_2] = ctx.client->GetReplication("test_replication");
+  REQUIRE(err_2 == Error::kOk);
+  REQUIRE(replication.info == IClient::ReplicationInfo{
+                                  .name = "test_replication",
+                                  .is_active = false,
+                                  .is_provisioned = false,
+                                  .pending_records = 0,
+                              });
+
+  settings.dst_token = "***";
+  REQUIRE(replication.settings == settings);
+  REQUIRE(replication.diagnostics == reduct::Diagnostics{});
+
+  SECTION("Conflict") {
+    REQUIRE(ctx.client->CreateReplication("test_replication", {}) ==
+            Error{409, "Replication 'test_replication' already exists"});
+  }
+}
+
+TEST_CASE("reduct::Client should update a replication", "[replication_api]") {
+  Fixture ctx;
+  auto err = ctx.client->CreateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  settings.entries = {"entry-2"};
+  err = ctx.client->UpdateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [replication, err_2] = ctx.client->GetReplication("test_replication");
+  REQUIRE(err_2 == Error::kOk);
+
+  settings.dst_token = "***";
+  REQUIRE(replication.settings == settings);
+
+  SECTION("Not found") {
+    REQUIRE(ctx.client->UpdateReplication("test_replication_2", {}) ==
+            Error{404, "Replication 'test_replication_2' does not exist"});
+  }
+}
+
+TEST_CASE("reduct::Client should remove a replication", "[replication_api]") {
+  Fixture ctx;
+  auto err = ctx.client->CreateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  err = ctx.client->RemoveReplication("test_replication");
+  REQUIRE(err == Error::kOk);
+
+  auto [replication, err_2] = ctx.client->GetReplication("test_replication");
+  REQUIRE(err_2 == Error{404, "Replication 'test_replication' does not exist"});
+
+  SECTION("Not found") {
+    REQUIRE(ctx.client->RemoveReplication("test_replication_2") ==
+            Error{404, "Replication 'test_replication_2' does not exist"});
+  }
 }

@@ -103,7 +103,7 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
   json_data["dst_bucket"] = settings.dst_bucket;
   json_data["dst_host"] = settings.dst_host;
   json_data["dst_token"] = settings.dst_token;
-  json_data["enabled"] = settings.entries;
+  json_data["entries"] = settings.entries;
   json_data["include"] = settings.include;
   json_data["exclude"] = settings.exclude;
 
@@ -114,28 +114,30 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
   IClient::FullReplicationInfo info;
   try {
     info.info = IClient::ReplicationInfo{
-        .name = data.at("name"),
-        .is_active = data.at("is_active"),
-        .is_provisioned = data.at("is_provisioned"),
-        .pending_records = data.at("pending_records"),
+        .name = data.at("info").at("name"),
+        .is_active = data.at("info").at("is_active"),
+        .is_provisioned = data.at("info").at("is_provisioned"),
+        .pending_records = data.at("info").at("pending_records"),
     };
 
     info.settings = IClient::ReplicationSettings{
-        .src_bucket = data.at("src_bucket"),
-        .dst_bucket = data.at("dst_bucket"),
-        .dst_host = data.at("dst_host"),
-        .dst_token = data.at("dst_token"),
-        .entries = data.at("enabled"),
-        .include = data.at("include"),
-        .exclude = data.at("exclude"),
+        .src_bucket = data.at("settings").at("src_bucket"),
+        .dst_bucket = data.at("settings").at("dst_bucket"),
+        .dst_host = data.at("settings").at("dst_host"),
+        .dst_token = data.at("settings").at("dst_token"),
+        .entries = data.at("settings").at("entries"),
+        .include = data.at("settings").at("include"),
+        .exclude = data.at("settings").at("exclude"),
     };
 
-    info.diagnostics =
-        Diagnostics{.hourly = DiagnosticsItem{.ok = data.at("diagnostics").at("hourly").at("ok"),
-                                              .errored = data.at("diagnostics").at("hourly").at("errored"),
-                                              .errors = {}}};
+    auto diagnostics = data.at("diagnostics");
+    info.diagnostics = Diagnostics{.hourly = DiagnosticsItem{
+                                       .ok = diagnostics.at("hourly").at("ok"),
+                                       .errored = diagnostics.at("hourly").at("errored"),
+                                       .errors = {},
+                                   }};
 
-    for (const auto& [key, value] : data.at("diagnostics").at("hourly").at("errors").items()) {
+    for (const auto& [key, value] : diagnostics.at("hourly").at("errors").items()) {
       info.diagnostics.hourly.errors[std::stoi(key)] = DiagnosticsError{
           .count = value.at("count"),
           .last_message = value.at("last_message"),
