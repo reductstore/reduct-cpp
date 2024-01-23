@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Added
+
+- RS-44: Replication API, [PR-64](https://github.com/reductstore/reduct-cpp/pull/64)
+
 ### Changed:
 
 - docs: update link to new website, [PR-63](https://github.com/reductstore/reduct-cpp/pull/63)
