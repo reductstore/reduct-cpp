@@ -10,6 +10,8 @@
 using reduct::Error;
 using reduct::IClient;
 
+const std::string_view kTestTokenName = "test_token";
+
 TEST_CASE("reduct::Client should get token list", "[token_api]") {
   Fixture ctx;
   auto [tokens, err] = ctx.client->GetTokenList();
@@ -23,16 +25,16 @@ TEST_CASE("reduct::Client should create token", "[token_api]") {
   Fixture ctx;
   IClient::Permissions permissions{
       .full_access = true,
-      .read = {"bucket_1"},
-      .write = {"bucket_2"},
+      .read = {"test_bucket_1"},
+      .write = {"test_bucket_2"},
   };
 
-  auto [token, err] = ctx.client->CreateToken("test-token", std::move(permissions));
+  auto [token, err] = ctx.client->CreateToken(kTestTokenName, std::move(permissions));
   REQUIRE(err == Error::kOk);
-  REQUIRE(token.starts_with("test-token-"));
+  REQUIRE(token.starts_with("test_token-"));
 
   SECTION("Conflict") {
-    REQUIRE(ctx.client->CreateToken("test-token", {}).error == Error{409, "Token 'test-token' already exists"});
+    REQUIRE(ctx.client->CreateToken(kTestTokenName, {}).error == Error{409, "Token 'test_token' already exists"});
   }
 }
 
@@ -40,18 +42,18 @@ TEST_CASE("reduct::Client should get token", "[token_api]") {
   Fixture ctx;
   IClient::Permissions permissions{
       .full_access = true,
-      .read = {"bucket_1"},
-      .write = {"bucket_2"},
+      .read = {"test_bucket_1"},
+      .write = {"test_bucket_2"},
   };
 
   {
-    auto [_, err] = ctx.client->CreateToken("test-token", permissions);
+    auto [_, err] = ctx.client->CreateToken(kTestTokenName, permissions);
     REQUIRE(err == Error::kOk);
   }
 
-  auto [token, err] = ctx.client->GetToken("test-token");
+  auto [token, err] = ctx.client->GetToken(kTestTokenName);
   REQUIRE(err == Error::kOk);
-  REQUIRE(token.name == "test-token");
+  REQUIRE(token.name == kTestTokenName);
   REQUIRE(token.created_at.time_since_epoch().count() > 0);
   REQUIRE(token.is_provisioned == false);
   REQUIRE(token.permissions.full_access == permissions.full_access);
@@ -66,11 +68,11 @@ TEST_CASE("reduct::Client should get token", "[token_api]") {
 TEST_CASE("reduct::Client should delete token", "[token_api]") {
   Fixture ctx;
   {
-    auto [_, err] = ctx.client->CreateToken("test-token", {});
+    auto [_, err] = ctx.client->CreateToken(kTestTokenName, {});
     REQUIRE(err == Error::kOk);
   }
 
-  auto err = ctx.client->RemoveToken("test-token");
+  auto err = ctx.client->RemoveToken(kTestTokenName);
   REQUIRE(err == Error::kOk);
 
   SECTION("not found") {

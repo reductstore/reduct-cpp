@@ -114,8 +114,8 @@ To create a new token, you should use `CreateToken` method with `IClient::Permis
 ```cpp
 IClient::Permissions permissions{
   .full_access = true,
-  .read = {"bucket_1"},
-  .write = {"bucket_2"},
+  .read = {"test_bucket_1"},
+  .write = {"test_bucket_2"},
 };
 
 

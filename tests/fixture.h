@@ -28,35 +28,46 @@ struct Fixture {
       throw std::runtime_error(fmt::format("Failed to get bucket list: {}", bucket_list.error.ToString()));
     }
     for (auto&& info : client->GetBucketList().result) {
+      if (!info.name.starts_with("test_bucket")) {
+        continue;
+      }
       std::unique_ptr<IBucket> bucket = client->GetBucket(info.name);
       [[maybe_unused]] auto ret = bucket->Remove();
     }
 
     for (auto&& t : client->GetTokenList().result) {
-      if (t.name != "init-token") {
-        [[maybe_unused]] auto ret = client->RemoveToken(t.name);
+      if (!t.name.starts_with("test_token")) {
+        continue;
       }
+      [[maybe_unused]] auto ret = client->RemoveToken(t.name);
     }
 
-    auto [bucket, err] = client->CreateBucket("bucket_1");
+    for (auto&& r : client->GetReplicationList().result) {
+      if (!r.name.starts_with("test_replication")) {
+        continue;
+      }
+      [[maybe_unused]] auto ret = client->RemoveReplication(r.name);
+    }
+
+    auto [bucket, err] = client->CreateBucket("test_bucket_1");
     if (err != reduct::Error::kOk) {
-      throw std::runtime_error(fmt::format("Failed to create bucket_1: {}", err.ToString()));
+      throw std::runtime_error(fmt::format("Failed to create test_bucket_1: {}", err.ToString()));
     }
-    bucket_1 = std::move(bucket);
+    test_bucket_1 = std::move(bucket);
     [[maybe_unused]] auto ret =
-        bucket_1->Write("entry-1", IBucket::Time() + s(1), [](auto rec) { rec->WriteAll("data-1"); });
-    ret = bucket_1->Write("entry-1", IBucket::Time() + s(2), [](auto rec) { rec->WriteAll("data-2"); });
-    ret = bucket_1->Write("entry-2", IBucket::Time() + s(3), [](auto rec) { rec->WriteAll("data-3"); });
-    ret = bucket_1->Write("entry-2", IBucket::Time() + s(4), [](auto rec) { rec->WriteAll("data-4"); });
+        test_bucket_1->Write("entry-1", IBucket::Time() + s(1), [](auto rec) { rec->WriteAll("data-1"); });
+    ret = test_bucket_1->Write("entry-1", IBucket::Time() + s(2), [](auto rec) { rec->WriteAll("data-2"); });
+    ret = test_bucket_1->Write("entry-2", IBucket::Time() + s(3), [](auto rec) { rec->WriteAll("data-3"); });
+    ret = test_bucket_1->Write("entry-2", IBucket::Time() + s(4), [](auto rec) { rec->WriteAll("data-4"); });
 
-    bucket_2 = client->CreateBucket("bucket_2").result;
-    ret = bucket_2->Write("entry-1", IBucket::Time() + s(5), [](auto rec) { rec->WriteAll("data-5"); });
-    ret = bucket_2->Write("entry-1", IBucket::Time() + s(6), [](auto rec) { rec->WriteAll("data-6"); });
+    test_bucket_2 = client->CreateBucket("test_bucket_2").result;
+    ret = test_bucket_2->Write("entry-1", IBucket::Time() + s(5), [](auto rec) { rec->WriteAll("data-5"); });
+    ret = test_bucket_2->Write("entry-1", IBucket::Time() + s(6), [](auto rec) { rec->WriteAll("data-6"); });
   }
 
   std::unique_ptr<reduct::IClient> client;
-  std::unique_ptr<reduct::IBucket> bucket_1;
-  std::unique_ptr<reduct::IBucket> bucket_2;
+  std::unique_ptr<reduct::IBucket> test_bucket_1;
+  std::unique_ptr<reduct::IBucket> test_bucket_2;
 };
 
 #endif  // REDUCT_CPP_HELPERS_H
