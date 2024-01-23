@@ -155,15 +155,21 @@ class IClient {
    */
   [[nodiscard]] virtual Result<FullTokenInfo> Me() const noexcept = 0;
 
+  /**
+   * Replication information
+   */
   struct ReplicationInfo {
-    std::string name;  // Replication name
-    bool is_active;  // Remote instance is available and replication is active
-    bool is_provisioned;  // Replication settings
+    std::string name;          // Replication name
+    bool is_active;            // Remote instance is available and replication is active
+    bool is_provisioned;       // Replication settings
     uint64_t pending_records;  // Number of records pending replication
 
     bool operator<=>(const ReplicationInfo&) const = default;
   };
 
+  /**
+   * Replication settings
+   */
   struct ReplicationSettings {
     std::string src_bucket;  // Source bucket
     std::string dst_bucket;  // Destination bucket
@@ -177,14 +183,53 @@ class IClient {
     bool operator<=>(const ReplicationSettings&) const = default;
   };
 
-  struct ReplicationFullInfo {
-    ReplicationInfo info;  // Replication info
+  /**
+   * Replication full info with settings and diagnostics
+   */
+  struct FullReplicationInfo {
+    ReplicationInfo info;          // Replication info
     ReplicationSettings settings;  // Replication settings
-    Diagnostics diagnostics;  // Diagnostics
+    Diagnostics diagnostics;       // Diagnostics
 
-    bool operator ==(const ReplicationFullInfo&) const = default;
+    bool operator==(const FullReplicationInfo&) const = default;
   };
 
+  /**
+   * @brief Get list of replications
+   * @return the list or an error
+   */
+  [[nodiscard]] virtual Result<std::vector<ReplicationInfo>> GetReplicationList() const noexcept = 0;
+
+  /**
+   * @brief Get replication info with settings and diagnostics
+   * @param name name of replication
+   * @return the info or an error
+   */
+  [[nodiscard]] virtual Result<FullReplicationInfo> GetReplication(std::string_view name) const noexcept = 0;
+
+  /**
+   * @brief Create a new replication
+   * @param name name of replication
+   * @param settings replication settings
+   * @return error
+   */
+  [[nodiscard]] virtual Error CreateReplication(std::string_view name, ReplicationSettings settings) const noexcept = 0;
+
+  /**
+   * @brief Update replication settings
+   * @param name name of replication
+   * @param settings replication settings
+   * @return error
+   */
+  [[nodiscard]] virtual Error UpdateReplication(std::string_view name, ReplicationSettings settings) const noexcept = 0;
+
+
+  /**
+   * @brief Remove replication
+   * @param name name of replication
+   * @return error
+   */
+  [[nodiscard]] virtual Error RemoveReplication(std::string_view name) const noexcept = 0;
 
   /**
    * @brief Build a client
