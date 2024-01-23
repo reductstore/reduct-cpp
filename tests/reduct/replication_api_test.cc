@@ -19,14 +19,14 @@ IClient::ReplicationSettings settings{
     .exclude = {{"label-1", "value-2"}},
 };
 
-TEST_CASE("reduct::Client should get list of replications", "[replication_api]") {
+TEST_CASE("reduct::Client should get list of replications", "[replication_api][1_8]") {
   Fixture ctx;
   auto [replications, err] = ctx.client->GetReplicationList();
   REQUIRE(err == Error::kOk);
   REQUIRE(replications.size() == 0);
 }
 
-TEST_CASE("reduct::Client should create a replication", "[replication_api]") {
+TEST_CASE("reduct::Client should create a replication", "[replication_api][1_8]") {
   Fixture ctx;
 
   auto err = ctx.client->CreateReplication("test_replication", settings);
@@ -51,7 +51,7 @@ TEST_CASE("reduct::Client should create a replication", "[replication_api]") {
   }
 }
 
-TEST_CASE("reduct::Client should update a replication", "[replication_api]") {
+TEST_CASE("reduct::Client should update a replication", "[replication_api][1_8]") {
   Fixture ctx;
   auto err = ctx.client->CreateReplication("test_replication", settings);
   REQUIRE(err == Error::kOk);
@@ -72,7 +72,7 @@ TEST_CASE("reduct::Client should update a replication", "[replication_api]") {
   }
 }
 
-TEST_CASE("reduct::Client should remove a replication", "[replication_api]") {
+TEST_CASE("reduct::Client should remove a replication", "[replication_api][1_8]") {
   Fixture ctx;
   auto err = ctx.client->CreateReplication("test_replication", settings);
   REQUIRE(err == Error::kOk);
