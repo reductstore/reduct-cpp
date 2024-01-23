@@ -27,26 +27,26 @@ else ()
     include(FetchContent)
     FetchContent_Declare(
             fmt
-            URL https://github.com/fmtlib/fmt/archive/refs/tags/8.1.1.zip
-            URL_HASH MD5=fed2f2c5027a4034cc8351bf59aa8f7c
+            URL https://github.com/fmtlib/fmt/archive/refs/tags/10.2.1.zip
+            URL_HASH MD5=1bba4e8bdd7b0fa98f207559ffa380a3
     )
 
     FetchContent_Declare(
             nlohmann_json
-            URL https://github.com/nlohmann/json/archive/refs/tags/v3.10.5.zip
-            URL_HASH MD5=accaeb6a75f5972f479ef9139fa65b9e
+            URL https://github.com/nlohmann/json/archive/refs/tags/v3.11.3.zip
+            URL_HASH MD5=23712ebf3a4b4ccb39f2375521716ab3
     )
 
     FetchContent_Declare(
             httplib
-            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.10.7.zip
-            URL_HASH MD5=31497d5f3ff1e0df2f57195dbabd3198
+            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.14.3.zip
+            URL_HASH MD5=af82eb38506ca531b6d1d53524ff7912
     )
 
     FetchContent_Declare(
             concurrentqueue
-            URL https://github.com/cameron314/concurrentqueue/archive/refs/tags/v1.0.3.zip
-            URL_HASH MD5=6e879b14c833df7c011be5959e70cef7
+            URL https://github.com/cameron314/concurrentqueue/archive/refs/tags/v1.0.4.zip
+            URL_HASH MD5=814c5e121b29e37ee836312f0eb0328f
     )
 
     FetchContent_Declare(
