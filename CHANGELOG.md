@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2023-12-02
 
 ### Added
 
@@ -16,13 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - docs: update link to new website, [PR-63](https://github.com/reductstore/reduct-cpp/pull/63)
 
-### [1.7.1] - 2023-11-04
+## [1.7.1] - 2023-11-04
 
 ### Fixed:
 
 - RS-68: Fix writing blobs bigger than 512Kb, [PR-62](https://github.com/reductstore/reduct-cpp/pull/62)
 
-### [1.7.0] - 2023-10-06
+## [1.7.0] - 2023-10-06
 
 ### Added
 
@@ -33,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - RTHD build, [PR-61](https://github.com/reductstore/reduct-cpp/pull/61)
 
-### [1.6.0] - 2023-08-15
+## [1.6.0] - 2023-08-15
 
 ### Added
 
@@ -176,7 +177,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.8.0...HEAD
+
+[1.8.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.7.1...1.8.0
+
+[1.7.1]: https://github.com/reduct-storage/reduct-cpp/compare/v1.7.0...1.7.1
 
 [1.7.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.6.0...1.7.0
 
