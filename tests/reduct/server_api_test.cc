@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #include <catch2/catch.hpp>
 
@@ -38,13 +38,13 @@ TEST_CASE("reduct::Client should list buckets", "[server_api]") {
   auto [list, err] = ctx.client->GetBucketList();
 
   REQUIRE_FALSE(list.empty());
-  REQUIRE(list[0].name == "bucket_1");
+  REQUIRE(list[0].name == "test_bucket_1");
   REQUIRE(list[0].size == 156);
   REQUIRE(list[0].entry_count == 2);
   REQUIRE(list[0].oldest_record.time_since_epoch() == s(1));
   REQUIRE(list[0].latest_record.time_since_epoch() == s(4));
 
-  REQUIRE(list[1].name == "bucket_2");
+  REQUIRE(list[1].name == "test_bucket_2");
   REQUIRE(list[1].size == 78);
   REQUIRE(list[1].entry_count == 1);
   REQUIRE(list[1].oldest_record.time_since_epoch() == s(5));

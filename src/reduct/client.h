@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #ifndef REDUCT_CPP_CLIENT_H
 #define REDUCT_CPP_CLIENT_H
@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "diagnostics.h"
 #include "reduct/bucket.h"
 #include "reduct/error.h"
 #include "reduct/http_options.h"
@@ -151,18 +152,84 @@ class IClient {
    * Makes a GET request to the '/me' endpoint using the client object stored as a member variable.
    *
    * @return A Result object containing a FullTokenInfo object or an Error object.
-   *
-   * Example:
-   *
-   * MyClass obj;
-   * auto [token_info, err] = obj.Me();
-   * if (err) {
-   *   std::cerr << err << std::endl;
-   * } else {
-   *   std::cout << token_info.name << std::endl;
-   * }
    */
   [[nodiscard]] virtual Result<FullTokenInfo> Me() const noexcept = 0;
+
+  /**
+   * Replication information
+   */
+  struct ReplicationInfo {
+    std::string name;          // Replication name
+    bool is_active;            // Remote instance is available and replication is active
+    bool is_provisioned;       // Replication settings
+    uint64_t pending_records;  // Number of records pending replication
+
+    bool operator<=>(const ReplicationInfo&) const = default;
+  };
+
+  /**
+   * Replication settings
+   */
+  struct ReplicationSettings {
+    std::string src_bucket;  // Source bucket
+    std::string dst_bucket;  // Destination bucket
+    std::string dst_host;    // Destination host URL (e.g. https://reductstore.com)
+    std::string dst_token;   // Destination access token
+    std::vector<std::string>
+        entries;                // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
+    IBucket::LabelMap include;  // Labels to include
+    IBucket::LabelMap exclude;  // Labels to exclude
+
+    bool operator<=>(const ReplicationSettings&) const = default;
+  };
+
+  /**
+   * Replication full info with settings and diagnostics
+   */
+  struct FullReplicationInfo {
+    ReplicationInfo info;          // Replication info
+    ReplicationSettings settings;  // Replication settings
+    Diagnostics diagnostics;       // Diagnostics
+
+    bool operator==(const FullReplicationInfo&) const = default;
+  };
+
+  /**
+   * @brief Get list of replications
+   * @return the list or an error
+   */
+  [[nodiscard]] virtual Result<std::vector<ReplicationInfo>> GetReplicationList() const noexcept = 0;
+
+  /**
+   * @brief Get replication info with settings and diagnostics
+   * @param name name of replication
+   * @return the info or an error
+   */
+  [[nodiscard]] virtual Result<FullReplicationInfo> GetReplication(std::string_view name) const noexcept = 0;
+
+  /**
+   * @brief Create a new replication
+   * @param name name of replication
+   * @param settings replication settings
+   * @return error
+   */
+  [[nodiscard]] virtual Error CreateReplication(std::string_view name, ReplicationSettings settings) const noexcept = 0;
+
+  /**
+   * @brief Update replication settings
+   * @param name name of replication
+   * @param settings replication settings
+   * @return error
+   */
+  [[nodiscard]] virtual Error UpdateReplication(std::string_view name, ReplicationSettings settings) const noexcept = 0;
+
+
+  /**
+   * @brief Remove replication
+   * @param name name of replication
+   * @return error
+   */
+  [[nodiscard]] virtual Error RemoveReplication(std::string_view name) const noexcept = 0;
 
   /**
    * @brief Build a client

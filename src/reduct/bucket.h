@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 #ifndef REDUCT_CPP_BUCKET_H
 #define REDUCT_CPP_BUCKET_H
 
@@ -16,9 +16,14 @@
 #include "reduct/result.h"
 
 namespace reduct {
-
 /**
- * Provides Bucket HTTP API
+ * @class IBucket
+ * @brief Represents a bucket for storing and retrieving data.
+ *
+ * A Bucket object allows you to interact with a specific bucket in the storage system.
+ * You can perform operations like getting the bucket settings, updating the settings,
+ * getting bucket information, retrieving the list of entries, writing records to the bucket,
+ * and reading records from the bucket.
  */
 class IBucket {
  public:

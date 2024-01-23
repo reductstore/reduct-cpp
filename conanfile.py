@@ -3,7 +3,7 @@ from conans import ConanFile, CMake
 
 class DriftFrameworkConan(ConanFile):
     name = "reduct-cpp"
-    version = "1.7.1"
+    version = "1.8.0"
     license = "MIT"
     author = "Alexey Timin"
     url = "https://github.com/reduct-storage/reduct-cpp"
@@ -15,11 +15,11 @@ class DriftFrameworkConan(ConanFile):
                        "date:header_only": True}
     generators = "cmake"
 
-    requires = ("fmt/10.0.0",
-                "cpp-httplib/0.12.4",
-                "nlohmann_json/3.11.2",
-                "openssl/3.1.1",
-                "concurrentqueue/1.0.3",
+    requires = ("fmt/10.2.1",
+                "cpp-httplib/0.14.3",
+                "nlohmann_json/3.11.3",
+                "openssl/3.2.0",
+                "concurrentqueue/1.0.4",
                 "date/3.0.1")
 
     def config_options(self):

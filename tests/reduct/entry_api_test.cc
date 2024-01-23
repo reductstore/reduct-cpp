@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #include <catch2/catch.hpp>
 
@@ -12,7 +12,7 @@ using reduct::Error;
 using reduct::IBucket;
 using reduct::IClient;
 
-const auto kBucketName = "bucket";
+const auto kBucketName = "test_bucket_3";
 using us = std::chrono::microseconds;
 
 TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
@@ -253,7 +253,7 @@ TEST_CASE("reduct::IBucket should query records (huge blobs)", "[entry_api]") {
 
 TEST_CASE("reduct::IBucket should limit records in a query", "[entry_api][1_6]") {
   Fixture ctx;
-  auto [bucket, _] = ctx.client->GetBucket("bucket_1");
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
   REQUIRE(bucket);
 
   int count;

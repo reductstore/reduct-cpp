@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #include <catch2/catch.hpp>
 
@@ -11,7 +11,7 @@ using reduct::IClient;
 
 using s = std::chrono::seconds;
 
-constexpr auto kBucketName = "bucket";
+constexpr auto kBucketName = "test_bucket_3";
 
 TEST_CASE("reduct::Client should create a bucket", "[bucket_api]") {
   Fixture ctx;
@@ -132,7 +132,7 @@ TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
 TEST_CASE("reduct::IBucket should get list of entries", "[bucket_api]") {
   Fixture ctx;
 
-  auto [entries, err] = ctx.bucket_1->GetEntryList();
+  auto [entries, err] = ctx.test_bucket_1->GetEntryList();
   REQUIRE(err == Error::kOk);
   REQUIRE(entries.size() == 2);
 

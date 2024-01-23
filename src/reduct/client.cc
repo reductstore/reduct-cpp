@@ -187,6 +187,48 @@ class Client : public IClient {
     }
   }
 
+  Result<std::vector<ReplicationInfo>> GetReplicationList() const noexcept override {
+    auto [body, err] = client_->Get("/replications");
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      nlohmann::json data = nlohmann::json::parse(body);
+      return internal::ParseReplicationList(data);
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+  }
+
+  Result<FullReplicationInfo> GetReplication(std::string_view name) const noexcept override {
+    auto [body, err] = client_->Get(fmt::format("/replications/{}", name));
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      nlohmann::json data = nlohmann::json::parse(body);
+      return internal::ParseFullReplicationInfo(data);
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+  }
+
+  Error CreateReplication(std::string_view name, ReplicationSettings settings) const noexcept override {
+    auto json_data = internal::ReplicationSettingsToJsonString(std::move(settings));
+    return client_->Post(fmt::format("/replications/{}", name), json_data.dump());
+  }
+
+  Error UpdateReplication(std::string_view name, ReplicationSettings settings) const noexcept override {
+    auto json_data = internal::ReplicationSettingsToJsonString(std::move(settings));
+    return client_->Put(fmt::format("/replications/{}", name), json_data.dump());
+  }
+
+  Error RemoveReplication(std::string_view name) const noexcept override {
+    return client_->Delete(fmt::format("/replications/{}", name));
+  }
+
  private:
   HttpOptions options_;
   std::unique_ptr<internal::IHttpClient> client_;

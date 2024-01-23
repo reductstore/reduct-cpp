@@ -10,7 +10,8 @@ set(PUBLIC_HEADERS
         reduct/client.h
         reduct/error.h
         reduct/http_options.h
-        reduct/result.h)
+        reduct/result.h
+        reduct/diagnostics.h)
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
