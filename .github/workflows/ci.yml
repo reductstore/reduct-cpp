@@ -86,6 +86,10 @@ jobs:
           name: image
           path: /tmp/
       - uses: actions/checkout@v3
+
+      - name: Generate license
+        run: echo '${{secrets.LICENSE_KEY}}' > lic.key
+
       - uses: ./.github/actions/run-tests
         with:
           api-token: ${{matrix.token}}
