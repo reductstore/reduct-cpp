@@ -15,8 +15,7 @@ inputs:
     default: "main"
   lic_file: # id of input
     description: 'License file'
-    required: false
-    default: "lic.key"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -24,7 +23,7 @@ runs:
       shell: bash
       run: docker run -p 8383:8383 -v ${PWD}:/workdir
         --env RS_API_TOKEN=${{inputs.api-token}}
-        --env RS_LICENSE_FILE=/workdir/${{inputs.lic_file}}
+        --env RS_LICENSE_PATH=/workdir/${{inputs.lic_file}}
         -d reduct/store:${{inputs.reductstore-version}}
 
     - name: Load image with tests
