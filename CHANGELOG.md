@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- RS-179: add license information to ServerInfo, [PR-65](https://github.com/reductstore/reduct-cpp/pull/65)
+
 ## [1.8.0] - 2023-12-02
 
 ### Added
