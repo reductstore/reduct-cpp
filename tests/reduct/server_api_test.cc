@@ -33,7 +33,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(*info.defaults.bucket.quota_size == 0);
 }
 
-TEST_CASE("reduct::Client should get license info", "[server_api][license") {
+TEST_CASE("reduct::Client should get license info", "[server_api][license]") {
   Fixture ctx;
   auto [info, err] = ctx.client->GetInfo();
 
@@ -41,7 +41,7 @@ TEST_CASE("reduct::Client should get license info", "[server_api][license") {
   REQUIRE(info.license);
   REQUIRE(info.license->licensee == "ReductStore,LLC");
   REQUIRE(info.license->invoice == "xxxxxx");
-  REQUIRE(info.license->expiry_date.time_since_epoch() == s(1672531200));
+  REQUIRE(info.license->expiry_date.time_since_epoch().count() == 1672531200);
   REQUIRE(info.license->plan == "UNLIMITED");
   REQUIRE(info.license->device_number == 1);
   REQUIRE(info.license->disk_quota == 0);
