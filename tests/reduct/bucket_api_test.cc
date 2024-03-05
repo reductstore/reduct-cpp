@@ -122,7 +122,7 @@ TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
   REQUIRE(info == IBucket::BucketInfo{
                       .name = kBucketName,
                       .entry_count = 2,
-                      .size = 80,
+                      .size = 98,
                       .oldest_record = t,
                       .latest_record = t + std::chrono::seconds(1),
                       .is_provisioned = false,
@@ -141,7 +141,7 @@ TEST_CASE("reduct::IBucket should get list of entries", "[bucket_api]") {
                             .name = "entry-1",
                             .record_count = 2,
                             .block_count = 1,
-                            .size = 78,
+                            .size = 98,
                             .oldest_record = t + s(1),
                             .latest_record = t + s(2),
                         });
@@ -150,7 +150,7 @@ TEST_CASE("reduct::IBucket should get list of entries", "[bucket_api]") {
                             .name = "entry-2",
                             .record_count = 2,
                             .block_count = 1,
-                            .size = 78,
+                            .size = 98,
                             .oldest_record = t + s(3),
                             .latest_record = t + s(4),
                         });
