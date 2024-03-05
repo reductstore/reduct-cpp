@@ -22,7 +22,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(info.version >= "1.2.0");
 
   REQUIRE(info.bucket_count == 2);
-  REQUIRE(info.usage == 234);
+  REQUIRE(info.usage == 294);
   REQUIRE(info.uptime.count() >= 1);
   REQUIRE(info.oldest_record.time_since_epoch() == s(1));
   REQUIRE(info.latest_record.time_since_epoch() == s(6));
@@ -33,19 +33,19 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(*info.defaults.bucket.quota_size == 0);
 }
 
-TEST_CASE("reduct::Client should get info", "[server_api][license") {
+TEST_CASE("reduct::Client should get license info", "[server_api][license") {
   Fixture ctx;
   auto [info, err] = ctx.client->GetInfo();
 
   REQUIRE(err == Error::kOk);
   REQUIRE(info.license);
-  REQUIRE(info.license->licensee == "Reduct");
-  REQUIRE(info.license->invoice == "INV-2022-01");
+  REQUIRE(info.license->licensee == "ReductStore,LLC");
+  REQUIRE(info.license->invoice == "xxxxxx");
   REQUIRE(info.license->expiry_date.time_since_epoch() == s(1672531200));
-  REQUIRE(info.license->plan == "Enterprise");
-  REQUIRE(info.license->device_number == 100);
-  REQUIRE(info.license->disk_quota == 100);
-  REQUIRE(info.license->fingerprint == "fingerprint");
+  REQUIRE(info.license->plan == "UNLIMITED");
+  REQUIRE(info.license->device_number == 1);
+  REQUIRE(info.license->disk_quota == 0);
+  REQUIRE(info.license->fingerprint == "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9");
 }
 
 TEST_CASE("reduct::Client should list buckets", "[server_api]") {
@@ -54,13 +54,13 @@ TEST_CASE("reduct::Client should list buckets", "[server_api]") {
 
   REQUIRE_FALSE(list.empty());
   REQUIRE(list[0].name == "test_bucket_1");
-  REQUIRE(list[0].size == 156);
+  REQUIRE(list[0].size == 196);
   REQUIRE(list[0].entry_count == 2);
   REQUIRE(list[0].oldest_record.time_since_epoch() == s(1));
   REQUIRE(list[0].latest_record.time_since_epoch() == s(4));
 
   REQUIRE(list[1].name == "test_bucket_2");
-  REQUIRE(list[1].size == 78);
+  REQUIRE(list[1].size == 98);
   REQUIRE(list[1].entry_count == 1);
   REQUIRE(list[1].oldest_record.time_since_epoch() == s(5));
   REQUIRE(list[1].latest_record.time_since_epoch() == s(6));

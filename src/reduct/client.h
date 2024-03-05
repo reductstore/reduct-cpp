@@ -50,7 +50,7 @@ class IClient {
       bool operator<=>(const License&) const = default;
     };
 
-    std::optional<License> license;  // License information
+    std::optional<License> license;  // License information. If empty, then it is BUSL-1.1
 
     struct Defaults {
       IBucket::Settings bucket;  // default settings for a new bucket

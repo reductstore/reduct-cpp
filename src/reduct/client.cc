@@ -45,7 +45,7 @@ class Client : public IClient {
           .defaults = {.bucket = default_bucket_settings},
       };
 
-      if (data.contains("license")) {
+      if (data.contains("license") && !data.at("license").is_null()) {
         auto& license = data.at("license");
         server_info.license = ServerInfo::License{
             .licensee = license.at("licensee"),
