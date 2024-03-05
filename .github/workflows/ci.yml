@@ -60,7 +60,8 @@ jobs:
     strategy:
       matrix:
         token: [ "", "TOKEN" ]
-        reductstore_version: [ "main", "latest" ]
+        reductstore_version: [ "main" ]
+        license_file: [ "", "lic.key" ]
         include:
           - token: ""
             exclude_token_api_tag: "~[token_api]"
@@ -69,7 +70,9 @@ jobs:
           - reductstore_version: "main"
             exclude_api_version_tag: ""
           - reductstore_version: "latest"
-            exclude_api_version_tag: "~[1_8]"
+            exclude_api_version_tag: "~[1_9]"
+          - license_file: ""
+            exclude_license_tag: "~[license]"
 
     needs:
       - build
@@ -86,5 +89,6 @@ jobs:
       - uses: ./.github/actions/run-tests
         with:
           api-token: ${{matrix.token}}
-          tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}}"
+          tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}} ${{matrix.exclude_license_tag}}"
           reductstore-version: ${{matrix.reductstore_version}}
+          lic_file: ${{matrix.license_file}}

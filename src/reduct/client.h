@@ -35,6 +35,23 @@ class IClient {
     Time oldest_record;
     Time latest_record;
 
+    /**
+     * @brief License information
+     */
+    struct License {
+      std::string licensee;     // Licensee usually is the company name
+      std::string invoice;      // Invoice number
+      Time expiry_date;         // Expiry date of the license in ISO 8601 format (UTC)
+      std::string plan;         // Plan name
+      uint64_t device_number;   // Number of devices (0 for unlimited)
+      uint64_t disk_quota;      // Disk quota in TB (0 for unlimited)
+      std::string fingerprint;  // License fingerprint
+
+      bool operator<=>(const License&) const = default;
+    };
+
+    std::optional<License> license;  // License information
+
     struct Defaults {
       IBucket::Settings bucket;  // default settings for a new bucket
 
@@ -222,7 +239,6 @@ class IClient {
    * @return error
    */
   [[nodiscard]] virtual Error UpdateReplication(std::string_view name, ReplicationSettings settings) const noexcept = 0;
-
 
   /**
    * @brief Remove replication

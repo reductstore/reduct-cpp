@@ -33,6 +33,21 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(*info.defaults.bucket.quota_size == 0);
 }
 
+TEST_CASE("reduct::Client should get info", "[server_api][license") {
+  Fixture ctx;
+  auto [info, err] = ctx.client->GetInfo();
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(info.license);
+  REQUIRE(info.license->licensee == "Reduct");
+  REQUIRE(info.license->invoice == "INV-2022-01");
+  REQUIRE(info.license->expiry_date.time_since_epoch() == s(1672531200));
+  REQUIRE(info.license->plan == "Enterprise");
+  REQUIRE(info.license->device_number == 100);
+  REQUIRE(info.license->disk_quota == 100);
+  REQUIRE(info.license->fingerprint == "fingerprint");
+}
+
 TEST_CASE("reduct::Client should list buckets", "[server_api]") {
   Fixture ctx;
   auto [list, err] = ctx.client->GetBucketList();

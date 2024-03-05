@@ -34,14 +34,34 @@ class Client : public IClient {
       if (def_err) {
         return {{}, def_err};
       }
+
+      ServerInfo server_info{
+          .version = data.at("version"),
+          .bucket_count = data.at("bucket_count"),
+          .usage = data.at("usage"),
+          .uptime = std::chrono::seconds(data.at("uptime")),
+          .oldest_record = Time() + std::chrono::microseconds(data.at("oldest_record")),
+          .latest_record = Time() + std::chrono::microseconds(data.at("latest_record")),
+          .defaults = {.bucket = default_bucket_settings},
+      };
+
+      if (data.contains("license")) {
+        auto& license = data.at("license");
+        server_info.license = ServerInfo::License{
+            .licensee = license.at("licensee"),
+            .invoice = license.at("invoice"),
+            .expiry_date = Time(),
+            .plan = license.at("plan"),
+            .device_number = license.at("device_number"),
+            .disk_quota = license.at("disk_quota"),
+            .fingerprint = license.at("fingerprint"),
+        };
+        std::istringstream(license.at("expiry_date").get<std::string>()) >>
+            date::parse("%FT%TZ", server_info.license->expiry_date);
+      }
+
       return {
-          ServerInfo{.version = data.at("version"),
-                     .bucket_count = data.at("bucket_count"),
-                     .usage = data.at("usage"),
-                     .uptime = std::chrono::seconds(data.at("uptime")),
-                     .oldest_record = Time() + std::chrono::microseconds(data.at("oldest_record")),
-                     .latest_record = Time() + std::chrono::microseconds(data.at("latest_record")),
-                     .defaults = {.bucket = default_bucket_settings}},
+          server_info,
           Error::kOk,
       };
     } catch (const std::exception& e) {
