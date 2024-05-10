@@ -47,7 +47,7 @@ class IClient {
       uint64_t disk_quota;      // Disk quota in TB (0 for unlimited)
       std::string fingerprint;  // License fingerprint
 
-      bool operator<=>(const License&) const = default;
+      auto operator<=>(const License&) const = default;
     };
 
     std::optional<License> license;  // License information. If empty, then it is BUSL-1.1
@@ -55,12 +55,12 @@ class IClient {
     struct Defaults {
       IBucket::Settings bucket;  // default settings for a new bucket
 
-      bool operator<=>(const IClient::ServerInfo::Defaults&) const = default;
+      auto operator<=>(const IClient::ServerInfo::Defaults&) const = default;
     };
 
     Defaults defaults;
 
-    bool operator<=>(const IClient::ServerInfo&) const = default;
+    auto operator<=>(const IClient::ServerInfo&) const = default;
   };
 
   /**
@@ -106,7 +106,7 @@ class IClient {
     std::string name;  // name of token
     Time created_at;   // creation time
 
-    bool operator<=>(const IClient::Token&) const = default;
+    auto operator<=>(const IClient::Token&) const = default;
   };
 
   /**
@@ -117,7 +117,7 @@ class IClient {
     std::vector<std::string> read;   // list of buckets with read access
     std::vector<std::string> write;  // list of buckets with write access
 
-    bool operator<=>(const IClient::Permissions&) const = default;
+    auto operator<=>(const IClient::Permissions&) const = default;
   };
 
   /**
@@ -130,7 +130,7 @@ class IClient {
 
     Permissions permissions;
 
-    bool operator<=>(const IClient::FullTokenInfo&) const = default;
+    auto operator<=>(const IClient::FullTokenInfo&) const = default;
   };
 
   /**
@@ -181,7 +181,7 @@ class IClient {
     bool is_provisioned;       // Replication settings
     uint64_t pending_records;  // Number of records pending replication
 
-    bool operator<=>(const ReplicationInfo&) const = default;
+    auto operator<=>(const ReplicationInfo&) const = default;
   };
 
   /**
@@ -197,7 +197,7 @@ class IClient {
     IBucket::LabelMap include;  // Labels to include
     IBucket::LabelMap exclude;  // Labels to exclude
 
-    bool operator<=>(const ReplicationSettings&) const = default;
+    auto operator<=>(const ReplicationSettings&) const = default;
   };
 
   /**

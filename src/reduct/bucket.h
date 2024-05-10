@@ -40,7 +40,7 @@ class IBucket {
     std::optional<size_t> quota_size;
     std::optional<size_t> max_block_records;
 
-    bool operator<=>(const Settings&) const noexcept = default;
+    auto operator<=>(const Settings&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const Settings& settings);
   };
 
@@ -57,7 +57,7 @@ class IBucket {
     Time latest_record;   // timestamp of the latest record in the bucket
     bool is_provisioned;  // is bucket provisioned, you can't remove it or change settings
 
-    bool operator<=>(const BucketInfo&) const noexcept = default;
+    auto operator<=>(const BucketInfo&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const BucketInfo& info);
   };
 
@@ -72,7 +72,7 @@ class IBucket {
     Time oldest_record;   // timestamp of the oldest record in the entry
     Time latest_record;   // timestamp of the latest record in the entry
 
-    bool operator<=>(const EntryInfo&) const noexcept = default;
+    auto operator<=>(const EntryInfo&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const EntryInfo& info);
   };
 
