@@ -12,7 +12,7 @@ struct DiagnosticsError {
   uint64_t count;            // Count of errors
   std::string last_message;  // Last error message
 
-  bool operator<=>(const DiagnosticsError&) const = default;
+  auto operator<=>(const DiagnosticsError&) const = default;
 };
 
 struct DiagnosticsItem {

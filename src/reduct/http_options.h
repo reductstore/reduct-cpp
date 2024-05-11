@@ -13,7 +13,7 @@ struct HttpOptions {
   std::string api_token;  // API token, if empty anonymous access
   bool ssl_verification;  // check ssl certificate if it is true
 
-  bool operator<=>(const HttpOptions&) const = default;
+  auto operator<=>(const HttpOptions&) const = default;
 };
 
 const std::string_view kApiPrefix = "/api/v1";
