@@ -57,7 +57,7 @@ class Client : public IClient {
             .fingerprint = license.at("fingerprint"),
         };
         std::istringstream(license.at("expiry_date").get<std::string>()) >>
-            date::parse("%FT%TZ", server_info.license->expiry_date);
+            std::chrono::parse("%FT%TZ", server_info.license->expiry_date);
       }
 
       return {
@@ -142,7 +142,7 @@ class Client : public IClient {
       token_list.reserve(json_tokens.size());
       for (const auto& token : json_tokens) {
         Time created_at;
-        std::istringstream(token.at("created_at").get<std::string>()) >> date::parse("%FT%TZ", created_at);
+        std::istringstream(token.at("created_at").get<std::string>()) >> std::chrono::parse("%FT%TZ", created_at);
 
         token_list.push_back(Token{
             .name = token.at("name"),

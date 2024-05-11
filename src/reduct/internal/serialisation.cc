@@ -65,7 +65,7 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) {
 
 Result<IClient::FullTokenInfo> ParseTokenInfo(const nlohmann::json& json) {
   IClient::Time created_at;
-  std::istringstream(json.at("created_at").get<std::string>()) >> date::parse("%FT%TZ", created_at);
+  std::istringstream(json.at("created_at").get<std::string>()) >> std::chrono::parse("%FT%TZ", created_at);
 
   return {
       IClient::FullTokenInfo{
