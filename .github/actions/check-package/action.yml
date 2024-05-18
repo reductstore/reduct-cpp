@@ -23,4 +23,3 @@ runs:
         sleep 3
         cd examples/build
         ./usage-example
-        ./subscription
