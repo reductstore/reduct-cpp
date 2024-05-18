@@ -3,15 +3,14 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/reductstore/reduct-cpp)]()
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/reductstore/reduct-cpp/ci.yml?branch=main)
 
-The ReductStore Client SDK for C++ is an open source client for [ReductStore](https://reduct.store) written
+The ReductStore Client SDK for C++ is an open source client for [ReductStore](https://www.reduct.store) written
 in C++20. It allows developers to easily interact with the database from their C++ applications.
 
 ## Features
 
 * Written in C++20
-* Support ReductStore HTTP API v1.9
+* Support ReductStore [HTTP API v1.10](https://www.reduct.store/docs/next/http-api)
 * Support HTTP and HTTPS protocols
-* Exception free
 * Support Linux AMD64
 
 ## Example
