@@ -246,11 +246,15 @@ class Bucket : public IBucket {
 
 
     if (options.ttl) {
-      url += fmt::format("ttl={}&", options.ttl->count());
+      url += fmt::format("ttl={}&", options.ttl->count() / 1000);
     }
 
     if (options.continuous) {
       url += "continuous=true&";
+    }
+
+    if (options.head_only) {
+      url += "head=true&";
     }
 
     auto [body, err] = client_->Get(url);
