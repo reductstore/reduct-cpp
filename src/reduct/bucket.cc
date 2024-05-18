@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #include "reduct/bucket.h"
 #define FMT_HEADER_ONLY 1
@@ -258,7 +258,7 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      bool batched = client_->api_version() >= "1.5";
+      bool batched = internal::IsCompatible("1.5", client_->api_version());
       auto [stopped, record_err] =
           ReadRecord(fmt::format("{}/{}{}?q={}", path_, entry_name, batched ? "/batch" : "", id), batched,
                      options.head_only, callback);
