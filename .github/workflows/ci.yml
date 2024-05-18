@@ -69,8 +69,8 @@ jobs:
             exclude_token_api_tag: ""
           - reductstore_version: "main"
             exclude_api_version_tag: ""
-#          - reductstore_version: "latest"
-#            exclude_api_version_tag: "~[1_9]"
+          - reductstore_version: "latest"
+            exclude_api_version_tag: "~[1_10]"
           - license_file: ""
             exclude_license_tag: "~[license]"
 

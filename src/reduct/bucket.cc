@@ -224,24 +224,33 @@ class Bucket : public IBucket {
       url += fmt::format("stop={}&", ToMicroseconds(*stop));
     }
 
-    if (options.ttl) {
-      url += fmt::format("ttl={}&", options.ttl->count());
-    }
-
-    if (options.continuous) {
-      url += "continuous=true&";
-    }
-
-    if (options.limit) {
-      url += fmt::format("limit={}&", *options.limit);
-    }
-
     for (const auto& [key, value] : options.include) {
       url += fmt::format("&include-{}={}", key, value);
     }
 
     for (const auto& [key, value] : options.exclude) {
       url += fmt::format("&exclude-{}={}", key, value);
+    }
+
+    if (options.each_s) {
+      url += fmt::format("each_s={}&", *options.each_s);
+    }
+
+    if (options.each_n) {
+      url += fmt::format("each_n={}&", *options.each_n);
+    }
+
+    if (options.limit) {
+      url += fmt::format("limit={}&", *options.limit);
+    }
+
+
+    if (options.ttl) {
+      url += fmt::format("ttl={}&", options.ttl->count());
+    }
+
+    if (options.continuous) {
+      url += "continuous=true&";
     }
 
     auto [body, err] = client_->Get(url);

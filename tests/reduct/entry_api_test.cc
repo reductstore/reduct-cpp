@@ -14,6 +14,7 @@ using reduct::IClient;
 
 const auto kBucketName = "test_bucket_3";
 using us = std::chrono::microseconds;
+using s = std::chrono::seconds;
 
 TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   Fixture ctx;
@@ -251,6 +252,41 @@ TEST_CASE("reduct::IBucket should query records (huge blobs)", "[entry_api]") {
   REQUIRE(received_data[1] == blob2);
 }
 
+TEST_CASE("reduct::IBucket should resample data", "[entry_api][1_10]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::Time ts{};
+  REQUIRE(bucket->Write("entry", ts, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts + s(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry", ts + s(2), [](auto rec) { rec->WriteAll("some_data3"); }) == Error::kOk);
+
+  std::vector<std::string> received_data;
+  auto call_back = [&received_data](auto record) {
+    auto [data, err] = record.ReadAll();
+    received_data.push_back(data);
+    return true;
+  };
+
+  SECTION("return a record each 2 seconds") {
+    auto err = bucket->Query("entry", std::nullopt, std::nullopt, {.each_s = 2.0}, call_back);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(received_data.size() == 2);
+    REQUIRE(received_data[0] == "some_data1");
+    REQUIRE(received_data[1] == "some_data3");
+  }
+
+  SECTION("return each 3th record") {
+    auto err = bucket->Query("entry", std::nullopt, std::nullopt, {.each_n = 3}, call_back);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(received_data.size() == 1);
+    REQUIRE(received_data[0] == "some_data1");
+  }
+}
+
 TEST_CASE("reduct::IBucket should limit records in a query", "[entry_api][1_6]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
@@ -282,13 +318,13 @@ TEST_CASE("reduct::IBucket should write batch of records", "[bucket_api][1_7]") 
 
   auto t = IBucket::Time();
   REQUIRE(bucket
-              ->WriteBatch(
-                  "entry-1",
-                  [t](IBucket::Batch* batch) {
-                    batch->AddRecord(t, "some_data1");
-                    batch->AddRecord(t + us(1), "some_data2", "text/plain");
-                    batch->AddRecord(t + us(2), "some_data3", "text/plain", {{"key1", "value1"}, {"key2", "value2"}});
-                  })
+              ->WriteBatch("entry-1",
+                           [t](IBucket::Batch* batch) {
+                             batch->AddRecord(t, "some_data1");
+                             batch->AddRecord(t + us(1), "some_data2", "text/plain");
+                             batch->AddRecord(t + us(2), "some_data3", "text/plain",
+                                              {{"key1", "value1"}, {"key2", "value2"}});
+                           })
               .error == Error::kOk);
 
   REQUIRE(bucket->Read("entry-1", t, [](auto record) {
