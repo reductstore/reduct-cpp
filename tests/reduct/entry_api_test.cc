@@ -292,7 +292,7 @@ TEST_CASE("reduct::IBucket should limit records in a query", "[entry_api][1_6]")
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
   REQUIRE(bucket);
 
-  int count;
+  int count = 0;
   auto err =
       bucket->Query("entry-1", IBucket::Time{}, IBucket::Time::clock::now(), {.limit = 1}, [&count](auto record) {
         count++;
