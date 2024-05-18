@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #include "reduct/internal/http_client.h"
 #undef CPPHTTPLIB_BROTLI_SUPPORT
@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <string>
 
 namespace reduct::internal {
 
@@ -175,5 +176,34 @@ class HttpClient : public IHttpClient {
 
 std::unique_ptr<IHttpClient> IHttpClient::Build(std::string_view url, const HttpOptions& options) {
   return std::make_unique<HttpClient>(url, options);
+}
+
+bool IsCompatible(std::string_view min, std::string_view version) {
+  if (version.empty()) {
+    return false;
+  }
+
+  auto parse_version = [](std::string version) {
+    std::stringstream ss(version);
+    std::string item;
+    std::vector<int> result;
+    while (std::getline(ss, item, '.')) {
+      result.push_back(std::stoi(item));
+    }
+    return result;
+  };
+
+  auto min_version = parse_version(std::string(min));
+  auto current_version = parse_version(std::string(version));
+
+  if (min_version.size() != current_version.size()) {
+    return false;
+  }
+
+  if (min_version.size() != 2) {
+    return false;
+  }
+
+  return min_version[0] == current_version[0] && min_version[1] <= current_version[1];
 }
 }  // namespace reduct::internal

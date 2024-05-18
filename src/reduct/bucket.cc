@@ -1,4 +1,4 @@
-// Copyright 2022-2023 Alexey Timin
+// Copyright 2022-2024 Alexey Timin
 
 #include "reduct/bucket.h"
 #define FMT_HEADER_ONLY 1
@@ -224,24 +224,37 @@ class Bucket : public IBucket {
       url += fmt::format("stop={}&", ToMicroseconds(*stop));
     }
 
-    if (options.ttl) {
-      url += fmt::format("ttl={}&", options.ttl->count());
-    }
-
-    if (options.continuous) {
-      url += "continuous=true&";
-    }
-
-    if (options.limit) {
-      url += fmt::format("limit={}&", *options.limit);
-    }
-
     for (const auto& [key, value] : options.include) {
       url += fmt::format("&include-{}={}", key, value);
     }
 
     for (const auto& [key, value] : options.exclude) {
       url += fmt::format("&exclude-{}={}", key, value);
+    }
+
+    if (options.each_s) {
+      url += fmt::format("each_s={}&", *options.each_s);
+    }
+
+    if (options.each_n) {
+      url += fmt::format("each_n={}&", *options.each_n);
+    }
+
+    if (options.limit) {
+      url += fmt::format("limit={}&", *options.limit);
+    }
+
+
+    if (options.ttl) {
+      url += fmt::format("ttl={}&", options.ttl->count() / 1000);
+    }
+
+    if (options.continuous) {
+      url += "continuous=true&";
+    }
+
+    if (options.head_only) {
+      url += "head=true&";
     }
 
     auto [body, err] = client_->Get(url);
@@ -258,7 +271,7 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      bool batched = client_->api_version() >= "1.5";
+      bool batched = internal::IsCompatible("1.5", client_->api_version());
       auto [stopped, record_err] =
           ReadRecord(fmt::format("{}/{}{}?q={}", path_, entry_name, batched ? "/batch" : "", id), batched,
                      options.head_only, callback);

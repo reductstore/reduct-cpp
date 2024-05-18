@@ -252,13 +252,17 @@ class IBucket {
    * Query options
    */
   struct QueryOptions {
-    std::optional<std::chrono::milliseconds> ttl;  ///< time to live
     LabelMap include;                              ///< include labels
     LabelMap exclude;                              ///< exclude labels
+    std::optional<double> each_s;                  ///< return one record each S seconds
+    std::optional<size_t>  each_n;                 ///< return each N-th record
+    std::optional<size_t> limit;                   ///< limit number of records
+
+    std::optional<std::chrono::milliseconds> ttl;  ///< time to live
+
     bool continuous;  ///< continuous query. If true, the method returns the latest record and waits for the next one
     std::chrono::milliseconds poll_interval;  ///< poll interval for continuous query
     bool head_only;                           ///< read only metadata
-    std::optional<size_t> limit;              ///< limit number of records
   };
 
   /**

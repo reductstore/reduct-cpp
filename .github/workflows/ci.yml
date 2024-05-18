@@ -18,7 +18,7 @@ jobs:
         run: find src/ -name "*.cc" -o -name "*.h"  | xargs cpplint
       - name: Check code in /tests
         run: find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint
-      - name: Check code in /exampes
+      - name: Check code in /examples
         run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint
   build:
     runs-on: ubuntu-latest
@@ -69,8 +69,8 @@ jobs:
             exclude_token_api_tag: ""
           - reductstore_version: "main"
             exclude_api_version_tag: ""
-#          - reductstore_version: "latest"
-#            exclude_api_version_tag: "~[1_9]"
+          - reductstore_version: "latest"
+            exclude_api_version_tag: "~[1_10]"
           - license_file: ""
             exclude_license_tag: "~[license]"
 

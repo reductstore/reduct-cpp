@@ -47,5 +47,7 @@ class IHttpClient {
   static std::unique_ptr<IHttpClient> Build(std::string_view url, const HttpOptions &options);
 };
 
+bool IsCompatible(std::string_view min, std::string_view version);
+
 }  // namespace reduct::internal
 #endif  // REDUCT_CPP_HTTP_CLIENT_H
