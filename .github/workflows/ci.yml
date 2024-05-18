@@ -60,7 +60,7 @@ jobs:
     strategy:
       matrix:
         token: [ "", "TOKEN" ]
-        reductstore_version: [ "main" ]
+        reductstore_version: [ "main", "latest" ]
         license_file: [ "", "lic.key" ]
         include:
           - token: ""
