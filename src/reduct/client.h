@@ -105,6 +105,8 @@ class IClient {
   struct Token {
     std::string name;  // name of token
     Time created_at;   // creation time
+    bool is_provisioned;  // true if token is provisioned, you can't remove it or change its permissions
+
 
     auto operator<=>(const IClient::Token&) const = default;
   };
