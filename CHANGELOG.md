@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - RS-261: Support for `each_n` and `each_s` query parameters, [PR-68](https://github.com/reductstore/reduct-cpp/pull/68)
+- `is_provisioned` flag to Token, [PR-69](https://github.com/reductstore/reduct-cpp/pull/69)
 
 ### Fixed
 

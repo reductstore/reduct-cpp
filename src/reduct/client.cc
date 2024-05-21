@@ -147,6 +147,7 @@ class Client : public IClient {
         token_list.push_back(Token{
             .name = token.at("name"),
             .created_at = created_at,
+            .is_provisioned = token.at("is_provisioned"),
         });
       }
     } catch (const std::exception& e) {

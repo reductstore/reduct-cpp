@@ -19,6 +19,7 @@ TEST_CASE("reduct::Client should get token list", "[token_api]") {
   REQUIRE(tokens.size() == 1);
   REQUIRE(tokens[0].name == "init-token");
   REQUIRE(tokens[0].created_at.time_since_epoch().count() > 0);
+  REQUIRE_FALSE(tokens[0].is_provisioned);
 }
 
 TEST_CASE("reduct::Client should create token", "[token_api]") {
