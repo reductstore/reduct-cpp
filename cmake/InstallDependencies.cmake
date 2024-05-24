@@ -49,12 +49,16 @@ else ()
             URL_HASH MD5=814c5e121b29e37ee836312f0eb0328f
     )
 
-    FetchContent_Declare(
-            date
-            URL https://github.com/HowardHinnant/date/archive/refs/tags/v3.0.1.zip
-            URL_HASH MD5=cf556cc376d15055b8235b05b2fc6253)
-
-    FetchContent_MakeAvailable(fmt nlohmann_json httplib concurrentqueue date)
     add_library(dependencies INTERFACE)
-    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib concurrentqueue date)
+    FetchContent_MakeAvailable(fmt nlohmann_json httplib concurrentqueue)
+    target_link_libraries(dependencies INTERFACE fmt nlohmann_json httplib concurrentqueue)
+
+    if(NOT REDUCT_CPP_USE_STD_CHRONO)
+        FetchContent_Declare(
+                date
+                URL https://github.com/HowardHinnant/date/archive/refs/tags/v3.0.1.zip
+                URL_HASH MD5=cf556cc376d15055b8235b05b2fc6253)
+        FetchContent_MakeAvailable(date)
+        target_link_libraries(dependencies INTERFACE date)
+    endif()
 endif ()

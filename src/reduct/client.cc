@@ -2,7 +2,11 @@
 
 #include "reduct/client.h"
 
+#ifdef REDUCT_CPP_USE_STD_CHRONO
+#include <chrono>
+#else
 #include <date/date.h>
+#endif
 #include <fmt/core.h>
 #include <nlohmann/json.hpp>
 
@@ -56,8 +60,13 @@ class Client : public IClient {
             .disk_quota = license.at("disk_quota"),
             .fingerprint = license.at("fingerprint"),
         };
+#ifdef REDUCT_CPP_USE_STD_CHRONO
+        std::istringstream(license.at("expiry_date").get<std::string>()) >>
+            std::chrono::parse("%FT%TZ", server_info.license->expiry_date);
+#else
         std::istringstream(license.at("expiry_date").get<std::string>()) >>
             date::parse("%FT%TZ", server_info.license->expiry_date);
+#endif
       }
 
       return {
@@ -142,7 +151,11 @@ class Client : public IClient {
       token_list.reserve(json_tokens.size());
       for (const auto& token : json_tokens) {
         Time created_at;
+#ifdef REDUCT_CPP_USE_STD_CHRONO
+        std::istringstream(token.at("created_at").get<std::string>()) >> std::chrono::parse("%FT%TZ", created_at);
+#else
         std::istringstream(token.at("created_at").get<std::string>()) >> date::parse("%FT%TZ", created_at);
+#endif
 
         token_list.push_back(Token{
             .name = token.at("name"),
