@@ -88,3 +88,24 @@ TEST_CASE("reduct::Client should remove a replication", "[replication_api][1_8]"
             Error{404, "Replication 'test_replication_2' does not exist"});
   }
 }
+
+TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_api][1_10]") {
+  Fixture ctx;
+  settings.each_s = 1.5;
+  settings.each_n = 10;
+
+  auto err = ctx.client->CreateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [replication, err_2] = ctx.client->GetReplication("test_replication");
+  REQUIRE(err_2 == Error::kOk);
+  REQUIRE(replication.info == IClient::ReplicationInfo{
+                                  .name = "test_replication",
+                                  .is_active = false,
+                                  .is_provisioned = false,
+                                  .pending_records = 0,
+                              });
+
+  settings.dst_token = "***";
+  REQUIRE(replication.settings == settings);
+}

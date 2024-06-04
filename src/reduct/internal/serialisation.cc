@@ -114,6 +114,13 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
   json_data["entries"] = settings.entries;
   json_data["include"] = settings.include;
   json_data["exclude"] = settings.exclude;
+  if (settings.each_s) {
+    json_data["each_s"] = *settings.each_s;
+  }
+
+  if (settings.each_n) {
+    json_data["each_n"] = *settings.each_n;
+  }
 
   return json_data;
 }
@@ -128,15 +135,24 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
         .pending_records = data.at("info").at("pending_records"),
     };
 
+    const auto& settings = data.at("settings");
     info.settings = IClient::ReplicationSettings{
-        .src_bucket = data.at("settings").at("src_bucket"),
-        .dst_bucket = data.at("settings").at("dst_bucket"),
-        .dst_host = data.at("settings").at("dst_host"),
-        .dst_token = data.at("settings").at("dst_token"),
-        .entries = data.at("settings").at("entries"),
-        .include = data.at("settings").at("include"),
-        .exclude = data.at("settings").at("exclude"),
+        .src_bucket = settings.at("src_bucket"),
+        .dst_bucket = settings.at("dst_bucket"),
+        .dst_host = settings.at("dst_host"),
+        .dst_token = settings.at("dst_token"),
+        .entries = settings.at("entries"),
+        .include = settings.at("include"),
+        .exclude = settings.at("exclude"),
     };
+
+    if (settings.contains("each_s") && !settings.at("each_s").is_null()) {
+      info.settings.each_s = settings.at("each_s");
+    }
+
+    if (settings.contains("each_n") && !settings.at("each_n").is_null()) {
+      info.settings.each_n = settings.at("each_n");
+    }
 
     auto diagnostics = data.at("diagnostics");
     info.diagnostics = Diagnostics{.hourly = DiagnosticsItem{
