@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Windows compilation, [PR-66](https://github.com/reductstore/reduct-cpp/pull/66)
 
+### Changed
+
+- RS-269: move documentation to main website, [PR-71](https://github.com/reductstore/reduct-cpp/pull/71)
+
 ## [1.9.0] - 2024-03-09
 
 ### Added
