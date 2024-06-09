@@ -25,41 +25,50 @@ read the data back:
 
 using reduct::IBucket;
 using reduct::IClient;
+using sec = std::chrono::seconds;
 
 int main() {
-  auto client = IClient::Build("https://play.reduct.store");
-  // Create a bucket
-  auto [bucket, create_err] = client->GetOrCreateBucket("bucket");
-  if (create_err) {
-    std::cerr << "Error: " << create_err;
-    return -1;
-  }
-
-  // Write some data
-  auto ts = IBucket::Time::clock::now();
-  [[maybe_unused]] auto write_err = bucket->Write("entry-1", ts, [](auto rec) { rec->WriteAll("some_data1"); });
-
-  // Read data via timestamp
-  auto read_err = bucket->Read("entry-1", ts, [](auto rec) {
-        std::cout << "Read blob: " <<  rec->ReadAll() << std::endl;
-  });
-
-
-  // Walk through the data
-  err = bucket->Query("entry-1", std::nullopt, IBucket::Time::clock::now(), {}, [](auto&& record) {
-    std::string blob;
-
-    auto read_err = record.Read([&blob](auto chunk) {
-      blob.append(chunk);
-      return true;
+    // 1. Create a ReductStore client
+    auto client = IClient::Build("http://127.0.0.1:8383",{
+        .api_token = "my-token"
     });
 
-    if (!read_err) {
-      std::cout << "Read blob: " << blob;
+    // 2. Get or create a bucket with 1Gb quota
+    auto [bucket, create_err] = client->GetOrCreateBucket("my-bucket", {
+        .quota_type = IBucket::QuotaType::kFifo,
+        .quota_size = 1'000'000'000
+    });
+
+    if (create_err) {
+        std::cerr << "Error: " << create_err;
+        return -1;
     }
 
-    return true;
-  });
+    // 3. Write some data with timestamps in the 'sensor-1' entry
+    IBucket::Time start = IBucket::Time::clock::now();
+    [[maybe_unused]] auto write_err =
+            bucket->Write("sensor-1", start, [](auto rec) { rec->WriteAll("Record #1"); });
+    write_err = bucket->Write("sensor-1", start + sec(1), [](auto rec) { rec->WriteAll("Record #2"); });
+
+    // 4. Query the data by time range
+    auto err = bucket->Query("sensor-1", start,  start + sec(2), {}, [](auto&& record) {
+        std::cout << "Timestamp: " << record.timestamp.time_since_epoch().count() << std::endl;
+        std::cout << "Content Length: " << record.size << std::endl;
+
+        auto [blob, read_err] = record.ReadAll();
+        if (!read_err) {
+            std::cout << "Read blob: " << blob << std::endl;
+        }
+
+        return true;
+    });
+
+    if (err) {
+        std::cerr << "Error: " << err;
+        return -1;
+    }
+
+    return 0;
 }
 ```
 
@@ -89,7 +98,4 @@ FetchContent. To use ReductStore SDK you need only to use `find_pacakge` in your
 find_package(ReductCpp)
 ```
 
-## References
-
-* [Documentation](https://cpp.reduct.store)
-* [ReductStore HTTP API](https://reduct.store/docs/http-api)
+For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
