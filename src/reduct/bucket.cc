@@ -3,6 +3,7 @@
 #include "reduct/bucket.h"
 #define FMT_HEADER_ONLY 1
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 #if CONAN
 #include <moodycamel/concurrentqueue.h>
 #else
@@ -136,60 +137,29 @@ class Bucket : public IBucket {
     const auto time = options.timestamp ? ToMicroseconds(*options.timestamp) : ToMicroseconds(Time::clock::now());
     const auto content_type = options.content_type.empty() ? "application/octet-stream" : options.content_type;
 
-    IHttpClient::Headers headers;
-    for (const auto& [key, value] : options.labels) {
-      headers.emplace(fmt::format("x-reduct-label-{}", key), value);
-    }
-
+    IHttpClient::Headers headers = MakeHeadersFromLabels(options);
     return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, time), content_type, record.content_length_,
                          std::move(headers), std::move(record.callback_));
   }
 
   Result<WriteBatchErrors> WriteBatch(std::string_view entry_name,
                                       WriteBatchCallback callback) const noexcept override {
-    Batch batch;
-    callback(&batch);
+    return WriteOrUpdateBatch(entry_name, std::move(callback), true);
+  }
 
-    IHttpClient::Headers headers;
-    for (const auto& [time, record] : batch.records()) {
-      std::vector<std::string> labels;
-      for (const auto& [label_key, label_value] : record.labels) {
-        if (label_key.find(',') == std::string::npos) {
-          labels.push_back(fmt::format("{}={}", label_key, label_value));
-        } else {
-          labels.push_back(fmt::format("{}=\"{}\"", label_key, label_value));
-        }
-      }
+  Result<WriteBatchErrors> UpdateBatch(std::string_view entry_name,
+                                       WriteBatchCallback callback) const noexcept override {
+    return WriteOrUpdateBatch(entry_name, std::move(callback), false);
+  }
 
-      const auto key = fmt::format("x-reduct-time-{}", ToMicroseconds(time));
-      const auto value = fmt::format("{},{},{}", record.size, record.content_type, fmt::join(labels, ","));
-      headers.emplace(key, value);
+  Error Update(std::string_view entry_name, const WriteOptions& options) const noexcept override {
+    if (!options.timestamp) {
+      return Error{.code = 400, .message = "Timestamp is required"};
     }
 
-    const auto content_length = batch.body().size();
-    auto [resp_headers, err] =
-        client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
-                      std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
-                        return std::pair{batch.body().size() <= offset + size, batch.body().substr(offset, size)};
-                      });
-    if (err) {
-      return {{}, err};
-    }
-
-    WriteBatchErrors errors;
-    for (const auto& [key, value] : resp_headers) {
-      if (key.starts_with("x-reduct-error-")) {
-        auto pos = value.find(',');
-        if (pos == std::string::npos) {
-          continue;
-        }
-        auto status = std::stoi(value.substr(0, pos));
-        auto message = value.substr(pos + 1);
-        errors.emplace(FromMicroseconds(key.substr(15)), Error{.code = status, .message = message});
-      }
-    }
-
-    return {errors, Error::kOk};
+    const auto time = ToMicroseconds(*options.timestamp);
+    IHttpClient::Headers headers = MakeHeadersFromLabels(options);
+    return client_->Patch(fmt::format("{}/{}?ts={}", path_, entry_name, time), "", std::move(headers));
   }
 
   Error Read(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
@@ -524,6 +494,73 @@ class Bucket : public IBucket {
   }
 
   static Time FromMicroseconds(const std::string& ts) { return Time() + std::chrono::microseconds(std::stoul(ts)); }
+
+  IHttpClient::Headers MakeHeadersFromLabels(const WriteOptions& options) const {
+    IHttpClient::Headers headers;
+    for (const auto& [key, value] : options.labels) {
+      headers.emplace(fmt::format("x-reduct-label-{}", key), value);
+    }
+    return headers;
+  }
+
+  Result<WriteBatchErrors> WriteOrUpdateBatch(std::string_view entry_name, WriteBatchCallback callback,
+                                              bool write) const noexcept {
+    Batch batch;
+    callback(&batch);
+
+    IHttpClient::Headers headers;
+    for (const auto& [time, record] : batch.records()) {
+      std::vector<std::string> labels;
+      for (const auto& [label_key, label_value] : record.labels) {
+        if (label_key.find(',') == std::string::npos) {
+          labels.push_back(fmt::format("{}={}", label_key, label_value));
+        } else {
+          labels.push_back(fmt::format("{}=\"{}\"", label_key, label_value));
+        }
+      }
+
+      const auto key = fmt::format("x-reduct-time-{}", ToMicroseconds(time));
+
+      if (write) {
+        const auto value = fmt::format("{},{},{}", record.size, record.content_type, fmt::join(labels, ","));
+        headers.emplace(key, value);
+      } else {
+        const auto value = fmt::format("0,,{}", fmt::join(labels, ","));
+        headers.emplace(key, value);
+      }
+    }
+
+    Result<IHttpClient::Headers> resp;
+    if (write) {
+      const auto content_length = batch.body().size();
+      resp = client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
+                           std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
+                             return std::pair{batch.body().size() <= offset + size, batch.body().substr(offset, size)};
+                           });
+    } else {
+      resp = client_->Patch(fmt::format("{}/{}/batch", path_, entry_name), "", std::move(headers));
+    }
+
+    auto [resp_headers, err] = resp;
+    if (err) {
+      return {{}, err};
+    }
+
+    WriteBatchErrors errors;
+    for (const auto& [key, value] : resp_headers) {
+      if (key.starts_with("x-reduct-error-")) {
+        auto pos = value.find(',');
+        if (pos == std::string::npos) {
+          continue;
+        }
+        auto status = std::stoi(value.substr(0, pos));
+        auto message = value.substr(pos + 1);
+        errors.emplace(FromMicroseconds(key.substr(15)), Error{.code = status, .message = message});
+      }
+    }
+
+    return {errors, Error::kOk};
+  }
 
   std::unique_ptr<internal::IHttpClient> client_;
   std::string path_;

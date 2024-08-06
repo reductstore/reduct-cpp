@@ -121,19 +121,25 @@ class HttpClient : public IHttpClient {
       return {{}, std::move(err)};
     }
 
-    Headers response_headers;
-    for (auto& [k, v] : res->headers) {
-      std::string lowcase_header = k;
-      std::transform(k.begin(), k.end(), lowcase_header.begin(), [](auto ch) { return std::tolower(ch); });
-      response_headers[lowcase_header] = v;
-    }
-
-    return {std::move(response_headers), Error::kOk};
+    return NormilizeHeaders(std::move(res));
   }
 
   Error Put(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
     auto res = client_->Put(AddApiPrefix(path).data(), std::string(body), mime.data());
     return CheckRequest(res);
+  }
+
+  Result<Headers> Patch(std::string_view path, std::string_view body, Headers headers) const noexcept override {
+    httplib::Headers httplib_headers;
+    for (auto& [k, v] : headers) {
+      httplib_headers.emplace(k, v);
+    }
+    auto res = client_->Patch(AddApiPrefix(path).data(), httplib_headers, std::string(body), "");
+    if (auto err = CheckRequest(res)) {
+      return {{}, std::move(err)};
+    }
+
+    return NormilizeHeaders(std::move(res));
   }
 
   Error Delete(std::string_view path) const noexcept override {
@@ -206,4 +212,16 @@ bool IsCompatible(std::string_view min, std::string_view version) {
 
   return min_version[0] == current_version[0] && min_version[1] <= current_version[1];
 }
+
+Result<IHttpClient::Headers> NormilizeHeaders(httplib::Result res) {
+  IHttpClient::Headers response_headers;
+  for (auto& [k, v] : res->headers) {
+    std::string lowcase_header = k;
+    std::transform(k.begin(), k.end(), lowcase_header.begin(), [](auto ch) { return tolower(ch); });
+    response_headers[lowcase_header] = v;
+  }
+
+  return {std::move(response_headers), Error::kOk};
+}
+
 }  // namespace reduct::internal
