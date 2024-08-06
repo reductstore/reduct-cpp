@@ -15,10 +15,10 @@ class DriftFrameworkConan(ConanFile):
                        "date:header_only": True}
     generators = "cmake"
 
-    requires = ("fmt/10.2.1",
-                "cpp-httplib/0.14.3",
+    requires = ("fmt/11.0.2",
+                "cpp-httplib/0.16.0",
                 "nlohmann_json/3.11.3",
-                "openssl/3.2.0",
+                "openssl/3.2.2",
                 "concurrentqueue/1.0.4",
                 "date/3.0.1")
 

@@ -180,6 +180,10 @@ class IBucket {
       body_ += data;
     }
 
+    void AddOnlyLabels(Time timestamp, LabelMap labels) {
+      records_[timestamp] = Record{timestamp, 0, "", std::move(labels)};
+    }
+
     [[nodiscard]] const std::map<Time, Record>& records() const { return records_; }
     [[nodiscard]] const std::string& body() const { return body_; }
 
@@ -190,6 +194,7 @@ class IBucket {
 
   using WriteBatchCallback = std::function<void(Batch*)>;
   using WriteBatchErrors = std::map<Time, Error>;
+
 
   /**
    * Read a record in chunks
@@ -247,6 +252,30 @@ class IBucket {
    */
   [[nodiscard]] virtual Result<WriteBatchErrors> WriteBatch(std::string_view entry_name,
                            WriteBatchCallback callback) const noexcept = 0;
+
+
+  /**
+   * Write labels of an existing record
+   *
+   * Provide a label with empty value to remove it
+   *
+   * @param entry_name entry in bucket
+   * @param options options with timestamp, labels (content type is ignored)
+   * @return HTTP or communication error
+   */
+  virtual Error Update(std::string_view entry_name,
+                           const WriteOptions& options) const noexcept = 0;
+
+  /**
+   * Update labels of an existing record in a batch
+
+   * @param entry_name entry in bucket
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  [[nodiscard]] virtual Result<WriteBatchErrors> UpdateBatch(std::string_view entry_name,
+                                                            WriteBatchCallback callback) const noexcept = 0;
+
 
   /**
    * Query options

@@ -40,6 +40,8 @@ class IHttpClient {
   virtual Error Put(std::string_view path, std::string_view body,
                     std::string_view mime = "application/json") const noexcept = 0;
 
+  virtual Result<Headers> Patch(std::string_view path, std::string_view body, Headers headers) const noexcept = 0;
+
   virtual Error Delete(std::string_view path) const noexcept = 0;
 
   [[nodiscard]] virtual std::string_view api_version() const noexcept = 0;

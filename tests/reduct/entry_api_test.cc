@@ -373,3 +373,49 @@ TEST_CASE("reduct::IBucket should write batch of records with errors", "[bucket_
   REQUIRE(record_errors[t].code == 409);
   REQUIRE(record_errors[t].message == "A record with timestamp 0 already exists");
 }
+
+TEST_CASE("reduct::IBukcet should update labels", "[bucket_api][1_11]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1",
+                        {
+                            .timestamp = t,
+                            .labels = {{"key1", "value1"}, {"key2", "value2"}},
+                        },
+                        [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+
+  REQUIRE(bucket->Update("entry-1", {
+                                        .timestamp = t,
+                                        .labels = {{"key1", "value1"}, {"key2", ""}},
+                                    }) == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-1", t, [](auto record) {
+    REQUIRE(record.labels == std::map<std::string, std::string>{{"key1", "value1"}});
+    return true;
+  }) == Error::kOk);
+}
+
+TEST_CASE("reduct::IBukcet should update labels in barch and return errors", "[bucket_api][1_11]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1",
+                        {
+                            .timestamp = t,
+                            .labels = {{"key1", "value1"}, {"key2", "value2"}},
+                        },
+                        [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+
+  auto [record_errors, http_error] = bucket->UpdateBatch("entry-1", [t](IBucket::Batch* batch) {
+    batch->AddOnlyLabels(t, {{"key1", "value1"}, {"key2", ""}});
+    batch->AddOnlyLabels(t + us(1), {{"key1", "value1"}, {"key2", "value2"}});
+  });
+
+  REQUIRE(http_error == Error::kOk);
+  REQUIRE(record_errors.size() == 1);
+  REQUIRE(record_errors[t + us(1)].code == 404);
+  REQUIRE(record_errors[t + us(1)].message == "No record with timestamp 1");
+}
