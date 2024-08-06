@@ -27,8 +27,8 @@ else ()
     include(FetchContent)
     FetchContent_Declare(
             fmt
-            URL https://github.com/fmtlib/fmt/archive/refs/tags/10.2.1.zip
-            URL_HASH MD5=1bba4e8bdd7b0fa98f207559ffa380a3
+            URL https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.zip
+            URL_HASH MD5=6e20923e12c4b78a99e528c802f459ef
     )
 
     FetchContent_Declare(
@@ -39,8 +39,8 @@ else ()
 
     FetchContent_Declare(
             httplib
-            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.14.3.zip
-            URL_HASH MD5=af82eb38506ca531b6d1d53524ff7912
+            URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.16.0.zip
+            URL_HASH MD5=c5367889819d677bd06d6c7739896b2b
     )
 
     FetchContent_Declare(
