@@ -21,23 +21,12 @@ jobs:
       - name: Check code in /examples
         run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint
 
-  test-pkg-with-conan:
+  test-pkg:
     runs-on: ${{ matrix.os }}
     needs: cpplint
     strategy:
       matrix:
-        os: [ ubuntu-22.04, windows-2019 ]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install conan
-        run: pip3 install conan==1.64.1
-      - uses: ./.github/actions/build-package
-
-  test-pkg-without-conan:
-    runs-on: ${{ matrix.os }}
-    needs: cpplint
-    strategy:
-      matrix:
+        with_conan: [ "true", "false" ]
         include:
           - os: ubuntu-22.04
             install: "true"
@@ -45,6 +34,9 @@ jobs:
             install: "false"
     steps:
       - uses: actions/checkout@v4
+      - name: Install conan
+        if: ${{ matrix.with_conan == 'true' }}
+        run: pip3 install conan==1.64.1
       - uses: ./.github/actions/build-package
         with:
           install: ${{ matrix.install }}
