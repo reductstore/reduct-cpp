@@ -1,12 +1,17 @@
 name: "build-package"
 description: "Install package and build example"
+inputs:
+  install:
+    default: "true"
+    description: "Install the package after build"
 runs:
   using: "composite"
   steps:
     - name: Build package
       shell: bash
-      run: cmake -DCMAKE_BUILD_TYPE=Release -DREDUCT_CPP_ENABLE_EXAMPLES=ON -S . -B build
+      run: cmake -DCMAKE_BUILD_TYPE=Debug -DREDUCT_CPP_ENABLE_EXAMPLES=ON -DREDUCT_CPP_ENABLE_TESTS=ON -S . -B build
     - name: Install package
+      if: ${{inputs.install == 'true' }}
       shell: bash
       run: sudo cmake --build build --target install
     - name: Build example
