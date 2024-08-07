@@ -27,11 +27,11 @@ jobs:
     strategy:
       matrix:
         build_type: [ "cmake", "conan" ]
-        os: [ ubuntu-22.04, windows-latest ]
+        os: [ ubuntu-22.04, windows-2019 ]
         include:
           - os: ubuntu-22.04
             install: "true"
-          - os: windows-latest
+          - os: windows-2019
             install: "false"
     steps:
       - uses: actions/checkout@v4
