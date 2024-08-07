@@ -20,43 +20,30 @@ jobs:
         run: find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint
       - name: Check code in /examples
         run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint
-  build:
-    runs-on: ubuntu-latest
-    needs: cpplint
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      - name: Build and export
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          tags: ${{github.repository}}:latest
-          outputs: type=docker,dest=/tmp/image.tar
-          build-args: BUILD_TYPE=Debug
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: image
-          path: /tmp/image.tar
 
   test-pkg-with-conan:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
     needs: cpplint
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - name: Install conan
         run: pip3 install conan==1.58.0
-      - uses: ./.github/actions/check-package
+      - uses: ./.github/actions/build-package
 
   test-pkg-without-conan:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
     needs: cpplint
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/check-package
+      - uses: ./.github/actions/build-package
 
-  tests:
+  unit-tests:
     strategy:
       matrix:
         token: [ "", "TOKEN" ]
@@ -75,17 +62,11 @@ jobs:
             exclude_license_tag: "~[license]"
 
     needs:
-      - build
-      - test-pkg-with-conan
-      - test-pkg-without-conan
+      - cpplint
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: image
-          path: /tmp/
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-package
 
       - name: Generate license
         run: echo '${{secrets.LICENSE_KEY}}' > lic.key

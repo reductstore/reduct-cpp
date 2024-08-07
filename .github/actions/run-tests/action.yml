@@ -26,11 +26,6 @@ runs:
         --env RS_LICENSE_PATH=/workdir/${{inputs.lic_file}}
         -d reduct/store:${{inputs.reductstore-version}}
 
-    - name: Load image with tests
-      shell: bash
-      run: |
-        docker load --input /tmp/image.tar
-        docker image ls -a
     - name: Run tests
       shell: bash
-      run: docker run --network=host --env REDUCT_CPP_TOKEN_API=${{inputs.api-token}} ${{github.repository}} reduct-tests ${{inputs.tags}}
+      run:  build/bin/reduct-tests ${{inputs.tags}}

@@ -1,4 +1,4 @@
-name: "check-package"
+name: "build-package"
 description: "Install package and build example"
 runs:
   using: "composite"
@@ -16,10 +16,3 @@ runs:
         cd examples/build
         cmake ..
         cmake --build .
-    - name: Run examples
-      shell: bash
-      run: |
-        docker run -p 8383:8383 -d reduct/store:main
-        sleep 3
-        cd examples/build
-        ./usage-example
