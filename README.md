@@ -9,7 +9,7 @@ in C++20. It allows developers to easily interact with the database from their C
 ## Features
 
 * Written in C++20
-* Support ReductStore [HTTP API v1.10](https://www.reduct.store/docs/next/http-api)
+* Support ReductStore [HTTP API v1.11](https://www.reduct.store/docs/next/http-api)
 * Support HTTP and HTTPS protocols
 * Support Linux AMD64 and Windows
 
