@@ -26,7 +26,8 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        with_conan: [ "true", "false" ]
+        build_type: [ "cmake", "conan" ]
+        os: [ ubuntu-22.04, windows-latest ]
         include:
           - os: ubuntu-22.04
             install: "true"
@@ -35,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install conan
-        if: ${{ matrix.with_conan == 'true' }}
+        if: ${{ matrix.build_type == 'conan' }}
         run: pip3 install conan==1.64.1
       - uses: ./.github/actions/build-package
         with:
