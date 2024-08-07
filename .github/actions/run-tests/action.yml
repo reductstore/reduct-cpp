@@ -28,7 +28,9 @@ runs:
         -d reduct/store:${{inputs.reductstore-version}}
     - name: Print logs
       shell: bash
-      run: docker logs reduct-store
+      run: |
+        sleep 5
+        docker logs reduct-store
     - name: Run tests
       shell: bash
       run:  REDUCT_CPP_TOKEN_API=${{inputs.api-token}} build/bin/reduct-tests ${{inputs.tags}}
