@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - RS-31: `Bucket::Update` and `Bucket::UpdateBatch` methods for changing labels, [PR-72](https://github.com/reductstore/reduct-cpp/pull/72)
 
+### Infrastructure
+
+- RS-273: Refactor CI actions and add build for Windows, [PR-73](https://github.com/reductstore/reduct-cpp/pull/73)
+
 ## [1.10.0] - 2022-06-11
 
 ### Added

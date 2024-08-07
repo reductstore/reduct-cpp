@@ -24,13 +24,13 @@ runs:
       run: docker run -p 8383:8383 -v ${PWD}:/workdir
         --env RS_API_TOKEN=${{inputs.api-token}}
         --env RS_LICENSE_PATH=/workdir/${{inputs.lic_file}}
+        --name reduct-store
         -d reduct/store:${{inputs.reductstore-version}}
-
-    - name: Load image with tests
+    - name: Print logs
       shell: bash
       run: |
-        docker load --input /tmp/image.tar
-        docker image ls -a
+        sleep 5
+        docker logs reduct-store
     - name: Run tests
       shell: bash
-      run: docker run --network=host --env REDUCT_CPP_TOKEN_API=${{inputs.api-token}} ${{github.repository}} reduct-tests ${{inputs.tags}}
+      run:  REDUCT_CPP_TOKEN_API=${{inputs.api-token}} build/bin/reduct-tests ${{inputs.tags}}
