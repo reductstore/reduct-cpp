@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2022-08-19
+
 ### Added
 
 - RS-31: `Bucket::Update` and `Bucket::UpdateBatch` methods for changing labels, [PR-72](https://github.com/reductstore/reduct-cpp/pull/72)
@@ -208,7 +210,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.11.0...HEAD
+
+[1.11.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.10.0...1.11.0
 
 [1.10.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.9.0...1.10.0
 
