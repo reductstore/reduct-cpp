@@ -22,13 +22,13 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(info.version >= "1.10.0");
 
   REQUIRE(info.bucket_count == 2);
-  REQUIRE(info.usage == 294);
+  REQUIRE(info.usage == 234);
   REQUIRE(info.uptime.count() >= 1);
   REQUIRE(info.oldest_record.time_since_epoch() == s(1));
   REQUIRE(info.latest_record.time_since_epoch() == s(6));
 
   REQUIRE(*info.defaults.bucket.max_block_size == 64000000);
-  REQUIRE(*info.defaults.bucket.max_block_records == 256);
+  REQUIRE(*info.defaults.bucket.max_block_records == 1024);
   REQUIRE(*info.defaults.bucket.quota_type == IBucket::QuotaType::kNone);
   REQUIRE(*info.defaults.bucket.quota_size == 0);
 }
@@ -54,13 +54,13 @@ TEST_CASE("reduct::Client should list buckets", "[server_api]") {
 
   REQUIRE_FALSE(list.empty());
   REQUIRE(list[0].name == "test_bucket_1");
-  REQUIRE(list[0].size == 196);
+  REQUIRE(list[0].size == 156);
   REQUIRE(list[0].entry_count == 2);
   REQUIRE(list[0].oldest_record.time_since_epoch() == s(1));
   REQUIRE(list[0].latest_record.time_since_epoch() == s(4));
 
   REQUIRE(list[1].name == "test_bucket_2");
-  REQUIRE(list[1].size == 98);
+  REQUIRE(list[1].size == 78);
   REQUIRE(list[1].entry_count == 1);
   REQUIRE(list[1].oldest_record.time_since_epoch() == s(5));
   REQUIRE(list[1].latest_record.time_since_epoch() == s(6));
