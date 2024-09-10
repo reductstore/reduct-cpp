@@ -344,6 +344,17 @@ class IBucket {
    */
   virtual Error RemoveEntry(std::string_view entry_name) const noexcept = 0;
 
+
+  /**
+   * @brief Remove a record from the entry
+   * @param entry_name
+   * @param timestamp
+   * @return HTTP or communication error
+   */
+  virtual Error RemoveRecord(std::string_view entry_name, Time timestamp) const noexcept = 0;
+
+
+
   /**
    * @brief Creates a new bucket
    * @param server_url HTTP url

@@ -124,6 +124,10 @@ class Bucket : public IBucket {
     return client_->Delete(fmt::format("{}/{}", path_, entry_name));
   }
 
+  Error RemoveRecord(std::string_view entry_name, Time timestamp) const noexcept override {
+      return client_->Delete(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(timestamp)));
+  }
+
   Error Write(std::string_view entry_name, std::optional<Time> ts,
               WriteRecordCallback callback) const noexcept override {
     return Write(entry_name, {.timestamp = ts}, std::move(callback));
