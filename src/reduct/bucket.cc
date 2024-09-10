@@ -125,7 +125,7 @@ class Bucket : public IBucket {
   }
 
   Error RemoveRecord(std::string_view entry_name, Time timestamp) const noexcept override {
-      return client_->Delete(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(timestamp)));
+    return client_->Delete(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(timestamp)));
   }
 
   Error Write(std::string_view entry_name, std::optional<Time> ts,
@@ -146,14 +146,16 @@ class Bucket : public IBucket {
                          std::move(headers), std::move(record.callback_));
   }
 
-  Result<WriteBatchErrors> WriteBatch(std::string_view entry_name,
-                                      WriteBatchCallback callback) const noexcept override {
-    return WriteOrUpdateBatch(entry_name, std::move(callback), true);
+  Result<BatchErrors> WriteBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
+    return ProcessBatch(entry_name, std::move(callback), BatchType::kWrite);
   }
 
-  Result<WriteBatchErrors> UpdateBatch(std::string_view entry_name,
-                                       WriteBatchCallback callback) const noexcept override {
-    return WriteOrUpdateBatch(entry_name, std::move(callback), false);
+  Result<BatchErrors> UpdateBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
+    return ProcessBatch(entry_name, std::move(callback), BatchType::kUpdate);
+  }
+
+  Result<BatchErrors> RemoveBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
+    return ProcessBatch(entry_name, std::move(callback), BatchType::kRemove);
   }
 
   Error Update(std::string_view entry_name, const WriteOptions& options) const noexcept override {
@@ -507,8 +509,10 @@ class Bucket : public IBucket {
     return headers;
   }
 
-  Result<WriteBatchErrors> WriteOrUpdateBatch(std::string_view entry_name, WriteBatchCallback callback,
-                                              bool write) const noexcept {
+  enum class BatchType { kWrite, kUpdate, kRemove };
+
+  Result<WriteBatchErrors> ProcessBatch(std::string_view entry_name, BatchCallback callback,
+                                              BatchType type) const noexcept {
     Batch batch;
     callback(&batch);
 
@@ -525,24 +529,43 @@ class Bucket : public IBucket {
 
       const auto key = fmt::format("x-reduct-time-{}", ToMicroseconds(time));
 
-      if (write) {
-        const auto value = fmt::format("{},{},{}", record.size, record.content_type, fmt::join(labels, ","));
-        headers.emplace(key, value);
-      } else {
-        const auto value = fmt::format("0,,{}", fmt::join(labels, ","));
-        headers.emplace(key, value);
+      switch (type) {
+        case BatchType::kWrite: {
+          const auto value = fmt::format("{},{},{}", record.size, record.content_type, fmt::join(labels, ","));
+          headers.emplace(key, value);
+
+          break;
+        }
+        case BatchType::kUpdate: {
+          const auto value = fmt::format("0,,{}", fmt::join(labels, ","));
+          headers.emplace(key, value);
+          break;
+        }
+        case BatchType::kRemove: {
+          headers.emplace(key, "0,");
+          break;
+        }
       }
     }
 
     Result<IHttpClient::Headers> resp;
-    if (write) {
-      const auto content_length = batch.body().size();
-      resp = client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
-                           std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
-                             return std::pair{batch.body().size() <= offset + size, batch.body().substr(offset, size)};
-                           });
-    } else {
-      resp = client_->Patch(fmt::format("{}/{}/batch", path_, entry_name), "", std::move(headers));
+    switch (type) {
+      case BatchType::kWrite: {
+        const auto content_length = batch.body().size();
+        resp =
+            client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
+                          std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
+                            return std::pair{batch.body().size() <= offset + size, batch.body().substr(offset, size)};
+                          });
+        break;
+      }
+      case BatchType::kUpdate:
+        resp = client_->Patch(fmt::format("{}/{}/batch", path_, entry_name), "", std::move(headers));
+        break;
+
+      case BatchType::kRemove:
+        resp = client_->Delete(fmt::format("{}/{}/batch", path_, entry_name), std::move(headers));
+        break;
     }
 
     auto [resp_headers, err] = resp;

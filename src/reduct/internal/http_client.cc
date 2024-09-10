@@ -153,10 +153,18 @@ class HttpClient : public IHttpClient {
     return NormalizeHeaders(std::move(res));
   }
 
-  Error Delete(std::string_view path) const noexcept override {
-    auto res = client_->Delete(AddApiPrefix(path).data());
-    return CheckRequest(res);
-  }
+  Result<Headers> Delete(std::string_view path, Headers headers) const noexcept override {
+    httplib::Headers httplib_headers;
+    for (auto& [k, v] : headers) {
+      httplib_headers.emplace(k, v);
+    }
+
+    auto res = client_->Delete(AddApiPrefix(path).data(), httplib_headers);
+    if (auto err = CheckRequest(res)) {
+      return {{}, std::move(err)};
+    }
+
+    return NormalizeHeaders(std::move(res));  }
 
   std::string_view api_version() const noexcept override { return api_version_; }
 

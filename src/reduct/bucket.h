@@ -180,6 +180,15 @@ class IBucket {
       body_ += data;
     }
 
+    /**
+     * Add an empty record to batch (use for removing)
+     * @param timestamp
+     */
+    void AddRecord(Time timestamp) {
+      records_[timestamp] = Record{timestamp, 0, "", {}};
+    }
+
+
     void AddOnlyLabels(Time timestamp, LabelMap labels) {
       records_[timestamp] = Record{timestamp, 0, "", std::move(labels)};
     }
@@ -192,8 +201,17 @@ class IBucket {
     std::string body_;
   };
 
+  /**
+   * @deprecated Use BatchErrors instead
+   */
   using WriteBatchCallback = std::function<void(Batch*)>;
+  using BatchCallback = std::function<void(Batch*)>;
+
+  /**
+   * @deprecated Use BatchErrors instead
+   */
   using WriteBatchErrors = std::map<Time, Error>;
+  using BatchErrors = std::map<Time, Error>;
 
 
   /**
@@ -250,8 +268,8 @@ class IBucket {
    * @param callback a callback to add records to batch
    * @return HTTP error or map of errors for each record
    */
-  [[nodiscard]] virtual Result<WriteBatchErrors> WriteBatch(std::string_view entry_name,
-                           WriteBatchCallback callback) const noexcept = 0;
+  [[nodiscard]] virtual Result<BatchErrors> WriteBatch(std::string_view entry_name,
+                                                       BatchCallback callback) const noexcept = 0;
 
 
   /**
@@ -273,8 +291,8 @@ class IBucket {
    * @param callback a callback to add records to batch
    * @return HTTP error or map of errors for each record
    */
-  [[nodiscard]] virtual Result<WriteBatchErrors> UpdateBatch(std::string_view entry_name,
-                                                            WriteBatchCallback callback) const noexcept = 0;
+  [[nodiscard]] virtual Result<BatchErrors> UpdateBatch(std::string_view entry_name,
+                                                        BatchCallback callback) const noexcept = 0;
 
 
   /**
@@ -352,6 +370,16 @@ class IBucket {
    * @return HTTP or communication error
    */
   virtual Error RemoveRecord(std::string_view entry_name, Time timestamp) const noexcept = 0;
+
+
+  /**
+   * @brief Remove a batch of records from the entry
+   * @param entry_name
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  virtual Result<BatchErrors> RemoveBatch(std::string_view entry_name,
+                                          BatchCallback callback) const noexcept = 0;
 
 
 
