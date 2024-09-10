@@ -34,15 +34,18 @@ class IHttpClient {
                                                std::string_view mime = "application/json") const noexcept = 0;
 
   using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
-  virtual Result<Headers> Post(std::string_view path, std::string_view mime, size_t content_length, Headers headers,
-                               WriteCallback) const noexcept = 0;
+  virtual Result<std::tuple<std::string, Headers>> Post(std::string_view path, std::string_view mime,
+                                                        size_t content_length, Headers headers,
+                                                        WriteCallback) const noexcept = 0;
 
   virtual Error Put(std::string_view path, std::string_view body,
                     std::string_view mime = "application/json") const noexcept = 0;
 
-  virtual Result<Headers> Patch(std::string_view path, std::string_view body, Headers headers) const noexcept = 0;
+  virtual Result<std::tuple<std::string, Headers>> Patch(std::string_view path, std::string_view body,
+                                                         Headers headers) const noexcept = 0;
 
-  virtual Result<Headers> Delete(std::string_view path, Headers headers = {}) const noexcept = 0;
+  virtual Result<std::tuple<std::string, Headers>> Delete(std::string_view path,
+                                                          Headers headers = {}) const noexcept = 0;
 
   [[nodiscard]] virtual std::string_view api_version() const noexcept = 0;
 
