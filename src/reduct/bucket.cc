@@ -124,6 +124,10 @@ class Bucket : public IBucket {
     return client_->Delete(fmt::format("{}/{}", path_, entry_name));
   }
 
+  Error RemoveRecord(std::string_view entry_name, Time timestamp) const noexcept override {
+    return client_->Delete(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(timestamp)));
+  }
+
   Error Write(std::string_view entry_name, std::optional<Time> ts,
               WriteRecordCallback callback) const noexcept override {
     return Write(entry_name, {.timestamp = ts}, std::move(callback));
@@ -142,14 +146,16 @@ class Bucket : public IBucket {
                          std::move(headers), std::move(record.callback_));
   }
 
-  Result<WriteBatchErrors> WriteBatch(std::string_view entry_name,
-                                      WriteBatchCallback callback) const noexcept override {
-    return WriteOrUpdateBatch(entry_name, std::move(callback), true);
+  Result<BatchErrors> WriteBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
+    return ProcessBatch(entry_name, std::move(callback), BatchType::kWrite);
   }
 
-  Result<WriteBatchErrors> UpdateBatch(std::string_view entry_name,
-                                       WriteBatchCallback callback) const noexcept override {
-    return WriteOrUpdateBatch(entry_name, std::move(callback), false);
+  Result<BatchErrors> UpdateBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
+    return ProcessBatch(entry_name, std::move(callback), BatchType::kUpdate);
+  }
+
+  Result<BatchErrors> RemoveBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
+    return ProcessBatch(entry_name, std::move(callback), BatchType::kRemove);
   }
 
   Error Update(std::string_view entry_name, const WriteOptions& options) const noexcept override {
@@ -184,44 +190,7 @@ class Bucket : public IBucket {
 
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
               ReadRecordCallback callback) const noexcept override {
-    auto url = fmt::format("{}/{}/q?", path_, entry_name);
-
-    if (start) {
-      url += fmt::format("start={}&", ToMicroseconds(*start));
-    }
-
-    if (stop) {
-      url += fmt::format("stop={}&", ToMicroseconds(*stop));
-    }
-
-    for (const auto& [key, value] : options.include) {
-      url += fmt::format("&include-{}={}", key, value);
-    }
-
-    for (const auto& [key, value] : options.exclude) {
-      url += fmt::format("&exclude-{}={}", key, value);
-    }
-
-    if (options.each_s) {
-      url += fmt::format("each_s={}&", *options.each_s);
-    }
-
-    if (options.each_n) {
-      url += fmt::format("each_n={}&", *options.each_n);
-    }
-
-    if (options.limit) {
-      url += fmt::format("limit={}&", *options.limit);
-    }
-
-    if (options.ttl) {
-      url += fmt::format("ttl={}&", options.ttl->count() / 1000);
-    }
-
-    if (options.continuous) {
-      url += "continuous=true&";
-    }
-
+    std::string url =  BuildQueryUrl(start, stop, entry_name, options);
     auto [body, err] = client_->Get(url);
     if (err) {
       return err;
@@ -261,7 +230,65 @@ class Bucket : public IBucket {
     return Error::kOk;
   }
 
+  Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
+                               QueryOptions options) const noexcept override {
+    std::string url =  BuildQueryUrl(start, stop, entry_name, options);
+    auto [resp, err] = client_->Delete(url);
+    if (err) {
+      return {0, std::move(err)};
+    }
+
+    try {
+      auto data = nlohmann::json::parse(std::get<0>(resp));
+      return {data.at("removed_records"), Error::kOk};
+    } catch (const std::exception& ex) {
+      return {0, Error{.code = -1, .message = ex.what()}};
+    }
+  }
+
  private:
+  std::string BuildQueryUrl(const std::optional<Time>& start, const std::optional<Time>& stop,
+                            std::string_view entry_name, const QueryOptions& options) const {
+    auto url = fmt::v11::format("{}/{}/q?", path_, entry_name);
+    if (start) {
+      url += fmt::format("start={}&", ToMicroseconds(*start));
+    }
+
+    if (stop) {
+      url += fmt::format("stop={}&", ToMicroseconds(*stop));
+    }
+
+    for (const auto& [key, value] : options.include) {
+      url += fmt::format("&include-{}={}", key, value);
+    }
+
+    for (const auto& [key, value] : options.exclude) {
+      url += fmt::format("&exclude-{}={}", key, value);
+    }
+
+    if (options.each_s) {
+      url += fmt::format("each_s={}&", *options.each_s);
+    }
+
+    if (options.each_n) {
+      url += fmt::format("each_n={}&", *options.each_n);
+    }
+
+    if (options.limit) {
+      url += fmt::format("limit={}&", *options.limit);
+    }
+
+    if (options.ttl) {
+      url += fmt::format("ttl={}&", options.ttl->count() / 1000);
+    }
+
+    if (options.continuous) {
+      url += "continuous=true&";
+    }
+
+    return url;
+  }
+
   Result<bool> ReadRecord(std::string&& path, bool batched, bool head,
                           const ReadRecordCallback& callback) const noexcept {
     std::deque<std::optional<std::string>> data;
@@ -503,8 +530,10 @@ class Bucket : public IBucket {
     return headers;
   }
 
-  Result<WriteBatchErrors> WriteOrUpdateBatch(std::string_view entry_name, WriteBatchCallback callback,
-                                              bool write) const noexcept {
+  enum class BatchType { kWrite, kUpdate, kRemove };
+
+  Result<WriteBatchErrors> ProcessBatch(std::string_view entry_name, BatchCallback callback,
+                                        BatchType type) const noexcept {
     Batch batch;
     callback(&batch);
 
@@ -521,33 +550,52 @@ class Bucket : public IBucket {
 
       const auto key = fmt::format("x-reduct-time-{}", ToMicroseconds(time));
 
-      if (write) {
-        const auto value = fmt::format("{},{},{}", record.size, record.content_type, fmt::join(labels, ","));
-        headers.emplace(key, value);
-      } else {
-        const auto value = fmt::format("0,,{}", fmt::join(labels, ","));
-        headers.emplace(key, value);
+      switch (type) {
+        case BatchType::kWrite: {
+          const auto value = fmt::format("{},{},{}", record.size, record.content_type, fmt::join(labels, ","));
+          headers.emplace(key, value);
+
+          break;
+        }
+        case BatchType::kUpdate: {
+          const auto value = fmt::format("0,,{}", fmt::join(labels, ","));
+          headers.emplace(key, value);
+          break;
+        }
+        case BatchType::kRemove: {
+          headers.emplace(key, "0,");
+          break;
+        }
       }
     }
 
-    Result<IHttpClient::Headers> resp;
-    if (write) {
-      const auto content_length = batch.body().size();
-      resp = client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
-                           std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
-                             return std::pair{batch.body().size() <= offset + size, batch.body().substr(offset, size)};
-                           });
-    } else {
-      resp = client_->Patch(fmt::format("{}/{}/batch", path_, entry_name), "", std::move(headers));
+    Result<std::tuple<std::string, IHttpClient::Headers>> resp_result;
+    switch (type) {
+      case BatchType::kWrite: {
+        const auto content_length = batch.body().size();
+        resp_result =
+            client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
+                          std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
+                            return std::pair{batch.body().size() <= offset + size, batch.body().substr(offset, size)};
+                          });
+        break;
+      }
+      case BatchType::kUpdate:
+        resp_result = client_->Patch(fmt::format("{}/{}/batch", path_, entry_name), "", std::move(headers));
+        break;
+
+      case BatchType::kRemove:
+        resp_result = client_->Delete(fmt::format("{}/{}/batch", path_, entry_name), std::move(headers));
+        break;
     }
 
-    auto [resp_headers, err] = resp;
+    auto [resp, err] = resp_result;
     if (err) {
       return {{}, err};
     }
 
     WriteBatchErrors errors;
-    for (const auto& [key, value] : resp_headers) {
+    for (const auto& [key, value] : std::get<1>(resp)) {
       if (key.starts_with("x-reduct-error-")) {
         auto pos = value.find(',');
         if (pos == std::string::npos) {

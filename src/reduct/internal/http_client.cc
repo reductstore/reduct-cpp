@@ -112,8 +112,8 @@ class HttpClient : public IHttpClient {
     return {std::move(res->body), Error::kOk};
   }
 
-  Result<Headers> Post(std::string_view path, std::string_view mime, size_t content_length, Headers headers,
-                       WriteCallback callback) const noexcept override {
+  Result<std::tuple<std::string, Headers>> Post(std::string_view path, std::string_view mime, size_t content_length,
+                                                Headers headers, WriteCallback callback) const noexcept override {
     httplib::Headers httplib_headers;
     for (auto& [k, v] : headers) {
       httplib_headers.emplace(k, v);
@@ -132,7 +132,8 @@ class HttpClient : public IHttpClient {
       return {{}, std::move(err)};
     }
 
-    return NormalizeHeaders(std::move(res));
+    auto content = res->body;
+    return {{content, NormalizeHeaders(std::move(res)).result}};
   }
 
   Error Put(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
@@ -140,7 +141,8 @@ class HttpClient : public IHttpClient {
     return CheckRequest(res);
   }
 
-  Result<Headers> Patch(std::string_view path, std::string_view body, Headers headers) const noexcept override {
+  Result<std::tuple<std::string, Headers>> Patch(std::string_view path, std::string_view body,
+                                                 Headers headers) const noexcept override {
     httplib::Headers httplib_headers;
     for (auto& [k, v] : headers) {
       httplib_headers.emplace(k, v);
@@ -150,12 +152,23 @@ class HttpClient : public IHttpClient {
       return {{}, std::move(err)};
     }
 
-    return NormalizeHeaders(std::move(res));
+    auto content = res->body;
+    return {{content, NormalizeHeaders(std::move(res)).result}};
   }
 
-  Error Delete(std::string_view path) const noexcept override {
-    auto res = client_->Delete(AddApiPrefix(path).data());
-    return CheckRequest(res);
+  Result<std::tuple<std::string, Headers>> Delete(std::string_view path, Headers headers) const noexcept override {
+    httplib::Headers httplib_headers;
+    for (auto& [k, v] : headers) {
+      httplib_headers.emplace(k, v);
+    }
+
+    auto res = client_->Delete(AddApiPrefix(path).data(), httplib_headers);
+    if (auto err = CheckRequest(res)) {
+      return {{}, std::move(err)};
+    }
+
+    auto content = res->body;
+    return {{content, NormalizeHeaders(std::move(res)).result}};
   }
 
   std::string_view api_version() const noexcept override { return api_version_; }

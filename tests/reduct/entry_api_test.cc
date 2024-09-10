@@ -374,7 +374,7 @@ TEST_CASE("reduct::IBucket should write batch of records with errors", "[bucket_
   REQUIRE(record_errors[t].message == "A record with timestamp 0 already exists");
 }
 
-TEST_CASE("reduct::IBukcet should update labels", "[bucket_api][1_11]") {
+TEST_CASE("reduct::IBucket should update labels", "[bucket_api][1_11]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
 
@@ -397,7 +397,7 @@ TEST_CASE("reduct::IBukcet should update labels", "[bucket_api][1_11]") {
   }) == Error::kOk);
 }
 
-TEST_CASE("reduct::IBukcet should update labels in barch and return errors", "[bucket_api][1_11]") {
+TEST_CASE("reduct::IBucket should update labels in barch and return errors", "[bucket_api][1_11]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
 
@@ -418,4 +418,71 @@ TEST_CASE("reduct::IBukcet should update labels in barch and return errors", "[b
   REQUIRE(record_errors.size() == 1);
   REQUIRE(record_errors[t + us(1)].code == 404);
   REQUIRE(record_errors[t + us(1)].message == "No record with timestamp 1");
+}
+
+TEST_CASE("reduct::IBucket should remove a record", "[bucket_api][1_12]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", t, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-1", t + us(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
+
+  REQUIRE(bucket->RemoveRecord("entry-1", t) == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 0"});
+
+  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) { return true; }) == Error::kOk);
+}
+
+TEST_CASE("reduct::IBucket should remove a batch of records", "[bucket_api][1_12]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", t, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-1", t + us(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
+
+  auto [record_errors, http_error] = bucket->RemoveBatch("entry-1", [](IBucket::Batch* batch) {
+    batch->AddRecord(IBucket::Time());
+    batch->AddRecord(IBucket::Time() + us(1));
+    batch->AddRecord(IBucket::Time() + us(100));
+  });
+  REQUIRE(http_error == Error::kOk);
+  REQUIRE(record_errors.size() == 1);
+  REQUIRE(record_errors[IBucket::Time() + us(100)].code == 404);
+
+  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 0"});
+
+  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) {
+    REQUIRE(record.size == 10);
+    return true;
+  }) == Error{.code = 404, .message = "No record with timestamp 1"});
+}
+
+TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_12]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", t, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-1", t + us(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-1", t + us(2), [](auto rec) { rec->WriteAll("some_data3"); }) == Error::kOk);
+
+  auto [removed_records, err] = bucket->RemoveQuery("entry-1", t, t + us(3), {.each_n = 2});
+  REQUIRE(err == Error::kOk);
+  REQUIRE(removed_records == 2);
+
+  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 0"});
+
+  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) {
+    REQUIRE(record.ReadAll().result == "some_data2");
+    return true;
+  }) == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 2"});
 }

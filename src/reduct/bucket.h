@@ -180,6 +180,12 @@ class IBucket {
       body_ += data;
     }
 
+    /**
+     * Add an empty record to batch (use for removing)
+     * @param timestamp
+     */
+    void AddRecord(Time timestamp) { records_[timestamp] = Record{timestamp, 0, "", {}}; }
+
     void AddOnlyLabels(Time timestamp, LabelMap labels) {
       records_[timestamp] = Record{timestamp, 0, "", std::move(labels)};
     }
@@ -192,9 +198,17 @@ class IBucket {
     std::string body_;
   };
 
+  /**
+   * @deprecated Use BatchErrors instead
+   */
   using WriteBatchCallback = std::function<void(Batch*)>;
-  using WriteBatchErrors = std::map<Time, Error>;
+  using BatchCallback = std::function<void(Batch*)>;
 
+  /**
+   * @deprecated Use BatchErrors instead
+   */
+  using WriteBatchErrors = std::map<Time, Error>;
+  using BatchErrors = std::map<Time, Error>;
 
   /**
    * Read a record in chunks
@@ -250,9 +264,8 @@ class IBucket {
    * @param callback a callback to add records to batch
    * @return HTTP error or map of errors for each record
    */
-  [[nodiscard]] virtual Result<WriteBatchErrors> WriteBatch(std::string_view entry_name,
-                           WriteBatchCallback callback) const noexcept = 0;
-
+  [[nodiscard]] virtual Result<BatchErrors> WriteBatch(std::string_view entry_name,
+                                                       BatchCallback callback) const noexcept = 0;
 
   /**
    * Write labels of an existing record
@@ -263,8 +276,7 @@ class IBucket {
    * @param options options with timestamp, labels (content type is ignored)
    * @return HTTP or communication error
    */
-  virtual Error Update(std::string_view entry_name,
-                           const WriteOptions& options) const noexcept = 0;
+  virtual Error Update(std::string_view entry_name, const WriteOptions& options) const noexcept = 0;
 
   /**
    * Update labels of an existing record in a batch
@@ -273,19 +285,18 @@ class IBucket {
    * @param callback a callback to add records to batch
    * @return HTTP error or map of errors for each record
    */
-  [[nodiscard]] virtual Result<WriteBatchErrors> UpdateBatch(std::string_view entry_name,
-                                                            WriteBatchCallback callback) const noexcept = 0;
-
+  [[nodiscard]] virtual Result<BatchErrors> UpdateBatch(std::string_view entry_name,
+                                                        BatchCallback callback) const noexcept = 0;
 
   /**
    * Query options
    */
   struct QueryOptions {
-    LabelMap include;                              ///< include labels
-    LabelMap exclude;                              ///< exclude labels
-    std::optional<double> each_s;                  ///< return one record each S seconds
-    std::optional<size_t>  each_n;                 ///< return each N-th record
-    std::optional<size_t> limit;                   ///< limit number of records
+    LabelMap include;              ///< include labels
+    LabelMap exclude;              ///< exclude labels
+    std::optional<double> each_s;  ///< return one record each S seconds
+    std::optional<size_t> each_n;  ///< return each N-th record
+    std::optional<size_t> limit;   ///< limit number of records
 
     std::optional<std::chrono::milliseconds> ttl;  ///< time to live
 
@@ -343,6 +354,33 @@ class IBucket {
    * @return HTTP or communication error
    */
   virtual Error RemoveEntry(std::string_view entry_name) const noexcept = 0;
+
+  /**
+   * @brief Remove a record from the entry
+   * @param entry_name
+   * @param timestamp
+   * @return HTTP or communication error
+   */
+  virtual Error RemoveRecord(std::string_view entry_name, Time timestamp) const noexcept = 0;
+
+  /**
+   * @brief Remove a batch of records from the entry
+   * @param entry_name
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  virtual Result<BatchErrors> RemoveBatch(std::string_view entry_name, BatchCallback callback) const noexcept = 0;
+
+  /**
+   * @brief Remove revision of an entry by query
+   * @param entry_name
+   * @param start start time point
+   * @param stop stop time point
+   * @param options query options. TTL, continuous, poll_interval, head_only are ignored
+   * @return HTTP  error or number of removed records
+   */
+  virtual Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
+                                       QueryOptions options) const noexcept = 0;
 
   /**
    * @brief Creates a new bucket

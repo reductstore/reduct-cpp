@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- RS-418: `IBucket::RemoveRecord`, `IBucket::RemoveRecordBatch`, `IBucket::RemoveQuery` methods for removing records, [PR-74](https://github.com/reductstore/reduct-cpp/pull/74)
+
 ## [1.11.0] - 2022-08-19
 
 ### Added
 
-- RS-31: `Bucket::Update` and `Bucket::UpdateBatch` methods for changing labels, [PR-72](https://github.com/reductstore/reduct-cpp/pull/72)
+- RS-31: `IBucket::Update` and `IBucket::UpdateBatch` methods for changing labels, [PR-72](https://github.com/reductstore/reduct-cpp/pull/72)
 
 ### Infrastructure
 
