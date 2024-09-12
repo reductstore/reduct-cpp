@@ -29,7 +29,7 @@ class IBucket {
  public:
   virtual ~IBucket() = default;
 
-  enum class QuotaType { kNone, kFifo };
+  enum class QuotaType { kNone, kFifo, kHard };
 
   /**
    * Bucket Settings

@@ -51,6 +51,21 @@ TEST_CASE("reduct::Client should get or create a bucket", "[bucket_api]") {
   REQUIRE(bucket);
 }
 
+TEST_CASE("reduct::Client should create a bucket with different quota type", "[bucket_api][1_12]") {
+  Fixture ctx;
+
+  auto quota_type = GENERATE(IBucket::QuotaType::kNone, IBucket::QuotaType::kFifo, IBucket::QuotaType::kHard);
+  [[maybe_unused]] auto _ = ctx.client->GetOrCreateBucket(kBucketName, {.quota_type = quota_type});
+  auto [bucket, err] = ctx.client->GetOrCreateBucket(kBucketName);
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket);
+
+  auto [settings, get_error] = bucket->GetSettings();
+  REQUIRE(get_error == Error::kOk);
+  REQUIRE(settings.quota_type == quota_type);
+}
+
 TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
   Fixture ctx;
   const IBucket::Settings kSettings{

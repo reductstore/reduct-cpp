@@ -25,6 +25,9 @@ nlohmann::json BucketSettingToJsonString(const IBucket::Settings& settings) {
       case IBucket::QuotaType::kFifo:
         data["quota_type"] = "FIFO";
         break;
+      case IBucket::QuotaType::kHard:
+        data["quota_type"] = "HARD";
+        break;
     }
   }
 
@@ -51,6 +54,8 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) {
         settings.quota_type = IBucket::QuotaType::kNone;
       } else if (json["quota_type"] == "FIFO") {
         settings.quota_type = IBucket::QuotaType::kFifo;
+      } else if (json["quota_type"] == "HARD") {
+        settings.quota_type = IBucket::QuotaType::kHard;
       }
     }
 
