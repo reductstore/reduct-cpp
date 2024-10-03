@@ -382,6 +382,15 @@ class IBucket {
   virtual Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                        QueryOptions options) const noexcept = 0;
 
+
+  /**
+   * @brief Rename an entry
+   * @param old_name entry name to rename
+   * @param new_name
+   * @return
+   */
+  virtual Error RenameEntry(std::string_view old_name, std::string_view new_name) const noexcept = 0;
+
   /**
    * @brief Creates a new bucket
    * @param server_url HTTP url

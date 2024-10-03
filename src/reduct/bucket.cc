@@ -246,6 +246,12 @@ class Bucket : public IBucket {
     }
   }
 
+  Error RenameEntry(std::string_view old_name, std::string_view new_name) const noexcept override {
+        nlohmann::json data;
+        data["new_name"] = new_name;
+        return client_->Put(fmt::format("{}/{}/rename", path_, old_name), data.dump());
+  }
+
  private:
   std::string BuildQueryUrl(const std::optional<Time>& start, const std::optional<Time>& stop,
                             std::string_view entry_name, const QueryOptions& options) const {
