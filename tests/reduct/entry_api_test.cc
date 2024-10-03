@@ -486,3 +486,20 @@ TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_12]"
   REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) { return true; }) ==
           Error{.code = 404, .message = "No record with timestamp 2"});
 }
+
+TEST_CASE("reduct::IBucket should rename an entry", "[bucket_api][1_12]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", t, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->RenameEntry("entry-1", "entry-new") == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
+          Error{.code = 404, .message = "Entry 'entry-1' not found in bucket 'test_bucket_3'"});
+
+  REQUIRE(bucket->Read("entry-new", t, [](auto record) {
+    REQUIRE(record.ReadAll().result == "some_data1");
+    return true;
+  }) == Error::kOk);
+}
