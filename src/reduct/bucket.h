@@ -392,6 +392,13 @@ class IBucket {
   virtual Error RenameEntry(std::string_view old_name, std::string_view new_name) const noexcept = 0;
 
   /**
+   * @brief Rename the bucket
+   * @param new_name
+   * @return
+   */
+  virtual Error Rename(std::string_view new_name) noexcept = 0;
+
+  /**
    * @brief Creates a new bucket
    * @param server_url HTTP url
    * @param name name of the bucket

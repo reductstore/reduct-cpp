@@ -192,3 +192,14 @@ TEST_CASE("reduct::IBucket should remove entry", "[bucket_api][1_6]") {
   REQUIRE(bucket->RemoveEntry("entry-1") ==
           Error{.code = 404, .message = fmt::format("Entry 'entry-1' not found in bucket '{}'", kBucketName)});
 }
+
+TEST_CASE("reduct::IBucket should rename bucket", "[bucket_api][1_12]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  auto err =  bucket->Rename("test_bucket_new");
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket->GetInfo().result.name == "test_bucket_new");
+
+  auto [bucket_old, get_err] = ctx.client->GetBucket(kBucketName);
+  REQUIRE(get_err == Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
+}
