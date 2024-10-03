@@ -190,7 +190,7 @@ class Bucket : public IBucket {
 
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
               ReadRecordCallback callback) const noexcept override {
-    std::string url =  BuildQueryUrl(start, stop, entry_name, options);
+    std::string url = BuildQueryUrl(start, stop, entry_name, options);
     auto [body, err] = client_->Get(url);
     if (err) {
       return err;
@@ -232,7 +232,7 @@ class Bucket : public IBucket {
 
   Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                QueryOptions options) const noexcept override {
-    std::string url =  BuildQueryUrl(start, stop, entry_name, options);
+    std::string url = BuildQueryUrl(start, stop, entry_name, options);
     auto [resp, err] = client_->Delete(url);
     if (err) {
       return {0, std::move(err)};
@@ -247,9 +247,20 @@ class Bucket : public IBucket {
   }
 
   Error RenameEntry(std::string_view old_name, std::string_view new_name) const noexcept override {
-        nlohmann::json data;
-        data["new_name"] = new_name;
-        return client_->Put(fmt::format("{}/{}/rename", path_, old_name), data.dump());
+    nlohmann::json data;
+    data["new_name"] = new_name;
+    return client_->Put(fmt::format("{}/{}/rename", path_, old_name), data.dump());
+  }
+
+  Error Rename(std::string_view new_name) noexcept override {
+    nlohmann::json data;
+    data["new_name"] = new_name;
+    auto err = client_->Put(fmt::format("{}/rename", path_), data.dump());
+    if (err) {
+      return err;
+    }
+    path_ = fmt::format("/b/{}", new_name);
+    return Error::kOk;
   }
 
  private:
