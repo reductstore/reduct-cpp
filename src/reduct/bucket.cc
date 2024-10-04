@@ -593,7 +593,7 @@ class Bucket : public IBucket {
         resp_result =
             client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
                           std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
-                            return std::pair{batch.body().size() <= offset + size, batch.body().substr(offset, size)};
+                            return std::pair{true, batch.body().substr(offset, size)};
                           });
         break;
       }
