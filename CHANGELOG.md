@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] = 2024-10-04
+
 ### Added
 
 - RS-418: `IBucket::RemoveRecord`, `IBucket::RemoveRecordBatch`, `IBucket::RemoveQuery` methods for removing records, [PR-74](https://github.com/reductstore/reduct-cpp/pull/74)
@@ -15,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RS-419: Add IBucket::Rename method to rename bucket, [PR-77](https://github.com/reductstore/reduct-cpp/pull/77)
 - RS-462: Improve batching, [PR-78](https://github.com/reductstore/reduct-cpp/pull/78)
 
-## [1.11.0] - 2022-08-19
+## [1.11.0] - 2024-08-19
 
 ### Added
 
@@ -219,6 +221,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial implementation of Reduct Storage API v0.1.0
 
 [Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.11.0...HEAD
+
+[1.12.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.11.0...1.12.0
 
 [1.11.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.10.0...1.11.0
 
