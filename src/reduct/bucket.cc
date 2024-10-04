@@ -589,11 +589,11 @@ class Bucket : public IBucket {
     Result<std::tuple<std::string, IHttpClient::Headers>> resp_result;
     switch (type) {
       case BatchType::kWrite: {
-        const auto content_length = batch.body().size();
+        const auto content_length = batch.size();
         resp_result =
             client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
                           std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
-                            return std::pair{true, batch.body().substr(offset, size)};
+                            return std::pair{true, batch.Slice(offset, size)};
                           });
         break;
       }
