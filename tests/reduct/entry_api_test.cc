@@ -503,3 +503,31 @@ TEST_CASE("reduct::IBucket should rename an entry", "[bucket_api][1_12]") {
     return true;
   }) == Error::kOk);
 }
+
+TEST_CASE("Batch should slice data", "[batch]") {
+  auto batch = IBucket::Batch();
+
+  batch.AddRecord(IBucket::Time(), "1111111111");
+  batch.AddRecord(IBucket::Time() + us(1), "2222222222");
+  batch.AddRecord(IBucket::Time() + us(2), "3333333333");
+
+  REQUIRE(batch.size() == 30);
+  REQUIRE(batch.records().size() == 3);
+
+  SECTION("slice smaller record") {
+    REQUIRE(batch.Slice(0, 6) == "111111");
+    REQUIRE(batch.Slice(6, 6) == "111122");
+    REQUIRE(batch.Slice(12, 6) == "222222");
+    REQUIRE(batch.Slice(18, 6) == "223333");
+    REQUIRE(batch.Slice(24, 6) == "333333");
+  }
+
+  SECTION("slice bigger record") {
+    REQUIRE(batch.Slice(0, 15) == "111111111122222");
+    REQUIRE(batch.Slice(15, 15) == "222223333333333");
+  }
+
+  SECTION("slice all record") { REQUIRE(batch.Slice(0, 30) == "111111111122222222223333333333"); }
+
+  SECTION("slice out of range") { REQUIRE(batch.Slice(0, 31) == "111111111122222222223333333333"); }
+}

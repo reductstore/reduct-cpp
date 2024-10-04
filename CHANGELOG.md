@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RS-389: Support `QuotaType::kHard`, [PR-75](https://github.com/reductstore/reduct-cpp/pull/75)
 - RS-388: `IBucket::RenameEntry` to rename entry in bucket, [PR-76](https://github.com/reductstore/reduct-cpp/pull/76)
 - RS-419: Add IBucket::Rename method to rename bucket, [PR-77](https://github.com/reductstore/reduct-cpp/pull/77)
+- RS-462: Improve batching, [PR-78](https://github.com/reductstore/reduct-cpp/pull/78)
 
 ## [1.11.0] - 2022-08-19
 

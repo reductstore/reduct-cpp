@@ -174,10 +174,10 @@ class IBucket {
      * @param content_type
      * @param labels
      */
-    void AddRecord(Time timestamp, const std::string& data, std::string content_type = "application/octet-stream",
-                   LabelMap labels = {}) {
+    void AddRecord(Time timestamp, std::string data, std::string content_type = "", LabelMap labels = {}) {
       records_[timestamp] = Record{timestamp, data.size(), std::move(content_type), std::move(labels)};
-      body_ += data;
+      size_ += data.size();
+      body_.push_back(std::move(data));
     }
 
     /**
@@ -191,11 +191,37 @@ class IBucket {
     }
 
     [[nodiscard]] const std::map<Time, Record>& records() const { return records_; }
-    [[nodiscard]] const std::string& body() const { return body_; }
+
+    [[nodiscard]] std::string Slice(size_t offset, size_t size) const {
+      if (offset >= size_) {
+        return "";
+      }
+
+      std::string result;
+      for (const auto& data : body_) {
+        if (offset < data.size()) {
+          auto n = std::min(size, data.size() - offset);
+          result.append(data.substr(offset, n));
+          size -= n;
+          offset = 0;
+        } else {
+          offset -= data.size();
+        }
+
+        if (size == 0) {
+          break;
+        }
+      }
+
+      return result;
+    }
+
+    [[nodiscard]] uint64_t size() const { return size_; }
 
    private:
     std::map<Time, Record> records_;
-    std::string body_;
+    std::vector<std::string> body_;
+    uint64_t size_ = 0;
   };
 
   /**
@@ -381,7 +407,6 @@ class IBucket {
    */
   virtual Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                        QueryOptions options) const noexcept = 0;
-
 
   /**
    * @brief Rename an entry
