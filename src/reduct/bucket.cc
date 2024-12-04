@@ -175,8 +175,8 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), false, callback);
-    return record_err;
+    auto record_err = ReadRecord(std::move(path), ReadType::kSingle, false, callback);
+    return record_err.error;
   }
 
   Error Head(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
@@ -185,8 +185,8 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), true, callback);
-    return record_err;
+    auto record_err = ReadRecord(std::move(path), ReadType::kSingle, true, callback);
+    return record_err.error;
   }
 
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
@@ -223,9 +223,8 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      auto [stopped, record_err] =
-          ReadRecord(fmt::format("{}/{}/batch?q={}", path_, entry_name, id),
-                     options.head_only, callback);
+      auto [stopped, record_err] = ReadRecord(fmt::format("{}/{}/batch?q={}", path_, entry_name, id),
+                                              ReadType::kBatched, options.head_only, callback);
 
       if (stopped) {
         break;
@@ -340,18 +339,26 @@ class Bucket : public IBucket {
     return url;
   }
 
-  Result<bool> ReadRecord(std::string&& path, bool head,
+  enum class ReadType {
+    kSingle,
+    kBatched,
+  };
+
+  Result<bool> ReadRecord(std::string&& path, ReadType type, bool head,
                           const ReadRecordCallback& callback) const noexcept {
     std::deque<std::optional<std::string>> data;
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
 
-    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, head,
+    auto parse_headers_and_receive_data = [&type, &stopped, &data, &data_mutex, &callback, &future, head,
                                            this](IHttpClient::Headers&& headers) {
       std::vector<ReadableRecord> records;
-      records = ParseAndBuildBatchedRecords(&data, &data_mutex, head, std::move(headers));
-
+      if (type == ReadType::kBatched) {
+        records = ParseAndBuildBatchedRecords(&data, &data_mutex, head, std::move(headers));
+      } else {
+        records.emplace_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(headers)));
+      }
       for (auto& record : records) {
         Task task([record = std::move(record), &callback, &stopped] {
           if (stopped) {
@@ -392,7 +399,10 @@ class Bucket : public IBucket {
         std::lock_guard lock(data_mutex);
         data.emplace_back(std::nullopt);
       }
-      future.wait();
+
+      if (future.valid()) {
+        future.wait();
+      }
     }
 
     return {stopped, err};

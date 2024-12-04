@@ -25,13 +25,12 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
 
   IBucket::Time ts = IBucket::Time() + std::chrono::microseconds(123109210);
   std::string blob = "some blob of data";
-  REQUIRE(bucket->Write("entry",
-                        IBucket::WriteOptions{
-                            .timestamp = ts,
-                            .labels = {{"label1", "value1"}, {"label2", "value2"}},
-                            .content_type = "text/plain",
-                        },
-                        [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
+  err = bucket->Write(
+      "entry",
+      IBucket::WriteOptions{
+          .timestamp = ts, .labels = {{"label1", "value1"}, {"label2", "value2"}}, .content_type = "text/plain"},
+      [&blob](auto rec) { rec->WriteAll(blob); });
+  REQUIRE(err == Error::kOk);
 
   std::string received_data;
   err = bucket->Read("entry", ts, [&received_data, ts](auto record) {
@@ -224,23 +223,23 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
   }
 
   SECTION("with non strict condition") {
-        auto err = bucket->Query("entry", ts, ts + us(3),
-                                 {
-                                         .when = R"({"&NOT_EXIST": {"$gt": 0}})",
-                                         .strict = false,
-                                 },
-                                 [&all_data](auto record) {
-                                   auto read_err = record.Read([&all_data](auto data) {
-                                         all_data.append(data);
-                                         return true;
-                                   });
+    auto err = bucket->Query("entry", ts, ts + us(3),
+                             {
+                                 .when = R"({"&NOT_EXIST": {"$gt": 0}})",
+                                 .strict = false,
+                             },
+                             [&all_data](auto record) {
+                               auto read_err = record.Read([&all_data](auto data) {
+                                 all_data.append(data);
+                                 return true;
+                               });
 
-                                   REQUIRE(read_err == Error::kOk);
-                                   return true;
-                                 });
+                               REQUIRE(read_err == Error::kOk);
+                               return true;
+                             });
 
-        REQUIRE(err == Error::kOk);
-        REQUIRE(all_data.empty());
+    REQUIRE(err == Error::kOk);
+    REQUIRE(all_data.empty());
   }
 }
 
