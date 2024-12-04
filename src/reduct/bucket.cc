@@ -23,6 +23,7 @@
 namespace reduct {
 
 using internal::IHttpClient;
+using internal::QueryOptionsToJsonString;
 
 class Bucket : public IBucket {
  public:
@@ -232,14 +233,32 @@ class Bucket : public IBucket {
 
   Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                QueryOptions options) const noexcept override {
-    std::string url = BuildQueryUrl(start, stop, entry_name, options);
-    auto [resp, err] = client_->Delete(url);
-    if (err) {
-      return {0, std::move(err)};
+    std::string body;
+    if (options.when) {
+      auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", options);
+      if (json_err) {
+        return {0, std::move(json_err)};
+      }
+
+      auto [resp, resp_err] =
+          client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
+      if (resp_err) {
+        return {0, std::move(resp_err)};
+      }
+
+      body = std::move(resp);
+    } else {
+      std::string url = BuildQueryUrl(start, stop, entry_name, options);
+      auto [resp, err] = client_->Delete(url);
+      if (err) {
+        return {0, std::move(err)};
+      }
+
+      body = std::get<0>(resp);
     }
 
     try {
-      auto data = nlohmann::json::parse(std::get<0>(resp));
+      auto data = nlohmann::json::parse(body);
       return {data.at("removed_records"), Error::kOk};
     } catch (const std::exception& ex) {
       return {0, Error{.code = -1, .message = ex.what()}};

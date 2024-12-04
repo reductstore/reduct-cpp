@@ -53,6 +53,9 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
  */
 Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::json& data);
 
+
+Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, const IBucket::QueryOptions& options);
+
 };  // namespace reduct::internal
 
 #endif  // REDUCTCPP_SERIALISATION_H

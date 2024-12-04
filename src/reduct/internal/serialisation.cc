@@ -179,4 +179,51 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
   return {info, Error::kOk};
 }
 
+Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, const IBucket::QueryOptions& options) {
+  nlohmann::json json_data;
+  json_data["query_type"] = type;
+
+  for (const auto& [key, value] : options.include) {
+    json_data["include"][key] = value;
+  }
+
+  for (const auto& [key, value] : options.exclude) {
+    json_data["exclude"][key] = value;
+  }
+
+  if (options.each_s) {
+    json_data["each_s"] = *options.each_s;
+  }
+
+  if (options.each_n) {
+    json_data["each_n"] = *options.each_n;
+  }
+
+  if (options.limit) {
+    json_data["limit"] = *options.limit;
+  }
+
+  if (options.ttl) {
+    json_data["ttl"] = options.ttl->count() / 1000;
+  }
+
+  if (options.continuous) {
+    json_data["continuous"] = true;
+  }
+
+  if (options.when) {
+    try {
+      json_data["when"] = nlohmann::json::parse(*options.when);
+    } catch (const std::exception& ex) {
+      return {{}, Error{.code = -1, .message = ex.what()}};
+    }
+  }
+
+  if (options.strict) {
+    json_data["strict"] = *options.strict;
+  }
+
+  return  {json_data, Error::kOk};
+}
+
 }  // namespace reduct::internal

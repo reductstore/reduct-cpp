@@ -487,6 +487,47 @@ TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_12]"
           Error{.code = 404, .message = "No record with timestamp 2"});
 }
 
+TEST_CASE("reduct::IBucket should remove records by query with when condition", "[bucket_api][1_13]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", IBucket::WriteOptions{.timestamp = t, .labels = {{"score", "10"}}},
+                        [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-1", IBucket::WriteOptions{.timestamp = t + us(1), .labels = {{"score", "20"}}},
+                        [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
+
+  SECTION("ok") {
+    auto [removed_records, err] = bucket->RemoveQuery("entry-1", t, t + us(3), {.when = R"({"&score": {"$lt": 20}})"});
+    REQUIRE(err == Error::kOk);
+    REQUIRE(removed_records == 1);
+
+    REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
+            Error{.code = 404, .message = "No record with timestamp 0"});
+
+    REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) {
+      REQUIRE(record.ReadAll().result == "some_data2");
+      return true;
+    }) == Error::kOk);
+
+    REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) { return true; }) ==
+            Error{.code = 404, .message = "No record with timestamp 2"});
+  }
+
+  SECTION("strict") {
+    auto [removed_records, err] =
+        bucket->RemoveQuery("entry-1", t, t + us(3), {.when = R"({"&NOT_EXIST": {"$lt": 20}})", .strict = true});
+    REQUIRE(err == Error{.code = 404, .message = "Reference 'NOT_EXIST' not found"});
+  }
+
+  SECTION("non-strict") {
+    auto [removed_records, err] =
+        bucket->RemoveQuery("entry-1", t, t + us(3), {.when = R"({"&NOT_EXIST": {"$lt": 20}})", .strict = false});
+    REQUIRE(err == Error::kOk);
+    REQUIRE(removed_records == 0);
+  }
+}
+
 TEST_CASE("reduct::IBucket should rename an entry", "[bucket_api][1_12]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);

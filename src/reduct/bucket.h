@@ -313,13 +313,16 @@ class IBucket {
    */
   [[nodiscard]] virtual Result<BatchErrors> UpdateBatch(std::string_view entry_name,
                                                         BatchCallback callback) const noexcept = 0;
-
   /**
    * Query options
    */
   struct QueryOptions {
-    LabelMap include;              ///< include labels
-    LabelMap exclude;              ///< exclude labels
+    [[deprecated("Use when instead")]] LabelMap include;              ///< include labels
+    [[deprecated("Use when instead")]] LabelMap exclude;              ///< exclude labels
+
+    std::optional<std::string> when;  ///< query condition
+    std::optional<bool> strict;        ///< strict mode
+
     std::optional<double> each_s;  ///< return one record each S seconds
     std::optional<size_t> each_n;  ///< return each N-th record
     std::optional<size_t> limit;   ///< limit number of records
