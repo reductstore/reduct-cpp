@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build cpplint image
-        run: pip install cpplint
+        run: pip install "cpplint<2"
       - name: Check code in /src
         run: find src/ -name "*.cc" -o -name "*.h"  | xargs cpplint
       - name: Check code in /tests
