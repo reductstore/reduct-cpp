@@ -5,8 +5,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include "reduct/client.h"
 #include "reduct/bucket.h"
+#include "reduct/client.h"
 
 namespace reduct::internal {
 
@@ -30,14 +30,12 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json);
  */
 Result<IClient::FullTokenInfo> ParseTokenInfo(const nlohmann::json& json);
 
-
 /**
  * @brief Parse list of replication info from JSON string
  * @param json
  * @return
  */
 Result<std::vector<IClient::ReplicationInfo>> ParseReplicationList(const nlohmann::json& data);
-
 
 /**
  * @brief Serialize replication settings
@@ -52,6 +50,10 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
  * @return
  */
 Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::json& data);
+
+Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::optional<IBucket::Time> start,
+                                                std::optional<IBucket::Time> stop,
+                                                const IBucket::QueryOptions& options);
 
 };  // namespace reduct::internal
 

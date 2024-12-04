@@ -25,13 +25,12 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
 
   IBucket::Time ts = IBucket::Time() + std::chrono::microseconds(123109210);
   std::string blob = "some blob of data";
-  REQUIRE(bucket->Write("entry",
-                        IBucket::WriteOptions{
-                            .timestamp = ts,
-                            .labels = {{"label1", "value1"}, {"label2", "value2"}},
-                            .content_type = "text/plain",
-                        },
-                        [&blob](auto rec) { rec->WriteAll(blob); }) == Error::kOk);
+  err = bucket->Write(
+      "entry",
+      IBucket::WriteOptions{
+          .timestamp = ts, .labels = {{"label1", "value1"}, {"label2", "value2"}}, .content_type = "text/plain"},
+      [&blob](auto rec) { rec->WriteAll(blob); });
+  REQUIRE(err == Error::kOk);
 
   std::string received_data;
   err = bucket->Read("entry", ts, [&received_data, ts](auto record) {
@@ -130,7 +129,7 @@ TEST_CASE("reduct::IBucket should write a record in chunks", "[entry_api]") {
   REQUIRE(err == Error::kOk);
 }
 
-TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
+TEST_CASE("reduct::IBucket should query records", "[entry_api][1_13]") {
   auto [head, content] = GENERATE(std::make_tuple(false, "some_data1some_data2some_data3"), std::make_tuple(true, ""));
   CAPTURE(head);
 
@@ -142,7 +141,7 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
   REQUIRE(bucket->Write("entry",
                         IBucket::WriteOptions{
                             .timestamp = ts,
-                            .labels = {{"label1", "value1"}},
+                            .labels = {{"score", "10"}},
                         },
                         [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
   REQUIRE(bucket->Write("entry", ts + us(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
@@ -189,24 +188,46 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
     REQUIRE(err == Error::kOk);
   }
 
-  SECTION("include labels") {
-    auto err = bucket->Query("entry", ts, ts + us(3), IBucket::QueryOptions{.include = {{"label1", "value1"}}},
-                             [&all_data](auto record) {
-                               auto read_err = record.Read([&all_data](auto data) {
-                                 all_data.append(data);
-                                 return true;
-                               });
+  SECTION("with condition") {
+    auto err = bucket->Query("entry", ts, ts + us(3), {.when = R"({"&score": {"$gt": 0}})"}, [&all_data](auto record) {
+      auto read_err = record.Read([&all_data](auto data) {
+        all_data.append(data);
+        return true;
+      });
 
-                               REQUIRE(read_err == Error::kOk);
-                               return true;
-                             });
+      REQUIRE(read_err == Error::kOk);
+      return true;
+    });
 
     REQUIRE(err == Error::kOk);
     REQUIRE(all_data == "some_data1");
   }
 
-  SECTION("exclude labels") {
-    auto err = bucket->Query("entry", ts, ts + us(3), IBucket::QueryOptions{.exclude = {{"label1", "value1"}}},
+  SECTION("with strict condition") {
+    auto err = bucket->Query("entry", ts, ts + us(3),
+                             {
+                                 .when = R"({"&NOT_EXIST": {"$gt": 0}})",
+                                 .strict = true,
+                             },
+                             [&all_data](auto record) {
+                               auto read_err = record.Read([&all_data](auto data) {
+                                 all_data.append(data);
+                                 return true;
+                               });
+
+                               REQUIRE(read_err == Error::kOk);
+                               return true;
+                             });
+
+    REQUIRE(err == Error{.code = 404, .message = "Reference 'NOT_EXIST' not found"});
+  }
+
+  SECTION("with non strict condition") {
+    auto err = bucket->Query("entry", ts, ts + us(3),
+                             {
+                                 .when = R"({"&NOT_EXIST": {"$gt": 0}})",
+                                 .strict = false,
+                             },
                              [&all_data](auto record) {
                                auto read_err = record.Read([&all_data](auto data) {
                                  all_data.append(data);
@@ -218,7 +239,7 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
                              });
 
     REQUIRE(err == Error::kOk);
-    REQUIRE(all_data == "some_data2some_data3");
+    REQUIRE(all_data.empty());
   }
 }
 
@@ -485,6 +506,47 @@ TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_12]"
 
   REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) { return true; }) ==
           Error{.code = 404, .message = "No record with timestamp 2"});
+}
+
+TEST_CASE("reduct::IBucket should remove records by query with when condition", "[bucket_api][1_13]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+
+  auto t = IBucket::Time();
+  REQUIRE(bucket->Write("entry-1", IBucket::WriteOptions{.timestamp = t, .labels = {{"score", "10"}}},
+                        [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-1", IBucket::WriteOptions{.timestamp = t + us(1), .labels = {{"score", "20"}}},
+                        [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
+
+  SECTION("ok") {
+    auto [removed_records, err] = bucket->RemoveQuery("entry-1", t, t + us(3), {.when = R"({"&score": {"$lt": 20}})"});
+    REQUIRE(err == Error::kOk);
+    REQUIRE(removed_records == 1);
+
+    REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
+            Error{.code = 404, .message = "No record with timestamp 0"});
+
+    REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) {
+      REQUIRE(record.ReadAll().result == "some_data2");
+      return true;
+    }) == Error::kOk);
+
+    REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) { return true; }) ==
+            Error{.code = 404, .message = "No record with timestamp 2"});
+  }
+
+  SECTION("strict") {
+    auto [removed_records, err] =
+        bucket->RemoveQuery("entry-1", t, t + us(3), {.when = R"({"&NOT_EXIST": {"$lt": 20}})", .strict = true});
+    REQUIRE(err == Error{.code = 404, .message = "Reference 'NOT_EXIST' not found"});
+  }
+
+  SECTION("non-strict") {
+    auto [removed_records, err] =
+        bucket->RemoveQuery("entry-1", t, t + us(3), {.when = R"({"&NOT_EXIST": {"$lt": 20}})", .strict = false});
+    REQUIRE(err == Error::kOk);
+    REQUIRE(removed_records == 0);
+  }
 }
 
 TEST_CASE("reduct::IBucket should rename an entry", "[bucket_api][1_12]") {

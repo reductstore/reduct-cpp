@@ -23,6 +23,7 @@
 namespace reduct {
 
 using internal::IHttpClient;
+using internal::QueryOptionsToJsonString;
 
 class Bucket : public IBucket {
  public:
@@ -174,8 +175,8 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), false, false, callback);
-    return record_err;
+    auto record_err = ReadRecord(std::move(path), ReadType::kSingle, false, callback);
+    return record_err.error;
   }
 
   Error Head(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
@@ -184,31 +185,46 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), false, true, callback);
-    return record_err;
+    auto record_err = ReadRecord(std::move(path), ReadType::kSingle, true, callback);
+    return record_err.error;
   }
 
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
               ReadRecordCallback callback) const noexcept override {
-    std::string url = BuildQueryUrl(start, stop, entry_name, options);
-    auto [body, err] = client_->Get(url);
-    if (err) {
-      return err;
+    std::string body;
+    if (options.when) {
+      auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
+      if (json_err) {
+        return json_err;
+      }
+
+      auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
+      if (resp_err) {
+        return resp_err;
+      }
+
+      body = std::move(resp);
+    } else {
+      std::string url = BuildQueryUrl(start, stop, entry_name, options);
+      auto [resp, err] = client_->Get(url);
+      if (err) {
+        return err;
+      }
+
+      body = std::move(resp);
     }
 
     uint64_t id;
     try {
       auto data = nlohmann::json::parse(body);
-      id = data.at("id");
+      id = data["id"];
     } catch (const std::exception& ex) {
       return Error{.code = -1, .message = ex.what()};
     }
 
     while (true) {
-      bool batched = internal::IsCompatible("1.5", client_->api_version());
-      auto [stopped, record_err] =
-          ReadRecord(fmt::format("{}/{}{}?q={}", path_, entry_name, batched ? "/batch" : "", id), batched,
-                     options.head_only, callback);
+      auto [stopped, record_err] = ReadRecord(fmt::format("{}/{}/batch?q={}", path_, entry_name, id),
+                                              ReadType::kBatched, options.head_only, callback);
 
       if (stopped) {
         break;
@@ -232,14 +248,31 @@ class Bucket : public IBucket {
 
   Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                QueryOptions options) const noexcept override {
-    std::string url = BuildQueryUrl(start, stop, entry_name, options);
-    auto [resp, err] = client_->Delete(url);
-    if (err) {
-      return {0, std::move(err)};
+    std::string body;
+    if (options.when) {
+      auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
+      if (json_err) {
+        return {0, std::move(json_err)};
+      }
+
+      auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
+      if (resp_err) {
+        return {0, std::move(resp_err)};
+      }
+
+      body = std::move(resp);
+    } else {
+      std::string url = BuildQueryUrl(start, stop, entry_name, options);
+      auto [resp, err] = client_->Delete(url);
+      if (err) {
+        return {0, std::move(err)};
+      }
+
+      body = std::get<0>(resp);
     }
 
     try {
-      auto data = nlohmann::json::parse(std::get<0>(resp));
+      auto data = nlohmann::json::parse(body);
       return {data.at("removed_records"), Error::kOk};
     } catch (const std::exception& ex) {
       return {0, Error{.code = -1, .message = ex.what()}};
@@ -306,22 +339,26 @@ class Bucket : public IBucket {
     return url;
   }
 
-  Result<bool> ReadRecord(std::string&& path, bool batched, bool head,
+  enum class ReadType {
+    kSingle,
+    kBatched,
+  };
+
+  Result<bool> ReadRecord(std::string&& path, ReadType type, bool head,
                           const ReadRecordCallback& callback) const noexcept {
     std::deque<std::optional<std::string>> data;
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
 
-    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, batched, head,
+    auto parse_headers_and_receive_data = [&type, &stopped, &data, &data_mutex, &callback, &future, head,
                                            this](IHttpClient::Headers&& headers) {
       std::vector<ReadableRecord> records;
-      if (batched) {
+      if (type == ReadType::kBatched) {
         records = ParseAndBuildBatchedRecords(&data, &data_mutex, head, std::move(headers));
       } else {
-        records.push_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(headers)));
+        records.emplace_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(headers)));
       }
-
       for (auto& record : records) {
         Task task([record = std::move(record), &callback, &stopped] {
           if (stopped) {
@@ -362,7 +399,10 @@ class Bucket : public IBucket {
         std::lock_guard lock(data_mutex);
         data.emplace_back(std::nullopt);
       }
-      future.wait();
+
+      if (future.valid()) {
+        future.wait();
+      }
     }
 
     return {stopped, err};
