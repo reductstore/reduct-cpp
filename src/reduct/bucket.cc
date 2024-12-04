@@ -175,7 +175,7 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), false, false, callback);
+    auto record_err = ReadRecord(std::move(path), false, callback);
     return record_err;
   }
 
@@ -185,7 +185,7 @@ class Bucket : public IBucket {
       path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
     }
 
-    auto record_err = ReadRecord(std::move(path), false, true, callback);
+    auto record_err = ReadRecord(std::move(path), true, callback);
     return record_err;
   }
 
@@ -223,9 +223,8 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      bool batched = internal::IsCompatible("1.5", client_->api_version());
       auto [stopped, record_err] =
-          ReadRecord(fmt::format("{}/{}{}?q={}", path_, entry_name, batched ? "/batch" : "", id), batched,
+          ReadRecord(fmt::format("{}/{}/batch?q={}", path_, entry_name, id),
                      options.head_only, callback);
 
       if (stopped) {
@@ -341,21 +340,17 @@ class Bucket : public IBucket {
     return url;
   }
 
-  Result<bool> ReadRecord(std::string&& path, bool batched, bool head,
+  Result<bool> ReadRecord(std::string&& path, bool head,
                           const ReadRecordCallback& callback) const noexcept {
     std::deque<std::optional<std::string>> data;
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
 
-    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, batched, head,
+    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, head,
                                            this](IHttpClient::Headers&& headers) {
       std::vector<ReadableRecord> records;
-      if (batched) {
-        records = ParseAndBuildBatchedRecords(&data, &data_mutex, head, std::move(headers));
-      } else {
-        records.push_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(headers)));
-      }
+      records = ParseAndBuildBatchedRecords(&data, &data_mutex, head, std::move(headers));
 
       for (auto& record : records) {
         Task task([record = std::move(record), &callback, &stopped] {
