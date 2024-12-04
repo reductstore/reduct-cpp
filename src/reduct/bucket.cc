@@ -191,16 +191,33 @@ class Bucket : public IBucket {
 
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
               ReadRecordCallback callback) const noexcept override {
-    std::string url = BuildQueryUrl(start, stop, entry_name, options);
-    auto [body, err] = client_->Get(url);
-    if (err) {
-      return err;
+    std::string body;
+    if (options.when) {
+      auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
+      if (json_err) {
+        return json_err;
+      }
+
+      auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
+      if (resp_err) {
+        return resp_err;
+      }
+
+      body = std::move(resp);
+    } else {
+      std::string url = BuildQueryUrl(start, stop, entry_name, options);
+      auto [resp, err] = client_->Get(url);
+      if (err) {
+        return err;
+      }
+
+      body = std::move(resp);
     }
 
     uint64_t id;
     try {
       auto data = nlohmann::json::parse(body);
-      id = data.at("id");
+      id = data["id"];
     } catch (const std::exception& ex) {
       return Error{.code = -1, .message = ex.what()};
     }
@@ -235,13 +252,12 @@ class Bucket : public IBucket {
                                QueryOptions options) const noexcept override {
     std::string body;
     if (options.when) {
-      auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", options);
+      auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
       if (json_err) {
         return {0, std::move(json_err)};
       }
 
-      auto [resp, resp_err] =
-          client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
+      auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
       if (resp_err) {
         return {0, std::move(resp_err)};
       }
