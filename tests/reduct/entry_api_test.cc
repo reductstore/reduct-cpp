@@ -129,7 +129,7 @@ TEST_CASE("reduct::IBucket should write a record in chunks", "[entry_api]") {
   REQUIRE(err == Error::kOk);
 }
 
-TEST_CASE("reduct::IBucket should query records", "[entry_api]") {
+TEST_CASE("reduct::IBucket should query records", "[entry_api][1_13]") {
   auto [head, content] = GENERATE(std::make_tuple(false, "some_data1some_data2some_data3"), std::make_tuple(true, ""));
   CAPTURE(head);
 
