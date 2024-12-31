@@ -109,3 +109,15 @@ TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_
   settings.dst_token = "***";
   REQUIRE(replication.settings == settings);
 }
+
+TEST_CASE("reduct::Client should set when condition", "[replication_api][1_14]") {
+  Fixture ctx;
+  settings.when = R"({"&score":{"$gt":0}})";
+
+  auto err = ctx.client->CreateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [replication, err_2] = ctx.client->GetReplication("test_replication");
+  REQUIRE(err_2 == Error::kOk);
+  REQUIRE(replication.settings.when == settings.when);
+}
