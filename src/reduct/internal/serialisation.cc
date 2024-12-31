@@ -127,6 +127,14 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
     json_data["each_n"] = *settings.each_n;
   }
 
+  if (settings.when) {
+    try {
+      json_data["when"] = nlohmann::json::parse(*settings.when);
+    } catch (const std::exception& ex) {
+      return {{}, Error{.code = -1, .message = ex.what()}};
+    }
+  }
+
   return json_data;
 }
 
@@ -157,6 +165,10 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
 
     if (settings.contains("each_n") && !settings.at("each_n").is_null()) {
       info.settings.each_n = settings.at("each_n");
+    }
+
+    if (settings.contains("when") && !settings.at("when").is_null()) {
+      info.settings.when = settings.at("when").dump();
     }
 
     auto diagnostics = data.at("diagnostics");
