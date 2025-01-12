@@ -8,7 +8,6 @@ from conan.tools.scm import Git
 
 class DriftFrameworkConan(ConanFile):
     name = "reduct-cpp"
-    version = "1.13.0"
     license = "MIT"
     author = "Alexey Timin"
     url = "https://github.com/reduct-storage/reduct-cpp"
@@ -34,6 +33,11 @@ class DriftFrameworkConan(ConanFile):
         "date/3.0.1",
     )
 
+    def set_version(self):
+        if not self.version:
+            git = Git(self, self.recipe_folder)
+            self.version = git.run("describe --tags") + ".local"
+
     def config_options(self):
         if self.settings.get_safe("os") == "Windows":
             self.options.rm_safe("fPIC")
@@ -41,10 +45,26 @@ class DriftFrameworkConan(ConanFile):
     def layout(self):
         cmake_layout(self)
 
+    def export_sources(self):
+        if ".local" in self.version:
+            copy(
+                self,
+                "CMakeLists.txt",
+                src=self.recipe_folder,
+                dst=self.export_sources_folder,
+            )
+            copy(
+                self, "cmake/*", src=self.recipe_folder, dst=self.export_sources_folder
+            )
+            copy(self, "src/*", src=self.recipe_folder, dst=self.export_sources_folder)
+
     def source(self):
-        git = Git(self)
-        git.clone(url="https://github.com/reduct-storage/reduct-cpp.git", target=".")
-        git.checkout(f"v{self.version}")
+        if ".local" not in self.version:
+            git = Git(self)
+            git.clone(
+                url="https://github.com/reduct-storage/reduct-cpp.git", target="."
+            )
+            git.checkout(f"v{self.version}")
 
     def build(self):
         cmake = CMake(self)
@@ -61,13 +81,38 @@ class DriftFrameworkConan(ConanFile):
         copy(
             self,
             "*reductcpp.lib",
+            src=join(self.build_folder, "lib"),
             dst=join(self.package_folder, "lib"),
             keep_path=False,
         )
-        copy(self, "*.dll", dst=join(self.package_folder, "bin"), keep_path=False)
-        copy(self, "*.so", dst=join(self.package_folder, "lib"), keep_path=False)
-        copy(self, "*.dylib", dst=join(self.package_folder, "lib"), keep_path=False)
-        copy(self, "*.a", dst=join(self.package_folder, "lib"), keep_path=False)
+        copy(
+            self,
+            "*.dll",
+            src=self.build_folder,
+            dst=join(self.package_folder, "bin"),
+            keep_path=False,
+        )
+        copy(
+            self,
+            "*.so",
+            src=self.build_folder,
+            dst=join(self.package_folder, "lib"),
+            keep_path=False,
+        )
+        copy(
+            self,
+            "*.dylib",
+            src=self.build_folder,
+            dst=join(self.package_folder, "lib"),
+            keep_path=False,
+        )
+        copy(
+            self,
+            "*.a",
+            src=self.build_folder,
+            dst=join(self.package_folder, "lib"),
+            keep_path=False,
+        )
 
     def package_info(self):
         self.cpp_info.libs = ["reductcpp"]
