@@ -7,18 +7,21 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Run conan install
+      shell: bash
+      run: conan install .
     - name: Build package
       shell: bash
-      run: cmake -DCMAKE_BUILD_TYPE=Debug -DREDUCT_CPP_ENABLE_EXAMPLES=ON -DREDUCT_CPP_ENABLE_TESTS=ON -S . -B build
-    - name: Install package
-      if: ${{inputs.install == 'true' }}
-      shell: bash
-      run: sudo cmake --build build --target install
-    - name: Build example
-      if: ${{inputs.install == 'true' }}
-      shell: bash
-      run: |
-        mkdir examples/build
-        cd examples/build
-        cmake ..
-        cmake --build .
+      run: cmake --preset conan-release
+    # - name: Install package
+    #   if: ${{inputs.install == 'true' }}
+    #   shell: bash
+    #   run: sudo cmake --build build --target install
+    # - name: Build example
+    #   if: ${{inputs.install == 'true' }}
+    #   shell: bash
+    #   run: |
+    #     mkdir examples/build
+    #     cd examples/build
+    #     cmake ..
+    #     cmake --build .

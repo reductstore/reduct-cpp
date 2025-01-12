@@ -1,11 +1,11 @@
 name: ci
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
-    branches: [ main ]
+    branches: [main]
 jobs:
   cpplint:
     runs-on: ubuntu-latest
@@ -26,8 +26,8 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        build_type: [ "cmake", "conan" ]
-        os: [ ubuntu-22.04, windows-2019 ]
+        build_type: ["cmake", "conan"]
+        os: [ubuntu-22.04, windows-2019]
         include:
           - os: ubuntu-22.04
             install: "true"
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install conan
         if: ${{ matrix.build_type == 'conan' }}
-        run: pip3 install conan==1.64.1
+        run: pip3 install conan==2.11.10
       - uses: ./.github/actions/build-package
         with:
           install: ${{ matrix.install }}
@@ -45,9 +45,9 @@ jobs:
   unit-tests:
     strategy:
       matrix:
-        token: [ "", "TOKEN" ]
-        reductstore_version: [ "main", "latest" ]
-        license_file: [ "", "lic.key" ]
+        token: ["", "TOKEN"]
+        reductstore_version: ["main", "latest"]
+        license_file: ["", "lic.key"]
         include:
           - token: ""
             exclude_token_api_tag: "~[token_api]"
