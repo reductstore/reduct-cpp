@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install conan
         if: ${{ matrix.build_type == 'conan' }}
-        run: pip3 install conan==2.11.10
+        run: pip3 install conan==2.11.0
       - uses: ./.github/actions/build-package
         with:
           install: ${{ matrix.install }}
