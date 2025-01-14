@@ -36,12 +36,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install conan
         run: pip3 install conan==2.11.0
-      - name: Run conan install
-        shell: bash
-        run: conan install .
       - name: Create profile
         shell: bash
         run: conan profile detect
+      - name: Run conan install
+        shell: bash
+        run: conan install .
       - name: Build package
         shell: bash
         run: cmake --preset conan-release
