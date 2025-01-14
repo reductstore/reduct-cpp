@@ -26,7 +26,6 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        build_type: ["cmake", "conan"]
         os: [ubuntu-22.04, windows-2019]
         include:
           - os: ubuntu-22.04
@@ -36,11 +35,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install conan
-        if: ${{ matrix.build_type == 'conan' }}
         run: pip3 install conan==2.11.0
-      - uses: ./.github/actions/build-package
-        with:
-          install: ${{ matrix.install }}
+      - name: Run conan install
+        shell: bash
+        run: conan install .
+      - name: Build package
+        shell: bash
+        run: cmake --preset conan-release
+
+      # - uses: actions/checkout@v4
+      # - name: Build package
+      #   shell: bash
+      #   run: cmake --preset conan-release
+
+    # - name: Install package
+    #   if: ${{inputs.install == 'true' }}
+    #   shell: bash
+    #   run: sudo cmake --build build --target install
+    # - name: Build example
+    #   if: ${{inputs.install == 'true' }}
+    #   shell: bash
+    #   run: |
+    #     mkdir examples/build
+    #     cd examples/build
+    #     cmake ..
+    #     cmake --build .
 
   unit-tests:
     strategy:

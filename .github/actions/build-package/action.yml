@@ -4,10 +4,14 @@ inputs:
   install:
     default: "true"
     description: "Install the package after build"
+  build_type:
+    description: "Type of build (e.g., cmake or conan)"
+    required: true
 runs:
   using: "composite"
   steps:
     - name: Run conan install
+      if: ${{inputs.build_type == 'conan' }}
       shell: bash
       run: conan install .
     - name: Build package
