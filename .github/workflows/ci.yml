@@ -47,6 +47,10 @@ jobs:
       - name: Build package
         shell: bash
         run: cmake --preset conan-release
+      - name: Install package
+        if: ${{inputs.install == 'true' }}
+        shell: bash
+        run: sudo cmake --build --preset conan-release --target install
 
       # - uses: actions/checkout@v4
       # - name: Build package
