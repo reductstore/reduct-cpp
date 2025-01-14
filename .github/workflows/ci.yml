@@ -39,6 +39,9 @@ jobs:
       - name: Run conan install
         shell: bash
         run: conan install .
+      - name: Create profile
+        shell: bash
+        run: conan profile detect
       - name: Build package
         shell: bash
         run: cmake --preset conan-release
