@@ -27,7 +27,7 @@ runs:
 
     - name: Install package
       if: ${{inputs.install == 'true' }}
-      run: cmake --install build
+      run: cmake --install build/Release
       shell: bash
     # - name: Build example
     #   if: ${{inputs.install == 'true' }}
