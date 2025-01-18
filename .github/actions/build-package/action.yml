@@ -24,10 +24,15 @@ runs:
         else
           cmake --preset conan-default
         fi
-    # - name: Install package
-    #   if: ${{inputs.install == 'true' }}
-    #   shell: bash
-    #   run: sudo cmake --build build --target install
+    - name: Install package
+      if: ${{inputs.install == 'true' }}
+      shell: bash
+      run: |
+        if [ "$(uname)" == "Linux" ]; then
+          cmake --install --preset conan-release
+        else
+          cmake --install --preset conan-default
+        fi
     # - name: Build example
     #   if: ${{inputs.install == 'true' }}
     #   shell: bash
