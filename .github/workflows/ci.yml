@@ -36,19 +36,26 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Install conan
         run: pip3 install conan==2.11.0
+
       - name: Create profile
         shell: bash
         run: conan profile detect
+
       - name: Run conan install
         shell: bash
         run: conan install .
+
       - name: Build package
-        shell: bash
-        run: cmake --preset conan-release
+        run: |
+          if [ "$(uname)" == "Linux" ]; then
+            cmake --preset conan-release
+          else
+            cmake --preset conan-default
       - name: Install package
-        if: ${{inputs.install == 'true' }}
+        if: inputs.install == 'true'
         shell: bash
         run: sudo cmake --build --preset conan-release --target install
 

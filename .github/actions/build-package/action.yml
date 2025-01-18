@@ -15,6 +15,7 @@ runs:
       shell: bash
       run: conan install .
     - name: Build package
+      if: ${{inputs.build_type == 'conan' }}
       shell: bash
       run: cmake --preset conan-release
     # - name: Install package
