@@ -37,20 +37,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/install-conan
-
-      - name: Run conan install
-        shell: bash
-        run: conan install .
-
-      - name: Build package
-        shell: bash
-        run: |
-          if [ "$(uname)" == "Linux" ]; then
-            cmake --preset conan-release
-          else
-            cmake --preset conan-default
-          fi
+      - uses: ./.github/actions/build-package
 
       - name: Install package
         if: inputs.install == 'true'
@@ -81,7 +68,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: ./.github/actions/install-conan
+      - uses: ./.github/actions/build-package
 
       - name: Generate license
         run: echo '${{secrets.LICENSE_KEY}}' > lic.key

@@ -10,14 +10,20 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - uses: ./.github/actions/install-conan
+
     - name: Run conan install
-      if: ${{inputs.build_type == 'conan' }}
       shell: bash
       run: conan install .
+
     - name: Build package
-      if: ${{inputs.build_type == 'conan' }}
       shell: bash
-      run: cmake --preset conan-release
+      run: |
+        if [ "$(uname)" == "Linux" ]; then
+          cmake --preset conan-release
+        else
+          cmake --preset conan-default
+        fi
     # - name: Install package
     #   if: ${{inputs.install == 'true' }}
     #   shell: bash
