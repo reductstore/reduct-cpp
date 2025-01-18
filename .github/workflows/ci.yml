@@ -49,11 +49,13 @@ jobs:
         run: conan install .
 
       - name: Build package
+        shell: bash
         run: |
           if [ "$(uname)" == "Linux" ]; then
             cmake --preset conan-release
           else
             cmake --preset conan-default
+          fi
       - name: Install package
         if: inputs.install == 'true'
         shell: bash
