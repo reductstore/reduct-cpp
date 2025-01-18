@@ -37,12 +37,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install conan
-        run: pip3 install conan==2.11.0
-
-      - name: Create profile
-        shell: bash
-        run: conan profile detect
+      - uses: ./.github/actions/install-conan
 
       - name: Run conan install
         shell: bash
@@ -56,28 +51,11 @@ jobs:
           else
             cmake --preset conan-default
           fi
+
       - name: Install package
         if: inputs.install == 'true'
         shell: bash
         run: sudo cmake --build --preset conan-release --target install
-
-      # - uses: actions/checkout@v4
-      # - name: Build package
-      #   shell: bash
-      #   run: cmake --preset conan-release
-
-    # - name: Install package
-    #   if: ${{inputs.install == 'true' }}
-    #   shell: bash
-    #   run: sudo cmake --build build --target install
-    # - name: Build example
-    #   if: ${{inputs.install == 'true' }}
-    #   shell: bash
-    #   run: |
-    #     mkdir examples/build
-    #     cd examples/build
-    #     cmake ..
-    #     cmake --build .
 
   unit-tests:
     strategy:
@@ -102,7 +80,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/build-package
+
+      - uses: ./.github/actions/install-conan
 
       - name: Generate license
         run: echo '${{secrets.LICENSE_KEY}}' > lic.key
