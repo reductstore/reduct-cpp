@@ -17,6 +17,7 @@ runs:
       run: conan install .
 
     - name: Detect OS and set preset name
+      shell: bash
       run: |
         if [[ "${{ runner.os }}" == "Linux" ]]; then
           echo "PRESET=conan-release" >> $GITHUB_ENV
