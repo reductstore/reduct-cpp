@@ -27,13 +27,7 @@ runs:
 
     - name: Install package
       if: ${{inputs.install == 'true' }}
-      shell: bash
-      run: |
-        if [ "$(uname)" == "Linux" ]; then
-          cmake --install . --preset conan-release
-        else
-          cmake --install . --preset conan-default
-        fi
+      run: cmake --install build
     # - name: Build example
     #   if: ${{inputs.install == 'true' }}
     #   shell: bash
