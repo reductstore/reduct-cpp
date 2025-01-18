@@ -16,14 +16,21 @@ runs:
       shell: bash
       run: conan install .
 
+    - name: Detect OS and set preset name
+      run: |
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          echo "PRESET=conan-release" >> $GITHUB_ENV
+        elif [[ "${{ runner.os }}" == "Windows" ]]; then
+          echo "PRESET=conan-default" >> $GITHUB_ENV
+        fi
+
+    - name: Cmake configuration
+      shell: bash
+      run: cmake --preset $PRESET
+
     - name: Build package
       shell: bash
-      run: |
-        if [ "$(uname)" == "Linux" ]; then
-          cmake --preset conan-release
-        else
-          cmake --preset conan-default
-        fi
+      run: cmake --build --preset $PRESET
 
     - name: Install package
       if: ${{inputs.install == 'true' }}
