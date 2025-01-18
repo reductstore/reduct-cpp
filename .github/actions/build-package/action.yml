@@ -14,7 +14,7 @@ runs:
 
     - name: Run conan install
       shell: bash
-      run: conan install .
+      run: conan install . --build=missing
 
     - name: Detect OS and set preset name
       shell: bash
