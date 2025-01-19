@@ -16,7 +16,7 @@ runs:
 
     - name: Run conan install
       shell: bash
-      run: conan install . --build=missing -s=compiler.cppstd=20
+      run: conan install . --build=missing -s:a=compiler.cppstd=20
 
     - name: Detect OS and set preset name
       shell: bash
