@@ -35,7 +35,7 @@ runs:
         if [[ "${{ runner.os }}" == "Linux" ]]; then
           cmake --build --preset $PRESET
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
-          cmake --build build --target Release
+          cmake --build build --config Release
         fi
 
     - name: Install package
