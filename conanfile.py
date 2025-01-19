@@ -1,7 +1,7 @@
 from os.path import join
 
 from conan import ConanFile
-from conan.tools.cmake import CMake, cmake_layout
+from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain, cmake_layout
 from conan.tools.files import copy
 from conan.tools.scm import Git
 
@@ -22,7 +22,6 @@ class DriftFrameworkConan(ConanFile):
         "cpp-httplib/*:with_zlib": True,
         "date/*:header_only": True,
     }
-    generators = "CMakeDeps", "CMakeToolchain"
 
     requires = (
         "fmt/11.0.2",
@@ -44,6 +43,13 @@ class DriftFrameworkConan(ConanFile):
 
     def layout(self):
         cmake_layout(self)
+
+    def generate(self):
+        deps = CMakeDeps(self)
+        deps.generate()
+        tc = CMakeToolchain(self)
+        tc.variables["REDUCT_CPP_USE_STD_CHRONO"] = "ON"
+        tc.generate()
 
     def export_sources(self):
         if ".local" in self.version:
