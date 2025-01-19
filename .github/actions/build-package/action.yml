@@ -29,6 +29,10 @@ runs:
       shell: bash
       run: cmake --preset $PRESET
 
+    - name: Show preset
+      shell: bash
+      run: cat CMakePresets.json
+
     - name: Build package
       shell: bash
       run: cmake --build --preset $PRESET
