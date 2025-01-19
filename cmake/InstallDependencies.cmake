@@ -25,8 +25,12 @@ if(CONAN_CMD)
             concurrentqueue::concurrentqueue
     )
     if(NOT REDUCT_CPP_USE_STD_CHRONO)
+        message(STATUS "Using date library")
+
         find_package(date REQUIRED)
         target_link_libraries(dependencies INTERFACE date::date)
+    else()
+        message(STATUS "Using std::chrono")
     endif()
 else()
     message(STATUS "Conan not found. Fetch dependencies")

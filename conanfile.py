@@ -48,7 +48,7 @@ class DriftFrameworkConan(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        # tc.variables["REDUCT_CPP_USE_STD_CHRONO"] = "ON"
+        tc.variables["REDUCT_CPP_USE_STD_CHRONO"] = "ON"
         tc.generate()
 
     def export_sources(self):
