@@ -28,14 +28,14 @@ runs:
         fi
 
     - name: Cmake configuration without tests
-      if: ${{inputs.build_tests == "false"}}
+      if: ${{inputs.build_tests == 'false'}}
       shell: bash
       run: cmake --preset $PRESET
 
     - name: Cmake configuration with tests
-      if: ${{inputs.build_tests == "true"}}
+      if: ${{inputs.build_tests == 'true'}}
       shell: bash
-      run: cmake --preset $PRESET
+      run: cmake --preset $PRESET -DREDUCT_CPP_ENABLE_TESTS=ON
 
     - name: Build package
       shell: bash
@@ -50,12 +50,3 @@ runs:
       if: ${{inputs.install == 'true' }}
       run: sudo cmake --install build/Release
       shell: bash
-
-    # - name: Build example
-    #   if: ${{inputs.install == 'true' }}
-    #   shell: bash
-    #   run: |
-    #     mkdir examples/build
-    #     cd examples/build
-    #     cmake ..
-    #     cmake --build .
