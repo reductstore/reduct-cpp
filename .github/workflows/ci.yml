@@ -26,12 +26,10 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        # os: [ubuntu-22.04, windows-2019]
-        os: [windows-2019]
-        # os: [ubuntu-22.04]
+        os: [ubuntu-22.04, windows-2019]
         include:
-          # - os: ubuntu-22.04
-          #   install: "true"
+          - os: ubuntu-22.04
+            install: "true"
           - os: windows-2019
             install: "false"
     steps:
