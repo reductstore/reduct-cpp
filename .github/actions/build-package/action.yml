@@ -29,13 +29,15 @@ runs:
       shell: bash
       run: cmake --preset $PRESET
 
-    - name: Show preset
-      shell: bash
-      run: cat CMakePresets.json
-
     - name: Build package
       shell: bash
       run: cmake --build --preset $PRESET
+      run: |
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          cmake --build build --target Release
+        elif [[ "${{ runner.os }}" == "Windows" ]]; then
+          cmake --build --preset $PRESET
+        fi
 
     - name: Install package
       if: ${{inputs.install == 'true' }}
