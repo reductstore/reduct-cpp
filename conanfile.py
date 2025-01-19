@@ -34,7 +34,6 @@ class DriftFrameworkConan(ConanFile):
         "nlohmann_json/3.11.3",
         "openssl/3.2.2",
         "concurrentqueue/1.0.4",
-        "date/3.0.1",
     )
 
     def set_version(self):
@@ -51,6 +50,10 @@ class DriftFrameworkConan(ConanFile):
             and self.settings.get_safe("compiler.version") >= "14"
         ):
             self.options.with_chrono = True
+
+    def requirements(self):
+        if not self.options.with_chrono:
+            self.requires("date/3.0.1")
 
     def layout(self):
         cmake_layout(self)
