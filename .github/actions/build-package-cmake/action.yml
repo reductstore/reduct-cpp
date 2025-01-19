@@ -9,6 +9,14 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Detect OS and install OpenSSL
+      shell: bash
+      run: |
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          choco install openssl -y
+          openssl version
+        fi
+
     - name: Detect OS and set std::chrono flag
       shell: bash
       run: |
