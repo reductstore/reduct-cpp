@@ -24,6 +24,10 @@ if(CONAN_CMD)
             httplib::httplib
             concurrentqueue::concurrentqueue
     )
+    if(NOT REDUCT_CPP_USE_STD_CHRONO)
+        find_package(date REQUIRED)
+        target_link_libraries(dependencies INTERFACE date::date)
+    endif()
 else()
     message(STATUS "Conan not found. Fetch dependencies")
     include(FetchContent)
