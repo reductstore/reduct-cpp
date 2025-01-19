@@ -1,12 +1,14 @@
 name: "build-package"
 description: "Install package and build example"
 inputs:
-  install:
-    default: "true"
-    description: "Install the package after build"
   build_type:
     description: "Type of build (e.g., cmake or conan)"
     required: true
+  build_tests:
+    default: "false"
+  install:
+    default: "true"
+    description: "Install the package after build"
 runs:
   using: "composite"
   steps:
@@ -25,7 +27,13 @@ runs:
           echo "PRESET=conan-default" >> $GITHUB_ENV
         fi
 
-    - name: Cmake configuration
+    - name: Cmake configuration without tests
+      if: ${{inputs.build_tests == "false"}}
+      shell: bash
+      run: cmake --preset $PRESET
+
+    - name: Cmake configuration with tests
+      if: ${{inputs.build_tests == "true"}}
       shell: bash
       run: cmake --preset $PRESET
 
@@ -42,6 +50,7 @@ runs:
       if: ${{inputs.install == 'true' }}
       run: sudo cmake --install build/Release
       shell: bash
+
     # - name: Build example
     #   if: ${{inputs.install == 'true' }}
     #   shell: bash

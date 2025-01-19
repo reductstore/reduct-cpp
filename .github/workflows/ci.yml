@@ -69,6 +69,8 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/build-package
+        with:
+          build_tests: true
 
       - name: Generate license
         run: echo '${{secrets.LICENSE_KEY}}' > lic.key
