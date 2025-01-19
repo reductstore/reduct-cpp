@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - RS-550: Add when condition to replication settings, [PR-80](https://github.com/reductstore/reduct-cpp/pull/80)
 
+### Changed
+
+- Support for Conan v2, [PR-83](https://github.com/reductstore/reduct-cpp/pull/83)
+
 ## [1.13.0] - 2024-12-04
 
 ### Added
@@ -150,7 +154,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- `Bucket.list`,  [PR-42](https://github.com/reduct-storage/reduct-cpp/pull/42)
+- `Bucket.list`, [PR-42](https://github.com/reduct-storage/reduct-cpp/pull/42)
 
 ### Changed
 
@@ -231,51 +235,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial implementation of Reduct Storage API v0.1.0
 
 [Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.13.0...HEAD
-
 [1.13.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.12.0...1.13.0
-
 [1.12.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.11.0...1.12.0
-
 [1.11.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.10.0...1.11.0
-
 [1.10.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.9.0...1.10.0
-
 [1.9.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.8.0...1.9.0
-
 [1.8.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.7.1...1.8.0
-
 [1.7.1]: https://github.com/reduct-storage/reduct-cpp/compare/v1.7.0...1.7.1
-
 [1.7.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.6.0...1.7.0
-
 [1.6.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.5.0...1.6.0
-
 [1.5.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.4.0...1.5.0
-
 [1.4.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.3.0...1.4.0
-
 [1.3.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.2.0...1.3.0
-
 [1.2.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.1.0...1.2.0
-
 [1.1.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.0.1...1.1.0
-
 [1.0.1]: https://github.com/reduct-storage/reduct-cpp/compare/v1.0.0...1.0.1
-
 [1.0.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.8.0...1.0.0
-
 [0.8.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.7.0...v0.8.0
-
 [0.7.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.6.0...v0.7.0
-
 [0.6.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.5.0...v0.6.0
-
 [0.5.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.4.0...v0.5.0
-
 [0.4.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.3.0...v0.4.0
-
 [0.3.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.2.0...v0.3.0
-
 [0.2.0]: https://github.com/reduct-storage/reduct-cpp/compare/v0.1.0...v0.2.0
-
 [0.1.0]: https://github.com/reduct-storage/reduct-cpp/releases/tag/v0.1.0
