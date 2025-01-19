@@ -31,7 +31,6 @@ runs:
 
     - name: Build package
       shell: bash
-      run: cmake --build --preset $PRESET
       run: |
         if [[ "${{ runner.os }}" == "Linux" ]]; then
           cmake --build build --target Release
