@@ -38,11 +38,8 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/build-package
-
-      - name: Install package
-        if: inputs.install == 'true'
-        shell: bash
-        run: sudo cmake --build --preset conan-release --target install
+        with:
+          install: ${{ matrix.install }}
 
   unit-tests:
     strategy:
