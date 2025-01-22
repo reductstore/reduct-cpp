@@ -1,4 +1,4 @@
-name: "build-package"
+name: "build-package-cmake"
 description: "Install package and build example"
 inputs:
   build_tests:
@@ -9,41 +9,42 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: ./.github/actions/install-conan
-
-    - name: Run conan install
+    - name: Detect OS and install OpenSSL
       shell: bash
-      run: conan install . --build=missing -s:a=compiler.cppstd=20
+      run: |
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          choco install openssl -y
+          openssl version
+        fi
 
-    - name: Detect OS and set preset name
+    - name: Detect OS and set std::chrono flag
       shell: bash
       run: |
         if [[ "${{ runner.os }}" == "Linux" ]]; then
-          echo "PRESET=conan-release" >> $GITHUB_ENV
+          echo "USE_CHRONO=OFF" >> $GITHUB_ENV
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
-          echo "PRESET=conan-default" >> $GITHUB_ENV
+          echo "USE_CHRONO=ON" >> $GITHUB_ENV
         fi
-
     - name: Cmake configuration without tests
       if: ${{inputs.build_tests == 'false'}}
       shell: bash
-      run: cmake --preset $PRESET
+      run: cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=$USE_CHRONO
 
     - name: Cmake configuration with tests
       if: ${{inputs.build_tests == 'true'}}
       shell: bash
-      run: cmake --preset $PRESET -DREDUCT_CPP_ENABLE_TESTS=ON
+      run: cmake -S . -B build -DREDUCT_CPP_ENABLE_TESTS=ON -DREDUCT_CPP_USE_STD_CHRONO=$USE_CHRONO
 
     - name: Build package
       shell: bash
       run: |
         if [[ "${{ runner.os }}" == "Linux" ]]; then
-          cmake --build --preset $PRESET
+          cmake --build build
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
           cmake --build build --config Release
         fi
 
     - name: Install package
       if: ${{inputs.install == 'true' }}
-      run: sudo cmake --install build/Release
+      run: sudo cmake --install build
       shell: bash

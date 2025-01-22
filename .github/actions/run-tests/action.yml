@@ -2,19 +2,19 @@ name: "run-tests"
 description: "Pull storage and run tests"
 inputs:
   api-token: # id of input
-    description: 'API_TOKEN'
+    description: "API_TOKEN"
     required: false
     default: ""
   tags: # id of input
-    description: 'Tags for tests'
+    description: "Tags for tests"
     required: false
     default: ""
   reductstore-version: # id of input
-    description: 'Reduct Store version'
+    description: "Reduct Store version"
     required: false
     default: "main"
   lic_file: # id of input
-    description: 'License file'
+    description: "License file"
     required: true
 runs:
   using: "composite"
@@ -33,4 +33,4 @@ runs:
         docker logs reduct-store
     - name: Run tests
       shell: bash
-      run:  REDUCT_CPP_TOKEN_API=${{inputs.api-token}} build/bin/reduct-tests ${{inputs.tags}}
+      run: REDUCT_CPP_TOKEN_API=${{inputs.api-token}} build/Release/bin/reduct-tests ${{inputs.tags}}

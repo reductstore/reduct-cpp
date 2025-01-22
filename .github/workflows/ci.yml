@@ -1,11 +1,11 @@
 name: ci
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
-    branches: [ main ]
+    branches: [main]
 jobs:
   cpplint:
     runs-on: ubuntu-latest
@@ -26,8 +26,8 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        build_type: [ "cmake", "conan" ]
-        os: [ ubuntu-22.04, windows-2019 ]
+        build_type: ["cmake", "conan"]
+        os: [ubuntu-22.04, windows-2019]
         include:
           - os: ubuntu-22.04
             install: "true"
@@ -35,19 +35,26 @@ jobs:
             install: "false"
     steps:
       - uses: actions/checkout@v4
-      - name: Install conan
+        with:
+          fetch-depth: 0
+      - name: Build without conan
+        if: ${{ matrix.build_type == 'cmake' }}
+        uses: ./.github/actions/build-package-cmake
+        with:
+          install: ${{ matrix.install }}
+
+      - name: Build with conan
         if: ${{ matrix.build_type == 'conan' }}
-        run: pip3 install conan==1.64.1
-      - uses: ./.github/actions/build-package
+        uses: ./.github/actions/build-package
         with:
           install: ${{ matrix.install }}
 
   unit-tests:
     strategy:
       matrix:
-        token: [ "", "TOKEN" ]
-        reductstore_version: [ "main", "latest" ]
-        license_file: [ "", "lic.key" ]
+        token: ["", "TOKEN"]
+        reductstore_version: ["main", "latest"]
+        license_file: ["", "lic.key"]
         include:
           - token: ""
             exclude_token_api_tag: "~[token_api]"
@@ -65,7 +72,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - uses: ./.github/actions/build-package
+        with:
+          build_tests: true
 
       - name: Generate license
         run: echo '${{secrets.LICENSE_KEY}}' > lic.key

@@ -1,0 +1,12 @@
+name: "install-conan"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install conan
+      shell: bash
+      run: pip3 install conan==2.11.0
+
+    - name: Create profile
+      shell: bash
+      run: conan profile detect
