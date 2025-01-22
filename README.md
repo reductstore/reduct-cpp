@@ -92,7 +92,7 @@ int main() {
 * CMake 3.18 or higher
 * ZLib
 * OpenSSL 1.1 or 3.0
-* Conan 1.58 (optionally)
+* Conan >=2.0 (optionally)
 
 To build the library, follow these steps:
 
