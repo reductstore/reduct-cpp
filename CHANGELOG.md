@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Support for Conan v2, [PR-83](https://github.com/reductstore/reduct-cpp/pull/83)
+- RS-563: Support for Conan v2, [PR-83](https://github.com/reductstore/reduct-cpp/pull/83)
 
 ## [1.13.0] - 2024-12-04
 
