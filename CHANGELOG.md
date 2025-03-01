@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Build on Windows with system OpenSSL, [PR-86](https://github.com/reductstore/reduct-cpp/pull/86)
+
+### Changed
+
+- `REDUCT_CPP_USE_CONAN` must be used to build with conan, [PR-86](https://github.com/reductstore/reduct-cpp/pull/86)
+
 ## [1.14.0] - 2025-02-25
 
 ### Added
