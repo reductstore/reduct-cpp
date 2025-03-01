@@ -137,7 +137,7 @@ Alternatively, you can use Conan to install the dependencies and build the libra
 ```shell
 conan install . --build=missing
 cmake --preset conan-release -DREDUCT_CPP_USE_CONAN=ON
-cmake --build --preset conan-release
+cmake --build --preset conan-release --config Release
 ```
 
 For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
