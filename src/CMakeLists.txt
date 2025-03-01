@@ -15,9 +15,8 @@ set(PUBLIC_HEADERS
     reduct/diagnostics.h
 )
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-
 add_library(${CMAKE_PROJECT_NAME} STATIC ${SRC_FILES})
+set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(
     ${CMAKE_PROJECT_NAME}
