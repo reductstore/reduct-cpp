@@ -1,4 +1,13 @@
 if(REDUCT_CPP_USE_CONAN)
+    message(STATUS "Using Conan to fetch dependencies")
+    find_program(CONAN conan)
+    if(NOT CONAN)
+        message(
+            FATAL_ERROR
+            "Conan not found. Please install Conan and run cmake again"
+        )
+    endif()
+
     find_package(fmt REQUIRED)
     find_package(nlohmann_json REQUIRED)
     find_package(httplib REQUIRED)
