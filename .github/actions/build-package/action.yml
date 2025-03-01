@@ -27,12 +27,12 @@ runs:
     - name: Cmake configuration without tests
       if: ${{inputs.build_tests == 'false'}}
       shell: bash
-      run: cmake --preset $PRESET
+      run: cmake --preset $PRESET -DREDUCT_CPP_USE_CONAN=ON
 
     - name: Cmake configuration with tests
       if: ${{inputs.build_tests == 'true'}}
       shell: bash
-      run: cmake --preset $PRESET -DREDUCT_CPP_ENABLE_TESTS=ON
+      run: cmake --preset $PRESET -DREDUCT_CPP_ENABLE_TESTS=ON -DREDUCT_CPP_USE_CONAN=ON
 
     - name: Build package
       shell: bash
