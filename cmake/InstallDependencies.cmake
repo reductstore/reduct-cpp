@@ -1,5 +1,4 @@
-find_program(CONAN_CMD conan)
-if(CONAN_CMD)
+if(REDUCT_CPP_USE_CONAN)
     find_package(fmt REQUIRED)
     find_package(nlohmann_json REQUIRED)
     find_package(httplib REQUIRED)
@@ -52,8 +51,7 @@ else()
 
     FetchContent_Declare(
         zlib
-        URL
-            https://github.com/madler/zlib/releases/download/v1.3.1/zlib131.zip
+        URL https://github.com/madler/zlib/releases/download/v1.3.1/zlib131.zip
         URL_HASH MD5=ef76f7ebfd97778a6653b1d8413541c0
     )
 
@@ -61,10 +59,21 @@ else()
     find_package(OpenSSL REQUIRED)
 
     add_library(dependencies INTERFACE)
-    FetchContent_MakeAvailable(fmt nlohmann_json httplib concurrentqueue zlib)
+    FetchContent_MakeAvailable(
+        fmt
+        nlohmann_json
+        httplib
+        concurrentqueue
+        zlib
+    )
     target_link_libraries(
         dependencies
-        INTERFACE fmt nlohmann_json httplib concurrentqueue zlib
+        INTERFACE
+            fmt
+            nlohmann_json
+            httplib
+            concurrentqueue
+            zlib
             OpenSSL::SSL
             OpenSSL::Crypto
     )
