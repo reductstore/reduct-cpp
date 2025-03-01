@@ -50,11 +50,23 @@ else()
         URL_HASH MD5=814c5e121b29e37ee836312f0eb0328f
     )
 
+    FetchContent_Declare(
+        zlib
+        URL
+            https://github.com/madler/zlib/releases/download/v1.3.1/zlib131.zip
+        URL_HASH MD5=ef76f7ebfd97778a6653b1d8413541c0
+    )
+
+    # use system OpenSSL
+    find_package(OpenSSL REQUIRED)
+
     add_library(dependencies INTERFACE)
-    FetchContent_MakeAvailable(fmt nlohmann_json httplib concurrentqueue)
+    FetchContent_MakeAvailable(fmt nlohmann_json httplib concurrentqueue zlib)
     target_link_libraries(
         dependencies
-        INTERFACE fmt nlohmann_json httplib concurrentqueue
+        INTERFACE fmt nlohmann_json httplib concurrentqueue zlib
+            OpenSSL::SSL
+            OpenSSL::Crypto
     )
 
     if(NOT REDUCT_CPP_USE_STD_CHRONO)
