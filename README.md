@@ -86,11 +86,10 @@ int main() {
 }
 ```
 
-## Build
+## Installing
 
 * GCC 11.2 or higher (support C++20)
 * CMake 3.18 or higher
-* ZLib
 * OpenSSL 1.1 or 3.0
 * Conan >=2.0 (optionally)
 
@@ -99,17 +98,46 @@ To build the library, follow these steps:
 ```shell
 git clone https://github.com/reductstore/reduct-cpp.git
 cd reduct-cpp
-mkdir build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-sudo cmake --build . --target install
+
+# Run cmake configuration
+cmake -S . -B build  # for linux
+cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=ON  -DOPENSSL_ROOT_DIR="<path>"   # for windows
+
+# Build
+cmake --build build # for linux
+cmake --build build --config Release # for windows
+
+# Install
+sudo cmake --install build
 ```
 
-CMake tries to use the `conan` package manager if it is installed. If it isn't, it downloads all the dependencies by using
-FetchContent. To use ReductStore SDK you need only to use `find_pacakge` in your cmake lists:
+CMake downloads all dependencies using `FetchContent` except OpenSLL which needs to be installed in the system.
+Now to use the SDK in your C++ project, you need to add the `find_package` to CMakeLists.txt:
 
 ```cmake
+cmake_minimum_required(VERSION 3.22)
+
+project(ReductCppExample)
+set(CMAKE_CXX_STANDARD 20)
+
+find_package(ZLIB)
+find_package(OpenSSL)
+
+
 find_package(ReductCpp)
+
+add_executable(quick_start quick_start.cc)
+target_link_libraries(quick_start ${REDUCT_CPP_LIBRARIES} ${ZLIB_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
+```
+
+### Building with Conan
+
+Alternatively, you can use Conan to install the dependencies and build the library:
+
+```shell
+conan install . --build=missing
+cmake --preset conan-release -DREDUCT_CPP_USE_CONAN=ON
+cmake --build --preset conan-release --config Release
 ```
 
 For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.

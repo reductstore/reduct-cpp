@@ -15,10 +15,15 @@ set(REDUCT_CPP_USE_STD_CHRONO
     CACHE BOOL
     "use std::chrono instead of date library"
 )
+set(REDUCT_CPP_USE_CONAN OFF CACHE BOOL "use conan to fetch dependencies")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
 
 include(cmake/InstallDependencies.cmake)
 
