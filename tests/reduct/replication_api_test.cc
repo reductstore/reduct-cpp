@@ -101,7 +101,7 @@ TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_
   REQUIRE(err_2 == Error::kOk);
   REQUIRE(replication.info == IClient::ReplicationInfo{
                                   .name = "test_replication",
-                                  .is_active = false,
+                                  .is_active = true,
                                   .is_provisioned = false,
                                   .pending_records = 0,
                               });
