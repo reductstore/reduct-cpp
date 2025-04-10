@@ -333,6 +333,16 @@ TEST_CASE("reduct::IBucket should limit records in a query", "[entry_api][1_6]")
   REQUIRE(count == 2);
 }
 
+TEST_CASE("reduct::IBucket should query data with ext parameter", "[bucket_api][1_15]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+  REQUIRE(bucket);
+
+  auto err = bucket->Query("entry-1", IBucket::Time{}, IBucket::Time::clock::now(), {.ext = R"({"test": {}})"},
+                           [](auto record) { return true; });
+  REQUIRE(err.message.starts_with("Unknown extension"));
+}
+
 TEST_CASE("reduct::IBucket should write batch of records", "[bucket_api][1_7]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);

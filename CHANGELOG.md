@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- RS-628: Support `ext` parameter in `IBucket::QueryOptions`, [PR-87](https://github.com/reductstore/reduct-cpp/pull/87)
+
 ### Fixed
 
 - Build on Windows with system OpenSSL, [PR-86](https://github.com/reductstore/reduct-cpp/pull/86)
@@ -19,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- RS-550: Add when condition to replication settings, [PR-80](https://github.com/reductstore/reduct-cpp/pull/80)
+- RS-550: Add `when` condition to replication settings, [PR-80](https://github.com/reductstore/reduct-cpp/pull/80)
 
 ### Changed
 
