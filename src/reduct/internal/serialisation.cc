@@ -245,6 +245,14 @@ Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::opti
     json_data["strict"] = *options.strict;
   }
 
+  if (options.ext) {
+    try {
+      json_data["ext"] = nlohmann::json::parse(*options.ext);
+    } catch (const std::exception& ex) {
+      return {{}, Error{.code = -1, .message = ex.what()}};
+    }
+  }
+
   return {json_data, Error::kOk};
 }
 

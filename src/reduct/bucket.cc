@@ -192,7 +192,7 @@ class Bucket : public IBucket {
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
               ReadRecordCallback callback) const noexcept override {
     std::string body;
-    if (options.when) {
+    if (options.when || options.ext) {
       auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
       if (json_err) {
         return json_err;

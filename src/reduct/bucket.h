@@ -322,6 +322,7 @@ class IBucket {
 
     std::optional<std::string> when;  ///< query condition
     std::optional<bool> strict;        ///< strict mode
+    std::optional<std::string> ext;   /// additional parameters for extensions
 
     std::optional<double> each_s;  ///< return one record each S seconds
     std::optional<size_t> each_n;  ///< return each N-th record
