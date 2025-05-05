@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2025-05-05
+
 ### Added
 
 - RS-628: Support `ext` parameter in `IBucket::QueryOptions`, [PR-87](https://github.com/reductstore/reduct-cpp/pull/87)
@@ -248,7 +250,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.14.0...1.15.0
 [1.14.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.13.0...1.14.0
 [1.13.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.12.0...1.13.0
 [1.12.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.11.0...1.12.0
