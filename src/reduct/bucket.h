@@ -317,16 +317,21 @@ class IBucket {
    * Query options
    */
   struct QueryOptions {
-    [[deprecated("Use when instead")]] LabelMap include;              ///< include labels
-    [[deprecated("Use when instead")]] LabelMap exclude;              ///< exclude labels
+    [[deprecated("Use when instead. Will be remove in v1.16.0")]]
+    LabelMap include;   ///< include labels
+    [[deprecated("Use when instead.  Will be remove in v1.16.0")]]
+    LabelMap exclude;  ///< exclude labels
 
     std::optional<std::string> when;  ///< query condition
-    std::optional<bool> strict;        ///< strict mode
+    std::optional<bool> strict;       ///< strict mode
     std::optional<std::string> ext;   /// additional parameters for extensions
 
+    [[deprecated("Use when instead. Will be remove in v1.18.0")]]
     std::optional<double> each_s;  ///< return one record each S seconds
+    [[deprecated("Use when instead. Will be remove in v1.18.0")]]
     std::optional<size_t> each_n;  ///< return each N-th record
-    std::optional<size_t> limit;   ///< limit number of records
+    [[deprecated("Use when instead. Will be remove in v1.18.0")]]
+    std::optional<size_t> limit;  ///< limit number of records
 
     std::optional<std::chrono::milliseconds> ttl;  ///< time to live
 
