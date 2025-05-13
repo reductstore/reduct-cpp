@@ -16,7 +16,10 @@ struct HttpOptions {
   auto operator<=>(const HttpOptions&) const = default;
 };
 
-const std::string_view kApiPrefix = "/api/v1";
+constexpr int kCurrentSupportedMajorVersion = 1;
+constexpr int kCurrentSupportedMinorVersion = 15;
+
+constexpr std::string_view kApiPrefix = "/api/v1";
 
 }  // namespace reduct
 #endif  // REDUCTCPP_HTTP_OPTIONS_H

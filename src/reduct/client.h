@@ -17,12 +17,14 @@
 #include "reduct/result.h"
 
 namespace reduct {
+
 /**
  * Interface for Reduct Storage HTTP Client
  */
 class IClient {
  public:
   using Time = std::chrono::time_point<std::chrono::system_clock>;
+
 
   /**
    * Reduct Storage Information

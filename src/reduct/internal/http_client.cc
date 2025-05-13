@@ -171,8 +171,6 @@ class HttpClient : public IHttpClient {
     return {{content, NormalizeHeaders(std::move(res)).result}};
   }
 
-  std::string_view api_version() const noexcept override { return api_version_; }
-
  private:
   Error CheckRequest(const httplib::Result& res) const noexcept {
     if (res.error() != httplib::Error::Success) {
@@ -190,7 +188,23 @@ class HttpClient : public IHttpClient {
     }
 
     if (auto api_version = res->headers.find("x-reduct-api"); api_version != res->headers.end()) {
-      api_version_ = api_version->second;
+      const auto dot = api_version->second.find('.');
+      if (dot == std::string::npos) {
+        return Error{.code = -1, .message = "Invalid API version"};
+      }
+      auto major = std::stoi(api_version->second.substr(0, dot));
+      auto minor = std::stoi(api_version->second.substr(dot + 1));
+
+      if (major != kCurrentSupportedMajorVersion) {
+        return Error{.code = -1, .message = fmt::format("Unsupported API version: {}.{}", major, minor)};
+      }
+
+      // We support only 3 minor versions from the current one
+      if (minor + 2 < kCurrentSupportedMinorVersion) {
+        std::cerr << "Warning: Server API version is too old: " << api_version->second
+                  << ", please update the server up to " << kCurrentSupportedMajorVersion << "."
+                  << kCurrentSupportedMinorVersion << std::endl;
+      }
     }
 
     return Error::kOk;
@@ -201,7 +215,6 @@ class HttpClient : public IHttpClient {
   std::unique_ptr<httplib::Client> client_;
   std::string api_token_;
   mutable std::string access_token_;
-  mutable std::string api_version_;
 };
 
 std::unique_ptr<IHttpClient> IHttpClient::Build(std::string_view url, const HttpOptions& options) {
