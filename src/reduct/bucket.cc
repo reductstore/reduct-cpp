@@ -192,27 +192,17 @@ class Bucket : public IBucket {
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
               ReadRecordCallback callback) const noexcept override {
     std::string body;
-    if (options.when || options.ext) {
-      auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
-      if (json_err) {
-        return json_err;
-      }
-
-      auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
-      if (resp_err) {
-        return resp_err;
-      }
-
-      body = std::move(resp);
-    } else {
-      std::string url = BuildQueryUrl(start, stop, entry_name, options);
-      auto [resp, err] = client_->Get(url);
-      if (err) {
-        return err;
-      }
-
-      body = std::move(resp);
+    auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
+    if (json_err) {
+      return json_err;
     }
+
+    auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
+    if (resp_err) {
+      return resp_err;
+    }
+
+    body = std::move(resp);
 
     uint64_t id;
     try {
@@ -261,14 +251,6 @@ class Bucket : public IBucket {
       }
 
       body = std::move(resp);
-    } else {
-      std::string url = BuildQueryUrl(start, stop, entry_name, options);
-      auto [resp, err] = client_->Delete(url);
-      if (err) {
-        return {0, std::move(err)};
-      }
-
-      body = std::get<0>(resp);
     }
 
     try {
@@ -297,47 +279,6 @@ class Bucket : public IBucket {
   }
 
  private:
-  std::string BuildQueryUrl(const std::optional<Time>& start, const std::optional<Time>& stop,
-                            std::string_view entry_name, const QueryOptions& options) const {
-    auto url = fmt::v11::format("{}/{}/q?", path_, entry_name);
-    if (start) {
-      url += fmt::format("start={}&", ToMicroseconds(*start));
-    }
-
-    if (stop) {
-      url += fmt::format("stop={}&", ToMicroseconds(*stop));
-    }
-
-    for (const auto& [key, value] : options.include) {
-      url += fmt::format("&include-{}={}", key, value);
-    }
-
-    for (const auto& [key, value] : options.exclude) {
-      url += fmt::format("&exclude-{}={}", key, value);
-    }
-
-    if (options.each_s) {
-      url += fmt::format("each_s={}&", *options.each_s);
-    }
-
-    if (options.each_n) {
-      url += fmt::format("each_n={}&", *options.each_n);
-    }
-
-    if (options.limit) {
-      url += fmt::format("limit={}&", *options.limit);
-    }
-
-    if (options.ttl) {
-      url += fmt::format("ttl={}&", options.ttl->count() / 1000);
-    }
-
-    if (options.continuous) {
-      url += "continuous=true&";
-    }
-
-    return url;
-  }
 
   enum class ReadType {
     kSingle,
