@@ -16,9 +16,6 @@ struct HttpOptions {
   auto operator<=>(const HttpOptions&) const = default;
 };
 
-constexpr int kCurrentSupportedMajorVersion = 1;
-constexpr int kCurrentSupportedMinorVersion = 15;
-
 constexpr std::string_view kApiPrefix = "/api/v1";
 
 }  // namespace reduct

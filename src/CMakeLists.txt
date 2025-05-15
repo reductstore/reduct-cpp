@@ -36,6 +36,13 @@ target_compile_definitions(
     ${CMAKE_PROJECT_NAME}
     PUBLIC CPPHTTPLIB_OPENSSL_SUPPORT
 )
+target_compile_definitions(
+    ${CMAKE_PROJECT_NAME}
+    PUBLIC
+        REDUCT_CPP_MAJOR_VERSION=${MAJOR_VERSION}
+        REDUCT_CPP_MINOR_VERSION=${MINOR_VERSION}
+)
+
 if(REDUCT_CPP_USE_STD_CHRONO)
     target_compile_definitions(
         ${CMAKE_PROJECT_NAME}

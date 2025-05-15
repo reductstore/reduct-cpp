@@ -195,15 +195,15 @@ class HttpClient : public IHttpClient {
       auto major = std::stoi(api_version->second.substr(0, dot));
       auto minor = std::stoi(api_version->second.substr(dot + 1));
 
-      if (major != kCurrentSupportedMajorVersion) {
+      if (major != REDUCT_CPP_MAJOR_VERSION) {
         return Error{.code = -1, .message = fmt::format("Unsupported API version: {}.{}", major, minor)};
       }
 
       // We support only 3 minor versions from the current one
-      if (minor + 2 < kCurrentSupportedMinorVersion) {
+      if (minor + 2 < REDUCT_CPP_MINOR_VERSION) {
         std::cerr << "Warning: Server API version is too old: " << api_version->second
-                  << ", please update the server up to " << kCurrentSupportedMajorVersion << "."
-                  << kCurrentSupportedMinorVersion << std::endl;
+                  << ", please update the server up to " << REDUCT_CPP_MAJOR_VERSION << "."
+                  << REDUCT_CPP_MINOR_VERSION << std::endl;
       }
     }
 
