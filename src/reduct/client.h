@@ -17,12 +17,14 @@
 #include "reduct/result.h"
 
 namespace reduct {
+
 /**
  * Interface for Reduct Storage HTTP Client
  */
 class IClient {
  public:
   using Time = std::chrono::time_point<std::chrono::system_clock>;
+
 
   /**
    * Reduct Storage Information
@@ -196,9 +198,13 @@ class IClient {
     std::string dst_token;   // Destination access token
     std::vector<std::string>
         entries;                // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
-    [[deprecated("Use when instead")]] IBucket::LabelMap include;  // Labels to include
-    [[deprecated("Use when instead")]] IBucket::LabelMap exclude;  // Labels to exclude
+    [[deprecated("Use when instead. Will be removed in v1.16.0")]]
+    IBucket::LabelMap include;  // Labels to include
+    [[deprecated("Use when instead. Will be removed in v1.16.0")]]
+    IBucket::LabelMap exclude;  // Labels to exclude
+    [[deprecated("Use when instead. Will be removed in v1.18.0")]]
     std::optional<double> each_s;  // Replicate a record every S seconds if not empty
+    [[deprecated("Use when instead. Will be removed in v1.18.0")]]
     std::optional<uint64_t> each_n;  // Replicate every Nth record if not empty
     std::optional<std::string> when;  // Replication condition
 
