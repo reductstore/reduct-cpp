@@ -317,9 +317,9 @@ class IBucket {
    * Query options
    */
   struct QueryOptions {
-    [[deprecated("Use when instead. Will be remove in v1.16.0")]]
+    [[deprecated("Use when instead. Will be removed in v1.16.0")]]
     LabelMap include;   ///< include labels
-    [[deprecated("Use when instead.  Will be remove in v1.16.0")]]
+    [[deprecated("Use when instead. Will be removed in v1.16.0")]]
     LabelMap exclude;  ///< exclude labels
 
     std::optional<std::string> when;  ///< query condition
