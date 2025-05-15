@@ -326,7 +326,7 @@ class IBucket {
     std::optional<bool> strict;       ///< strict mode
     std::optional<std::string> ext;   /// additional parameters for extensions
 
-    [[deprecated("Use when instead. Will be remove in v1.18.0")]]
+    [[deprecated("Use when instead. Will be removed in v1.18.0")]]
     std::optional<double> each_s;  ///< return one record each S seconds
     [[deprecated("Use when instead. Will be remove in v1.18.0")]]
     std::optional<size_t> each_n;  ///< return each N-th record
