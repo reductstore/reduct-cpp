@@ -9,7 +9,7 @@ in C++20. It allows developers to easily interact with the database from their C
 ## Features
 
 * Written in C++20
-* Support ReductStore [HTTP API v1.15](https://www.reduct.store/docs/next/http-api)
+* Support ReductStore https://www.reduct.store/docs/http-api
 * Support HTTP and HTTPS protocols
 * Support Linux AMD64 and Windows
 
@@ -141,3 +141,16 @@ cmake --build --preset conan-release --config Release
 ```
 
 For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
+
+### Supported ReductStore Versions and  Backward Compatibility
+
+The library is backward compatible with the previous versions. However, some methods have been deprecated and will be
+removed in the future releases. Please refer to the [Changelog](CHANGELOG.md) for more details.
+The SDK supports the following ReductStore API versions:
+
+* v1.15
+* v1.14
+* v1.13
+
+It can work with newer and older versions, but it is not guaranteed that all features will work as expected because
+the API may change and some features may be deprecated or the SDK may not support them yet.
