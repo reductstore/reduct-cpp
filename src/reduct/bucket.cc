@@ -279,7 +279,6 @@ class Bucket : public IBucket {
   }
 
  private:
-
   enum class ReadType {
     kSingle,
     kBatched,
