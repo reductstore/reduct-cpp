@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added
+
+- Check server API version and warn if it's too old, [PR-89](https://github.com/reductstore/reduct-cpp/pull/89)
+
+
+## Deprecated
+
+- `each_n`, `each_s`, `limit` in `IBucket::QueryOptions` and `IBucket::ReplicationSettings` are deprecated, [PR-89](https://github.com/reductstore/reduct-cpp/pull/89)
+
 ## [1.15.0] - 2025-05-05
 
 ### Added
