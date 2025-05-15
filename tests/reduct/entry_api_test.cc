@@ -493,7 +493,7 @@ TEST_CASE("reduct::IBucket should remove a batch of records", "[bucket_api][1_12
   }) == Error{.code = 404, .message = "No record with timestamp 1"});
 }
 
-TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_12]") {
+TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_15]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
 
@@ -502,20 +502,22 @@ TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_12]"
   REQUIRE(bucket->Write("entry-1", t + us(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
   REQUIRE(bucket->Write("entry-1", t + us(2), [](auto rec) { rec->WriteAll("some_data3"); }) == Error::kOk);
 
-  auto [removed_records, err] = bucket->RemoveQuery("entry-1", t, t + us(3), {.each_n = 2});
+  auto [removed_records, err] = bucket->RemoveQuery("entry-1", t, t + us(3), {.when = R"({"$each_n": 2})"});
   REQUIRE(err == Error::kOk);
-  REQUIRE(removed_records == 2);
+  REQUIRE(removed_records == 1);
 
-  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 0"});
-
-  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) {
-    REQUIRE(record.ReadAll().result == "some_data2");
+  REQUIRE(bucket->Read("entry-1", t + us(0), [](auto record) {
+    REQUIRE(record.ReadAll().result == "some_data1");
     return true;
   }) == Error::kOk);
 
-  REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 2"});
+  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 1"});
+
+  REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) {
+    REQUIRE(record.ReadAll().result == "some_data3");
+    return true;
+  }) == Error::kOk);
 }
 
 TEST_CASE("reduct::IBucket should remove records by query with when condition", "[bucket_api][1_13]") {

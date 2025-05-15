@@ -239,19 +239,17 @@ class Bucket : public IBucket {
   Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                QueryOptions options) const noexcept override {
     std::string body;
-    if (options.when) {
-      auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
-      if (json_err) {
-        return {0, std::move(json_err)};
-      }
-
-      auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
-      if (resp_err) {
-        return {0, std::move(resp_err)};
-      }
-
-      body = std::move(resp);
+    auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
+    if (json_err) {
+      return {0, std::move(json_err)};
     }
+
+    auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/{}/q", path_, entry_name), json_payload.dump());
+    if (resp_err) {
+      return {0, std::move(resp_err)};
+    }
+
+    body = std::move(resp);
 
     try {
       auto data = nlohmann::json::parse(body);
