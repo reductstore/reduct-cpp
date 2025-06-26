@@ -13,20 +13,13 @@ if(REDUCT_CPP_USE_CONAN)
     find_package(httplib REQUIRED)
     find_package(unofficial-concurrentqueue REQUIRED)
 
-    add_library(dependencies INTERFACE)
-    target_link_libraries(
-        dependencies
-        INTERFACE
-            fmt::fmt
-            nlohmann_json::nlohmann_json
-            httplib::httplib
-            unofficial::concurrentqueue::concurrentqueue
-    )
+    set(RCPP_DEPENDENCIES fmt nlohmann_json httplib unofficial::concurrentqueue)
+
     if(NOT REDUCT_CPP_USE_STD_CHRONO)
         message(STATUS "Using date library")
 
         find_package(date REQUIRED)
-        target_link_libraries(dependencies INTERFACE date::date)
+        list(APPEND RCPP_DEPENDENCIES date)
     else()
         message(STATUS "Using std::chrono")
     endif()
@@ -67,7 +60,6 @@ else()
     # use system OpenSSL
     find_package(OpenSSL REQUIRED)
 
-    add_library(dependencies INTERFACE)
     FetchContent_MakeAvailable(
         fmt
         nlohmann_json
@@ -75,16 +67,14 @@ else()
         concurrentqueue
         zlib
     )
-    target_link_libraries(
-        dependencies
-        INTERFACE
-            fmt
-            nlohmann_json
-            httplib
-            concurrentqueue
-            zlib
-            OpenSSL::SSL
-            OpenSSL::Crypto
+    set(RCPP_DEPENDENCIES
+        fmt
+        nlohmann_json::nlohmann_json
+        httplib
+        concurrentqueue
+        zlib
+        OpenSSL::SSL
+        OpenSSL::Crypto
     )
 
     if(NOT REDUCT_CPP_USE_STD_CHRONO)
@@ -95,6 +85,6 @@ else()
             URL_HASH MD5=cf556cc376d15055b8235b05b2fc6253
         )
         FetchContent_MakeAvailable(date)
-        target_link_libraries(dependencies INTERFACE date)
+        list(APPEND RCPP_DEPENDENCIES date)
     endif()
 endif()

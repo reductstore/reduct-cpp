@@ -33,7 +33,7 @@ target_include_directories(
 )
 
 # Link dependencies
-target_link_libraries(${RCPP_TARGET_NAME} PRIVATE dependencies)
+target_link_libraries(${RCPP_TARGET_NAME} PRIVATE ${RCPP_DEPENDENCIES})
 
 set_target_properties(
     ${RCPP_TARGET_NAME}
