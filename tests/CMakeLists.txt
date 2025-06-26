@@ -1,7 +1,5 @@
 enable_testing()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
 include(FetchContent)
 
 FetchContent_Declare(
@@ -20,6 +18,11 @@ set(SRC_FILES
     test.cc
 )
 
-add_executable(reduct-tests ${SRC_FILES})
+message(STATUS ${RCPP_TARGET_NAME})
 
-target_link_libraries(reduct-tests ${PROJECT_NAME} dependencies Catch2::Catch2)
+add_executable(reduct-tests ${SRC_FILES})
+target_include_directories(reduct-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(
+    reduct-tests
+    PRIVATE ${RCPP_TARGET_NAME} fmt::fmt Catch2::Catch2
+)

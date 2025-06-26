@@ -1,30 +1,5 @@
-if(REDUCT_CPP_USE_CONAN)
-    message(STATUS "Using Conan to fetch dependencies")
-    find_program(CONAN conan)
-    if(NOT CONAN)
-        message(
-            FATAL_ERROR
-            "Conan not found. Please install Conan and run cmake again"
-        )
-    endif()
-
-    find_package(fmt REQUIRED)
-    find_package(nlohmann_json REQUIRED)
-    find_package(httplib REQUIRED)
-    find_package(unofficial-concurrentqueue REQUIRED)
-
-    set(RCPP_DEPENDENCIES fmt nlohmann_json httplib unofficial::concurrentqueue)
-
-    if(NOT REDUCT_CPP_USE_STD_CHRONO)
-        message(STATUS "Using date library")
-
-        find_package(date REQUIRED)
-        list(APPEND RCPP_DEPENDENCIES date)
-    else()
-        message(STATUS "Using std::chrono")
-    endif()
-else()
-    message(STATUS "Conan not found. Fetch dependencies")
+if(REDUCT_CPP_USE_FETCHCONTENT)
+    message(STATUS "Using Fetchcontent for dependencies")
     include(FetchContent)
     FetchContent_Declare(
         fmt
@@ -67,17 +42,33 @@ else()
         concurrentqueue
         zlib
     )
-    set(RCPP_DEPENDENCIES
-        fmt
-        nlohmann_json::nlohmann_json
-        httplib
-        concurrentqueue
-        zlib
-        OpenSSL::SSL
-        OpenSSL::Crypto
-    )
 
-    if(NOT REDUCT_CPP_USE_STD_CHRONO)
+    # Add aliases
+    add_library(concurrentqueue::concurrentqueue ALIAS concurrentqueue)
+    add_library(zlib::zlib ALIAS zlib)
+else()
+    find_package(fmt REQUIRED)
+    find_package(nlohmann_json REQUIRED)
+    find_package(httplib REQUIRED)
+    find_package(unofficial-concurrentqueue REQUIRED)
+endif()
+
+# Set dependencies list
+set(RCPP_DEPENDENCIES
+    fmt::fmt
+    nlohmann_json::nlohmann_json
+    httplib::httplib
+    concurrentqueue::concurrentqueue
+    zlib::zlib
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
+
+# std::chrono
+if(NOT REDUCT_CPP_USE_STD_CHRONO)
+    message(STATUS "Using date library")
+
+    if(REDUCT_CPP_USE_FETCHCONTENT)
         FetchContent_Declare(
             date
             URL
@@ -85,6 +76,11 @@ else()
             URL_HASH MD5=cf556cc376d15055b8235b05b2fc6253
         )
         FetchContent_MakeAvailable(date)
-        list(APPEND RCPP_DEPENDENCIES date)
+    else()
+        find_package(date REQUIRED)
     endif()
+
+    list(APPEND RCPP_DEPENDENCIES date)
+else()
+    message(STATUS "Using std::chrono")
 endif()

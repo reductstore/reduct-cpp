@@ -15,19 +15,33 @@ set(REDUCT_CPP_USE_STD_CHRONO
     CACHE BOOL
     "use std::chrono instead of date library"
 )
-set(REDUCT_CPP_USE_CONAN OFF CACHE BOOL "use conan to fetch dependencies")
+# Use FetchContent
+set(REDUCT_CPP_USE_FETCHCONTENT
+    OFF
+    CACHE BOOL
+    "Use fetchcontent to fetch dependencies"
+)
+
+# Set RCPP_INSTALL
+if(REDUCT_CPP_USE_FETCHCONTENT)
+    set(RCPP_INSTALL OFF)
+else()
+    set(RCPP_INSTALL ON)
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
 
+# Dependencies
 include(cmake/InstallDependencies.cmake)
 
+set(RCPP_TARGET_NAME ${PROJECT_NAME})
 add_subdirectory(src)
+
+# Tests
 if(REDUCT_CPP_ENABLE_TESTS)
     add_subdirectory(tests)
 endif()

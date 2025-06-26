@@ -16,7 +16,6 @@ set(PUBLIC_HEADERS
 )
 
 # Create reductcpp target
-set(RCPP_TARGET_NAME ${PROJECT_NAME})
 add_library(${RCPP_TARGET_NAME} STATIC ${SRC_FILES})
 
 # Add alias
@@ -59,41 +58,44 @@ if(REDUCT_CPP_USE_STD_CHRONO)
     )
 endif()
 
-# Install rules
-include(GNUInstallDirs)
+if(RCPP_INSTALL)
+    # Install rules
+    include(GNUInstallDirs)
 
-# Install
-install(
-    TARGETS ${RCPP_TARGET_NAME}
-    EXPORT ${RCPP_TARGET_NAME}-target
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/reduct
-)
+    # Install
+    install(
+        TARGETS ${RCPP_TARGET_NAME}
+        EXPORT ${RCPP_TARGET_NAME}-target
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/reduct
+    )
 
-install(
-    EXPORT ${RCPP_TARGET_NAME}-target
-    FILE ${RCPP_TARGET_NAME}-targets.cmake
-    NAMESPACE ${RCPP_TARGET_NAME}::
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
-)
+    install(
+        EXPORT ${RCPP_TARGET_NAME}-target
+        FILE ${RCPP_TARGET_NAME}-targets.cmake
+        NAMESPACE ${RCPP_TARGET_NAME}::
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
+    )
 
-include(CMakePackageConfigHelpers)
+    include(CMakePackageConfigHelpers)
 
-# Create package config file
-configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/${RCPP_TARGET_NAME}-config.cmake.in"
-    "${RCPP_TARGET_NAME}-config.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
-)
-# Create package version file
-write_basic_package_version_file(
-    ${RCPP_TARGET_NAME}-config-version.cmake
-    COMPATIBILITY ExactVersion
-)
+    # Create package config file
+    configure_package_config_file(
+        "${PROJECT_SOURCE_DIR}/cmake/${RCPP_TARGET_NAME}-config.cmake.in"
+        "${RCPP_TARGET_NAME}-config.cmake"
+        INSTALL_DESTINATION
+            ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
+    )
+    # Create package version file
+    write_basic_package_version_file(
+        ${RCPP_TARGET_NAME}-config-version.cmake
+        COMPATIBILITY ExactVersion
+    )
 
-# Install cmake files
-install(
-    FILES
-        "${PROJECT_BINARY_DIR}/${RCPP_TARGET_NAME}-config.cmake"
-        "${PROJECT_BINARY_DIR}/${RCPP_TARGET_NAME}-config-version.cmake"
-    DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
-)
+    # Install cmake files
+    install(
+        FILES
+            "${PROJECT_BINARY_DIR}/${RCPP_TARGET_NAME}-config.cmake"
+            "${PROJECT_BINARY_DIR}/${RCPP_TARGET_NAME}-config-version.cmake"
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
+    )
+endif()
