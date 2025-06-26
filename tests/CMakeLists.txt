@@ -22,9 +22,4 @@ set(SRC_FILES
 
 add_executable(reduct-tests ${SRC_FILES})
 
-target_link_libraries(
-    reduct-tests
-    ${CMAKE_PROJECT_NAME}
-    dependencies
-    Catch2::Catch2
-)
+target_link_libraries(reduct-tests ${PROJECT_NAME} dependencies Catch2::Catch2)
