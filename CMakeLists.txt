@@ -27,17 +27,6 @@ endif()
 
 include(cmake/InstallDependencies.cmake)
 
-configure_file(
-    cmake/ReductCppConfig.cmake.in
-    ${CMAKE_BINARY_DIR}/cmake/ReductCppConfig.cmake
-    @ONLY
-)
-configure_file(
-    cmake/ReductCppConfigVersion.cmake.in
-    ${CMAKE_BINARY_DIR}/cmake/ReductCppConfigVersion.cmake
-    @ONLY
-)
-
 add_subdirectory(src)
 if(REDUCT_CPP_ENABLE_TESTS)
     add_subdirectory(tests)
