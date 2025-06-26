@@ -15,14 +15,19 @@ set(PUBLIC_HEADERS
     reduct/diagnostics.h
 )
 
-add_library(${PROJECT_NAME} STATIC ${SRC_FILES})
+# Create ReductCpp target
+set(RCPP_TARGET_NAME ${PROJECT_NAME})
+add_library(${RCPP_TARGET_NAME} STATIC ${SRC_FILES})
 
 # Add alias
-add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
+add_library(${RCPP_TARGET_NAME}::${RCPP_TARGET_NAME} ALIAS ${RCPP_TARGET_NAME})
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(
+    ${RCPP_TARGET_NAME}
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
 target_include_directories(
     ${PROJECT_NAME}
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../3dparty
