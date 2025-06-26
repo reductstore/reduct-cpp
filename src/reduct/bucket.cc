@@ -7,7 +7,7 @@
 #if CONAN
 #include <moodycamel/concurrentqueue.h>
 #else
-#include <concurrentqueue.h>
+#include <concurrentqueue/concurrentqueue.h>
 #endif
 
 #include <nlohmann/json.hpp>

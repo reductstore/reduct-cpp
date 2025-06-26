@@ -16,6 +16,13 @@ set(PUBLIC_HEADERS
 )
 
 add_library(${CMAKE_PROJECT_NAME} STATIC ${SRC_FILES})
+
+# Add alias
+add_library(
+    ${CMAKE_PROJECT_NAME}::${CMAKE_PROJECT_NAME}
+    ALIAS ${CMAKE_PROJECT_NAME}
+)
+
 set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(

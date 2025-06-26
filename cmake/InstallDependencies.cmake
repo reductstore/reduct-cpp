@@ -11,7 +11,7 @@ if(REDUCT_CPP_USE_CONAN)
     find_package(fmt REQUIRED)
     find_package(nlohmann_json REQUIRED)
     find_package(httplib REQUIRED)
-    find_package(concurrentqueue REQUIRED)
+    find_package(unofficial-concurrentqueue REQUIRED)
 
     add_library(dependencies INTERFACE)
     target_link_libraries(
@@ -20,7 +20,7 @@ if(REDUCT_CPP_USE_CONAN)
             fmt::fmt
             nlohmann_json::nlohmann_json
             httplib::httplib
-            concurrentqueue::concurrentqueue
+            unofficial::concurrentqueue::concurrentqueue
     )
     if(NOT REDUCT_CPP_USE_STD_CHRONO)
         message(STATUS "Using date library")
