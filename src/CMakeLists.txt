@@ -81,21 +81,21 @@ if(RCPP_INSTALL)
     # Create package config file
     configure_package_config_file(
         "${PROJECT_SOURCE_DIR}/cmake/${RCPP_TARGET_NAME}-config.cmake.in"
-        "${RCPP_TARGET_NAME}-config.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/${RCPP_TARGET_NAME}-config.cmake"
         INSTALL_DESTINATION
             ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
     )
     # Create package version file
     write_basic_package_version_file(
-        ${RCPP_TARGET_NAME}-config-version.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/${RCPP_TARGET_NAME}-config-version.cmake
         COMPATIBILITY ExactVersion
     )
 
     # Install cmake files
     install(
         FILES
-            "${PROJECT_BINARY_DIR}/${RCPP_TARGET_NAME}-config.cmake"
-            "${PROJECT_BINARY_DIR}/${RCPP_TARGET_NAME}-config-version.cmake"
+            "${CMAKE_CURRENT_BINARY_DIR}/${RCPP_TARGET_NAME}-config.cmake"
+            "${CMAKE_CURRENT_BINARY_DIR}/${RCPP_TARGET_NAME}-config-version.cmake"
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
     )
 endif()
