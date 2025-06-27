@@ -50,7 +50,7 @@ else()
     find_package(fmt REQUIRED)
     find_package(nlohmann_json REQUIRED)
     find_package(httplib REQUIRED)
-    find_package(unofficial-concurrentqueue REQUIRED)
+    find_package(concurrentqueue REQUIRED)
 endif()
 
 # Set dependencies list
