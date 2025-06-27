@@ -3,10 +3,10 @@
 include(CMakeFindDependencyMacro)
 
 find_dependency(fmt REQUIRED)
-find_dependency(nlohmann_jsonohmann_json::nlohmann_json REQUIRED)
-find_dependency(httplib::httplib REQUIRED)
-find_dependency(concurrentqueue::concurrentqueue REQUIRED)
-find_dependency(ZLIB::ZLIB REQUIRED)
+find_dependency(nlohmann_json REQUIRED)
+find_dependency(httplib REQUIRED)
+find_dependency(concurrentqueue REQUIRED)
+find_dependency(ZLIB REQUIRED)
 find_dependency(OpenSSL REQUIRED)
 
 @DATE_DEPENDENCY@
