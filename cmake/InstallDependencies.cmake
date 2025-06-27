@@ -32,7 +32,7 @@ if(REDUCT_CPP_USE_FETCHCONTENT)
         URL_HASH MD5=ef76f7ebfd97778a6653b1d8413541c0
     )
 
-    # use system OpenSSL
+    # Use system OpenSSL
     find_package(OpenSSL REQUIRED)
 
     FetchContent_MakeAvailable(
@@ -51,6 +51,8 @@ else()
     find_package(nlohmann_json REQUIRED)
     find_package(httplib REQUIRED)
     find_package(concurrentqueue REQUIRED)
+    find_package(ZLIB REQUIRED)
+    find_package(OpenSSL REQUIRED)
 endif()
 
 # Set dependencies list
