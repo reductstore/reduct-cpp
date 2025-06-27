@@ -45,7 +45,7 @@ if(REDUCT_CPP_USE_FETCHCONTENT)
 
     # Add aliases
     add_library(concurrentqueue::concurrentqueue ALIAS concurrentqueue)
-    add_library(zlib::zlib ALIAS zlib)
+    add_library(ZLIB::ZLIB ALIAS zlib)
 else()
     find_package(fmt REQUIRED)
     find_package(nlohmann_json REQUIRED)
@@ -59,7 +59,7 @@ set(RCPP_DEPENDENCIES
     nlohmann_json::nlohmann_json
     httplib::httplib
     concurrentqueue::concurrentqueue
-    zlib::zlib
+    ZLIB::ZLIB
     OpenSSL::SSL
     OpenSSL::Crypto
 )
