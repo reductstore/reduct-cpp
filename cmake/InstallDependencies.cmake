@@ -80,7 +80,7 @@ if(NOT REDUCT_CPP_USE_STD_CHRONO)
         find_package(date REQUIRED)
     endif()
 
-    list(APPEND RCPP_DEPENDENCIES date)
+    list(APPEND RCPP_DEPENDENCIES date::date)
 else()
     message(STATUS "Using std::chrono")
 endif()
