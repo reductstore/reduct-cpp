@@ -21,6 +21,9 @@ add_library(${RCPP_TARGET_NAME} STATIC ${SRC_FILES})
 # Add alias
 add_library(${RCPP_TARGET_NAME}::${RCPP_TARGET_NAME} ALIAS ${RCPP_TARGET_NAME})
 
+# Set c++ standart
+target_compile_features(${RCPP_TARGET_NAME} PUBLIC cxx_std_20)
+
 set_property(TARGET ${RCPP_TARGET_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # Include paths

@@ -35,8 +35,6 @@ else()
     set(RCPP_INSTALL ON)
 endif()
 
-set(CMAKE_CXX_STANDARD 20)
-
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
