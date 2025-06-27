@@ -9,12 +9,18 @@ project(reductcpp VERSION ${REDUCT_CPP_FULL_VERSION})
 
 message(STATUS "Version ${REDUCT_CPP_FULL_VERSION}")
 
-set(REDUCT_CPP_ENABLE_TESTS OFF CACHE BOOL "Compile tests")
+# Use std::chrono
 set(REDUCT_CPP_USE_STD_CHRONO
     OFF
     CACHE BOOL
     "use std::chrono instead of date library"
 )
+if(REDUCT_CPP_USE_STD_CHRONO)
+    set(DATE_DEPENDENCY "")
+else()
+    set(DATE_DEPENDENCY "find_dependency(date REQUIRED)")
+endif()
+
 # Use FetchContent
 set(REDUCT_CPP_USE_FETCHCONTENT
     OFF
@@ -42,6 +48,7 @@ set(RCPP_TARGET_NAME ${PROJECT_NAME})
 add_subdirectory(src)
 
 # Tests
+set(REDUCT_CPP_ENABLE_TESTS OFF CACHE BOOL "Compile tests")
 if(REDUCT_CPP_ENABLE_TESTS)
     add_subdirectory(tests)
 endif()
