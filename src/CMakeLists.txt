@@ -56,7 +56,7 @@ target_compile_definitions(
 if(REDUCT_CPP_USE_FETCHCONTENT)
     target_compile_definitions(
         ${RCPP_TARGET_NAME}
-        PRIVATE CONCURRENTQUEUE_H_FILEPATH="concurrentqueue.h"
+        PRIVATE CONCURRENTQUEUE_H_FILEPATH=\"concurrentqueue.h\"
     )
 endif()
 

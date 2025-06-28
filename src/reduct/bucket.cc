@@ -5,7 +5,7 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 #if CONCURRENTQUEUE_H_FILEPATH
-#include <CONCURRENTQUEUE_H_FILEPATH>
+#include CONCURRENTQUEUE_H_FILEPATH
 #else
 #include <moodycamel/concurrentqueue.h>
 #endif
