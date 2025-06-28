@@ -4,10 +4,10 @@
 #define FMT_HEADER_ONLY 1
 #include <fmt/core.h>
 #include <fmt/ranges.h>
-#if CONAN
-#include <moodycamel/concurrentqueue.h>
+#if CONCURRENTQUEUE_H_FILEPATH
+#include <CONCURRENTQUEUE_H_FILEPATH>
 #else
-#include <concurrentqueue.h>
+#include <moodycamel/concurrentqueue.h>
 #endif
 
 #include <nlohmann/json.hpp>

@@ -53,6 +53,12 @@ target_compile_definitions(
         REDUCT_CPP_MAJOR_VERSION=${MAJOR_VERSION}
         REDUCT_CPP_MINOR_VERSION=${MINOR_VERSION}
 )
+if(REDUCT_CPP_USE_FETCHCONTENT)
+    target_compile_definitions(
+        ${RCPP_TARGET_NAME}
+        PRIVATE CONCURRENTQUEUE_H_FILEPATH="concurrentqueue.h"
+    )
+endif()
 
 if(REDUCT_CPP_USE_STD_CHRONO)
     target_compile_definitions(
