@@ -45,7 +45,7 @@ set_target_properties(
 # Add definitions
 target_compile_definitions(
     ${RCPP_TARGET_NAME}
-    PUBLIC CPPHTTPLIB_OPENSSL_SUPPORT
+    PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT
 )
 target_compile_definitions(
     ${RCPP_TARGET_NAME}
