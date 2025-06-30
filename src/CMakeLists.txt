@@ -16,7 +16,7 @@ set(PUBLIC_HEADERS
 )
 
 # Create reductcpp target
-add_library(${RCPP_TARGET_NAME} STATIC ${SRC_FILES})
+add_library(${RCPP_TARGET_NAME} ${SRC_FILES})
 
 # Add alias
 add_library(${RCPP_TARGET_NAME}::${RCPP_TARGET_NAME} ALIAS ${RCPP_TARGET_NAME})
