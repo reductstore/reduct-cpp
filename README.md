@@ -88,10 +88,16 @@ int main() {
 
 ## Installing
 
+### Dependencies
 * GCC 11.2 or higher (support C++20)
 * CMake 3.18 or higher
 * OpenSSL 1.1 or 3.0
-* Conan >=2.0 (optionally)
+* fmt
+* nlohmann_json
+* httplib
+* concurrentqueue
+* ZLIB
+* OpenSSL
 
 To build the library, follow these steps:
 
@@ -111,7 +117,7 @@ cmake --build build --config Release # for windows
 sudo cmake --install build
 ```
 
-CMake downloads all dependencies using `FetchContent` except OpenSSL which needs to be installed in the system.
+## CMake Integration
 Now to use the SDK in your C++ project, you need to add the `find_package` to CMakeLists.txt:
 
 ```cmake
