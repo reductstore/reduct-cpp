@@ -118,16 +118,11 @@ Now to use the SDK in your C++ project, you need to add the `find_package` to CM
 cmake_minimum_required(VERSION 3.22)
 
 project(ReductCppExample)
-set(CMAKE_CXX_STANDARD 20)
 
-find_package(ZLIB)
-find_package(OpenSSL)
-
-
-find_package(ReductCpp)
+find_package(reductcpp)
 
 add_executable(quick_start quick_start.cc)
-target_link_libraries(quick_start ${REDUCT_CPP_LIBRARIES} ${ZLIB_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(quick_start reductcpp::reductcpp)
 ```
 
 ### Building with Conan
