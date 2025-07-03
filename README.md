@@ -111,7 +111,7 @@ cmake --build build --config Release # for windows
 sudo cmake --install build
 ```
 
-CMake downloads all dependencies using `FetchContent` except OpenSLL which needs to be installed in the system.
+CMake downloads all dependencies using `FetchContent` except OpenSSL which needs to be installed in the system.
 Now to use the SDK in your C++ project, you need to add the `find_package` to CMakeLists.txt:
 
 ```cmake
