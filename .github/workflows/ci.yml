@@ -45,7 +45,7 @@ jobs:
 
       - name: Build with conan
         if: ${{ matrix.build_type == 'conan' }}
-        uses: ./.github/actions/build-package
+        uses: ./.github/actions/build-package-conan
         with:
           install: ${{ matrix.install }}
 

@@ -1,5 +1,5 @@
-name: "build-package"
-description: "Install package and build example"
+name: "build-package-conan"
+description: "Install package with conan and build example"
 inputs:
   build_tests:
     default: "false"
