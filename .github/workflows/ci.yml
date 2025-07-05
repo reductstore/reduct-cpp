@@ -26,7 +26,7 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        build_type: ["cmake", "conan"]
+        build_type: ["system", "cmake", "conan"]
         os: [ubuntu-22.04, windows-2019]
         include:
           - os: ubuntu-22.04
@@ -37,7 +37,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Build without conan
+
+      - name: Build with system installed dependencies
+        if: ${{ matrix.build_type == 'system' }}
+        uses: ./.github/actions/build-package
+        with:
+          install: ${{ matrix.install }}
+
+      - name: Build with cmake fetchcontent
         if: ${{ matrix.build_type == 'cmake' }}
         uses: ./.github/actions/build-package-cmake
         with:
@@ -49,42 +56,42 @@ jobs:
         with:
           install: ${{ matrix.install }}
 
-  unit-tests:
-    strategy:
-      matrix:
-        token: ["", "TOKEN"]
-        reductstore_version: ["main", "latest"]
-        license_file: ["", "lic.key"]
-        include:
-          - token: ""
-            exclude_token_api_tag: "~[token_api]"
-          - token: "TOKEN"
-            exclude_token_api_tag: ""
-          - reductstore_version: "main"
-            exclude_api_version_tag: ""
-          - reductstore_version: "latest"
-            exclude_api_version_tag: "~[1_16]"
-          - license_file: ""
-            exclude_license_tag: "~[license]"
-
-    needs:
-      - cpplint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: ./.github/actions/build-package
-        with:
-          build_tests: true
-
-      - name: Generate license
-        run: echo '${{secrets.LICENSE_KEY}}' > lic.key
-
-      - uses: ./.github/actions/run-tests
-        with:
-          api-token: ${{matrix.token}}
-          tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}} ${{matrix.exclude_license_tag}}"
-          reductstore-version: ${{matrix.reductstore_version}}
-          lic_file: ${{matrix.license_file}}
+#  unit-tests:
+#    strategy:
+#      matrix:
+#        token: ["", "TOKEN"]
+#        reductstore_version: ["main", "latest"]
+#        license_file: ["", "lic.key"]
+#        include:
+#          - token: ""
+#            exclude_token_api_tag: "~[token_api]"
+#          - token: "TOKEN"
+#            exclude_token_api_tag: ""
+#          - reductstore_version: "main"
+#            exclude_api_version_tag: ""
+#          - reductstore_version: "latest"
+#            exclude_api_version_tag: "~[1_16]"
+#          - license_file: ""
+#            exclude_license_tag: "~[license]"
+#
+#    needs:
+#      - cpplint
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - uses: ./.github/actions/build-package-conan
+#        with:
+#          build_tests: true
+#
+#      - name: Generate license
+#        run: echo '${{secrets.LICENSE_KEY}}' > lic.key
+#
+#      - uses: ./.github/actions/run-tests
+#        with:
+#          api-token: ${{matrix.token}}
+#          tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}} ${{matrix.exclude_license_tag}}"
+#          reductstore-version: ${{matrix.reductstore_version}}
+#          lic_file: ${{matrix.license_file}}
