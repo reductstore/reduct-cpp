@@ -20,7 +20,7 @@ runs:
       shell: bash
       run: |
         sudo apt-get update
-        sudo apt-get install -y libssl-dev libfmt-dev nlohmann-json3-dev zlib1g-dev
+        sudo apt-get install -y libssl-dev libfmt-dev nlohmann-json3-dev zlib1g-dev libcpp-httplib-dev
 
     - name: Detect OS and set std::chrono flag
       shell: bash
