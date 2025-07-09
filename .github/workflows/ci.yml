@@ -74,7 +74,14 @@ jobs:
           openssl version
           fi
 
-      - name: Bulid example
+      - name: Detect OS and install dependencies
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev
+
+      - name: Build example
         shell: bash
         run: |
           if [[ "${{ runner.os }}" == "Linux" ]]; then
