@@ -19,15 +19,5 @@ endif()
 
 add_executable(usage-example usage_example.cc)
 add_executable(subscription subscription.cc)
-target_link_libraries(
-    usage-example
-    reductcpp::reductcpp
-    OpenSSL::SSL
-    OpenSSL::Crypto
-)
-target_link_libraries(
-    subscription
-    reductcpp::reductcpp
-    OpenSSL::SSL
-    OpenSSL::Crypto
-)
+target_link_libraries(usage-example reductcpp::reductcpp)
+target_link_libraries(subscription reductcpp::reductcpp)
