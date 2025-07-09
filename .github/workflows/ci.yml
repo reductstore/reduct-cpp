@@ -15,11 +15,11 @@ jobs:
       - name: Build cpplint image
         run: pip install "cpplint<2"
       - name: Check code in /src
-        run: find src/ -name "*.cc" -o -name "*.h"  | xargs cpplint
+        run: find src/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs -0 cpplint
       - name: Check code in /tests
-        run: find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint
+        run: find tests/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
       - name: Check code in /examples
-        run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint
+        run: find examples/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
 
   #  test-pkg:
   #    runs-on: ${{ matrix.os }}
