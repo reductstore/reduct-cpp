@@ -10,13 +10,13 @@ runs:
   using: "composite"
   steps:
     - name: Detect OS and install dependencies
-      if : ${{ runner.os == 'Windows' }}
+      if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
         choco install openssl zlib -y
 
     - name: Detect OS and install dependencies
-      if : ${{ runner.os == 'Linux' }}
+      if: ${{ runner.os == 'Linux' }}
       shell: bash
       run: |
         sudo apt-get update

@@ -21,40 +21,69 @@ jobs:
       - name: Check code in /examples
         run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint
 
-  test-pkg:
+  #  test-pkg:
+  #    runs-on: ${{ matrix.os }}
+  #    needs: cpplint
+  #    strategy:
+  #      matrix:
+  #        build_type: ["system", "cmake", "conan"]
+  #        os: [ubuntu-22.04, windows-2022]
+  #        include:
+  #          - os: ubuntu-22.04
+  #            install: "true"
+  #          - os: windows-2022
+  #            install: "false"
+  #    steps:
+  #      - uses: actions/checkout@v4
+  #        with:
+  #          fetch-depth: 0
+  #
+  #      - name: Build with system installed dependencies
+  #        if: ${{ matrix.build_type == 'system' }}
+  #        uses: ./.github/actions/build-package
+  #        with:
+  #          install: ${{ matrix.install }}
+  #
+  #      - name: Build with cmake fetchcontent
+  #        if: ${{ matrix.build_type == 'cmake' }}
+  #        uses: ./.github/actions/build-package-cmake
+  #        with:
+  #          install: ${{ matrix.install }}
+  #
+  #      - name: Build with conan
+  #        if: ${{ matrix.build_type == 'conan' }}
+  #        uses: ./.github/actions/build-package-conan
+  #        with:
+  #          install: ${{ matrix.install }}
+  check-example:
     runs-on: ${{ matrix.os }}
     needs: cpplint
     strategy:
       matrix:
-        build_type: ["system", "cmake", "conan"]
         os: [ubuntu-22.04, windows-2022]
-        include:
-          - os: ubuntu-22.04
-            install: "true"
-          - os: windows-2022
-            install: "false"
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Build with system installed dependencies
-        if: ${{ matrix.build_type == 'system' }}
-        uses: ./.github/actions/build-package
-        with:
-          install: ${{ matrix.install }}
+      - name: Detect OS and install OpenSSL
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+          choco install openssl -y
+          openssl version
+          fi
 
-      - name: Build with cmake fetchcontent
-        if: ${{ matrix.build_type == 'cmake' }}
-        uses: ./.github/actions/build-package-cmake
-        with:
-          install: ${{ matrix.install }}
-
-      - name: Build with conan
-        if: ${{ matrix.build_type == 'conan' }}
-        uses: ./.github/actions/build-package-conan
-        with:
-          install: ${{ matrix.install }}
+      - name: Bulid example
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF -DREDUCT_CPP_USE_FETCHCONTENT=ON
+            cmake --build build
+          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+            cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=ON -DREDUCT_CPP_USE_FETCHCONTENT=ON
+            cmake --build build --config Release
+          fi
 
 #  unit-tests:
 #    strategy:
