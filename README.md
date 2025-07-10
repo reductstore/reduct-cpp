@@ -130,6 +130,27 @@ find_package(reductcpp)
 add_executable(quick_start quick_start.cc)
 target_link_libraries(quick_start reductcpp::reductcpp)
 ```
+### Using FetchContent
+- Install only OpenSSL
+- Use `FetchContent` to download the ReductStore C++ SDK and its dependencies automatically
+```cmake
+cmake_minimum_required(VERSION 3.22)
+
+project(ReductCppExample)
+
+include(FetchContent)
+
+# Enable using fetchcontent for reductcpp dependencies
+set(REDUCT_CPP_USE_FETCHCONTENT ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    reductcpp
+        URL https://github.com/reductstore/reduct-cpp/archive/refs/tags/v1.15.0.zip
+)
+FetchContent_MakeAvailable(reductcpp)
+
+add_executable(quick_start quick_start.cc)
+target_link_libraries(quick_start reductcpp::reductcpp)
+```
 
 ### Building with Conan
 
