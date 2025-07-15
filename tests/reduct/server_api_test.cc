@@ -45,7 +45,7 @@ TEST_CASE("reduct::Client should get license info", "[server_api][license]") {
   REQUIRE(info.license->plan == "STANDARD");
   REQUIRE(info.license->device_number == 1);
   REQUIRE(info.license->disk_quota == 1);
-  REQUIRE(info.license->fingerprint == "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9");
+  REQUIRE(info.license->fingerprint == "21e2608b7d47f7fba623d714c3e14b73cd1fe3578f4010ef26bcbedfc42a4c92");
 }
 
 TEST_CASE("reduct::Client should list buckets", "[server_api]") {
