@@ -41,7 +41,7 @@ TEST_CASE("reduct::Client should get license info", "[server_api][license]") {
   REQUIRE(info.license);
   REQUIRE(info.license->licensee == "ReductSoftware");
   REQUIRE(info.license->invoice == "---");
-  REQUIRE(info.license->expiry_date.time_since_epoch().count() == 2051222400000000000);
+  REQUIRE(info.license->expiry_date.time_since_epoch().count() == 1778852143696974000);
   REQUIRE(info.license->plan == "UNLIMITED");
   REQUIRE(info.license->device_number == 1);
   REQUIRE(info.license->disk_quota == 0);
