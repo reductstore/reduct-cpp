@@ -40,7 +40,7 @@ TEST_CASE("reduct::Client should get license info", "[server_api][license]") {
   REQUIRE(err == Error::kOk);
   REQUIRE(info.license);
   REQUIRE(info.license->licensee == "ReductSoftware");
-  REQUIRE(info.license->invoice == "xxxxxx");
+  REQUIRE(info.license->invoice == "---");
   REQUIRE(info.license->expiry_date.time_since_epoch().count() == 2051222400000000000);
   REQUIRE(info.license->plan == "UNLIMITED");
   REQUIRE(info.license->device_number == 1);
