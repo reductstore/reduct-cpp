@@ -42,7 +42,7 @@ TEST_CASE("reduct::Client should get license info", "[server_api][license]") {
   REQUIRE(info.license->licensee == "ReductSoftware");
   REQUIRE(info.license->invoice == "---");
   REQUIRE(info.license->expiry_date.time_since_epoch().count() == 1778852143696974000);
-  REQUIRE(info.license->plan == "UNLIMITED");
+  REQUIRE(info.license->plan == "STANDARD");
   REQUIRE(info.license->device_number == 1);
   REQUIRE(info.license->disk_quota == 0);
   REQUIRE(info.license->fingerprint == "df92c95a7c9b56c2af99b290c39d8471c3e6cbf9dc33dc9bdb4116b98d465cc9");
