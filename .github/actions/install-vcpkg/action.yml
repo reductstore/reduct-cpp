@@ -1,0 +1,18 @@
+name: "install-vcpkg"
+description: "Install vcpkg and check its version"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install vcpkg
+      shell: bash
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git
+        cd vcpkg && ./bootstrap-vcpkg.sh
+        export VCPKG_ROOT=/path/to/vcpkg
+        export PATH=$VCPKG_ROOT:$PATH
+
+    - name: Check vcpkg version
+      shell: bash
+      run: |
+        vcpkg version
