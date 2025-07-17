@@ -21,11 +21,11 @@ jobs:
       - name: Check code in /examples
         run: find examples/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
   vcpkg:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - name: Install vcpkg
-        uses: ./.github/actions/install-vcpkg
+      - name: Check vcpkg version
+        shell: bash
+        run: vcpkg version
 
   #  test-pkg:
   #    runs-on: ${{ matrix.os }}

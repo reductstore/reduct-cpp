@@ -7,10 +7,13 @@ runs:
     - name: Install vcpkg
       shell: bash
       run: |
+        cd ..
         git clone https://github.com/microsoft/vcpkg.git
+        pwd
         cd vcpkg && ./bootstrap-vcpkg.sh
-        export VCPKG_ROOT=/path/to/vcpkg
-        export PATH=$VCPKG_ROOT:$PATH
+        echo "VCPKG_ROOT=/workspaces/vcpkg" >> $GITHUB_ENV
+        echo "PATH=$VCPKG_ROOT:$PATH" >> $GITHUB_PATH
+        vcpkg version
 
     - name: Check vcpkg version
       shell: bash
