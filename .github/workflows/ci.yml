@@ -21,7 +21,7 @@ jobs:
       - name: Check code in /examples
         run: find examples/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
   vcpkg:
-    runs-on: ubuntu-22.04
+    runs-on: windows-2022
     steps:
       - name: Check vcpkg version
         shell: bash
