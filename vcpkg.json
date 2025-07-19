@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    "cpp-httplib",
+    "fmt",
+    "date",
+    "nlohmann-json",
+    "cpp-httplib",
+    "concurrentqueue",
+    "zlib",
+    "openssl"
+  ]
+}
