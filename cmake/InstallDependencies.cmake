@@ -50,7 +50,15 @@ else()
     find_package(fmt REQUIRED)
     find_package(nlohmann_json REQUIRED)
     find_package(httplib REQUIRED)
-    find_package(concurrentqueue REQUIRED)
+    if(NOT VCPKG_ENABLED)
+        find_package(concurrentqueue REQUIRED)
+    else()
+        find_package(unofficial-concurrentqueue REQUIRED)
+        add_library(
+            concurrentqueue::concurrentqueue
+            ALIAS unofficial::concurrentqueue::concurrentqueue
+        )
+    endif()
     find_package(ZLIB REQUIRED)
     find_package(OpenSSL REQUIRED)
 endif()

@@ -39,6 +39,26 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
 
+# Check if vcpkg is used
+if(
+    DEFINED CMAKE_TOOLCHAIN_FILE
+    AND "${CMAKE_TOOLCHAIN_FILE}"
+        MATCHES
+        "vcpkg[/\\]scripts[/\\]buildsystems[/\\]vcpkg.cmake"
+)
+    set(VCPKG_ENABLED
+        TRUE
+        CACHE INTERNAL
+        "Flag indicating that vcpkg is being used"
+    )
+else()
+    set(VCPKG_ENABLED
+        FALSE
+        CACHE INTERNAL
+        "Flag indicating that vcpkg is not being used"
+    )
+endif()
+
 # Dependencies
 include(cmake/InstallDependencies.cmake)
 
