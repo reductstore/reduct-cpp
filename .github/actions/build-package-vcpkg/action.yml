@@ -1,0 +1,20 @@
+name: "build-package-vcpkg"
+description: "Install package with vcpkg and build example"
+inputs:
+  build_tests:
+    default: "false"
+  install:
+    default: "true"
+    description: "Install the package after build"
+runs:
+  using: "composite"
+  steps:
+    - name: Cmake configuration with tests
+      if: ${{inputs.build_tests == 'true'}}
+      shell: bash
+      run: cmake --preset $PRESET -DREDUCT_CPP_ENABLE_TESTS=ON
+
+    - name: Build package
+      shell: bash
+      run: |
+        cmake -B build -DREDUCT_CPP_ENABLE_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
