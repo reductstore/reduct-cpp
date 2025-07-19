@@ -9,11 +9,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Cmake configuration with tests
-      if: ${{inputs.build_tests == 'true'}}
-      shell: bash
-      run: cmake --preset $PRESET -DREDUCT_CPP_ENABLE_TESTS=ON
-
     - name: Build package
       shell: bash
       run: |
