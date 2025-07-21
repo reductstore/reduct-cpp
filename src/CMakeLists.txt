@@ -55,10 +55,17 @@ target_compile_definitions(
         REDUCT_CPP_MAJOR_VERSION=${MAJOR_VERSION}
         REDUCT_CPP_MINOR_VERSION=${MINOR_VERSION}
 )
+
+# Correct concurrentqueue.h filepath
 if(REDUCT_CPP_USE_FETCHCONTENT)
     target_compile_definitions(
         ${RCPP_TARGET_NAME}
         PRIVATE CONCURRENTQUEUE_H_FILEPATH=\"concurrentqueue.h\"
+    )
+elseif(VCPKG_ENABLED)
+    target_compile_definitions(
+        ${RCPP_TARGET_NAME}
+        PRIVATE CONCURRENTQUEUE_H_FILEPATH=\"concurrentqueue/concurrentqueue.h\"
     )
 endif()
 
