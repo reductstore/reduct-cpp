@@ -104,6 +104,7 @@ jobs:
         token: ["", "TOKEN"]
         reductstore_version: ["main", "latest"]
         license_file: ["", "lic.key"]
+        package_manager: ["vcpkg", "conan"]
         include:
           - token: ""
             exclude_token_api_tag: "~[token_api]"
@@ -124,7 +125,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/build-package-vcpkg
+      - name: Build with ${{ matrix.package_manager }}
+        uses: ./.github/actions/build-package-${{ matrix.package_manager }}
         with:
           build_tests: true
 

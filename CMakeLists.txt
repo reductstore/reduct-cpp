@@ -42,9 +42,7 @@ endif()
 # Check if vcpkg is used
 if(
     DEFINED CMAKE_TOOLCHAIN_FILE
-    AND "${CMAKE_TOOLCHAIN_FILE}"
-        MATCHES
-        "vcpkg[/\\]scripts[/\\]buildsystems[/\\]vcpkg.cmake"
+    AND "${CMAKE_TOOLCHAIN_FILE}" MATCHES "vcpkg\\.cmake$"
 )
     set(VCPKG_ENABLED
         TRUE
