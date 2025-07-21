@@ -47,13 +47,17 @@ if(
     set(VCPKG_ENABLED
         TRUE
         CACHE INTERNAL
-        "Flag indicating that vcpkg is being used"
+        "Whether vcpkg integration is enabled"
+    )
+    message(
+        STATUS
+        "vcpkg detected via CMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}"
     )
 else()
     set(VCPKG_ENABLED
         FALSE
         CACHE INTERNAL
-        "Flag indicating that vcpkg is not being used"
+        "Whether vcpkg integration is enabled"
     )
 endif()
 
