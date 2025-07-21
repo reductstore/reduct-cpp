@@ -33,7 +33,7 @@ repos:
         files: \.(h\+\+|h|hh|hxx|hpp|cuh|c|cc|cpp|cu|c\+\+|cxx|tpp|txx)$
         entry: cpplint
 
-  # - repo: https://github.com/rhysd/actionlint
-  #   rev: v1.7.7
-  #   hooks:
-  #     - id: actionlint
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+      - id: actionlint
