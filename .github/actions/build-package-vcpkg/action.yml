@@ -12,5 +12,5 @@ runs:
     - name: Build package
       shell: bash
       run: |
-        cmake -B build -DREDUCT_CPP_ENABLE_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake
-        cmake --build build
+        cmake -B build/Release -DREDUCT_CPP_ENABLE_TESTS=ON -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake
+        cmake --build build/Release
