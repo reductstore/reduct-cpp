@@ -39,7 +39,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     cmake_policy(SET CMP0135 NEW)
 endif()
 
-# Check if vcpkg is used
+# Detect whether vcpkg is being used by checking CMAKE_TOOLCHAIN_FILE
 if(
     DEFINED CMAKE_TOOLCHAIN_FILE
     AND "${CMAKE_TOOLCHAIN_FILE}" MATCHES "vcpkg\\.cmake$"
