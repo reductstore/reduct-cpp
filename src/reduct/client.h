@@ -198,10 +198,6 @@ class IClient {
     std::string dst_token;   // Destination access token
     std::vector<std::string>
         entries;                // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
-    [[deprecated("Use when instead. Will be removed in v1.16.0")]]
-    IBucket::LabelMap include;  // Labels to include
-    [[deprecated("Use when instead. Will be removed in v1.16.0")]]
-    IBucket::LabelMap exclude;  // Labels to exclude
     [[deprecated("Use when instead. Will be removed in v1.18.0")]]
     std::optional<double> each_s;  // Replicate a record every S seconds if not empty
     [[deprecated("Use when instead. Will be removed in v1.18.0")]]
