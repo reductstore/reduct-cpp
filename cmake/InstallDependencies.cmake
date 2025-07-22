@@ -49,7 +49,19 @@ if(REDUCT_CPP_USE_FETCHCONTENT)
 else()
     find_package(fmt REQUIRED)
     find_package(nlohmann_json REQUIRED)
-    find_package(httplib REQUIRED)
+
+    # If cpp-httplib is not found via find_package() search for it using pkg-config
+    find_package(httplib QUIET)
+    if(NOT httplib_FOUND)
+        message(
+            STATUS
+            "cpp-httplib not found via find_package(), checking pkg-config"
+        )
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(httplib REQUIRED IMPORTED_TARGET cpp-httplib)
+        add_library(httplib::httplib ALIAS PkgConfig::httplib)
+    endif()
+
     if(NOT VCPKG_ENABLED)
         find_package(concurrentqueue REQUIRED)
     else()
