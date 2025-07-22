@@ -117,8 +117,6 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
   json_data["dst_host"] = settings.dst_host;
   json_data["dst_token"] = settings.dst_token;
   json_data["entries"] = settings.entries;
-  json_data["include"] = settings.include;
-  json_data["exclude"] = settings.exclude;
   if (settings.each_s) {
     json_data["each_s"] = *settings.each_s;
   }
@@ -155,8 +153,6 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
         .dst_host = settings.at("dst_host"),
         .dst_token = settings.at("dst_token"),
         .entries = settings.at("entries"),
-        .include = settings.at("include"),
-        .exclude = settings.at("exclude"),
     };
 
     if (settings.contains("each_s") && !settings.at("each_s").is_null()) {
@@ -203,14 +199,6 @@ Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::opti
 
   if (stop) {
     json_data["stop"] = std::chrono::duration_cast<std::chrono::microseconds>(stop->time_since_epoch()).count();
-  }
-
-  for (const auto& [key, value] : options.include) {
-    json_data["include"][key] = value;
-  }
-
-  for (const auto& [key, value] : options.exclude) {
-    json_data["exclude"][key] = value;
   }
 
   if (options.each_s) {
