@@ -66,7 +66,12 @@ jobs:
       - name: Build and install package
         shell: bash
         run: |
-          sudo apt install -y libfmt-dev
+          sudo apt install -y libfmt-dev \
+            nlohmann-json3-dev \
+            libcpp-httplib-dev \
+            libconcurrentqueue-dev \
+            libdate-dev \
+            libhowardhinnant-date-dev
           cmake -S . -B build
           cmake --build build
           cmake --install build
