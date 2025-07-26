@@ -15,8 +15,6 @@ IClient::ReplicationSettings settings{
     .dst_bucket = "test_bucket_2",
     .dst_host = "http://127.0.0.1:8383",
     .entries = {"entry-1"},
-    .include = {{"label-3", "value-4"}},
-    .exclude = {{"label-1", "value-2"}},
 };
 
 TEST_CASE("reduct::Client should get list of replications", "[replication_api][1_8]") {
