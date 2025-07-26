@@ -66,6 +66,7 @@ jobs:
       - name: Build and install package
         shell: bash
         run: |
+          sudo apt-get update
           sudo apt install -y libfmt-dev \
             nlohmann-json3-dev \
             libcpp-httplib-dev \
@@ -74,7 +75,7 @@ jobs:
             libhowardhinnant-date-dev
           cmake -S . -B build
           cmake --build build
-          cmake --install build
+          sudo cmake --install build
 
       - name: Build example
         shell: bash
