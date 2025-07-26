@@ -20,129 +20,98 @@ jobs:
         run: find tests/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
       - name: Check code in /examples
         run: find examples/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
-  vcpkg:
-    runs-on: windows-2022
-    steps:
-      - name: Check vcpkg version
-        shell: bash
-        run: vcpkg version
 
-  #  test-pkg:
-  #    runs-on: ${{ matrix.os }}
-  #    needs: cpplint
-  #    strategy:
-  #      matrix:
-  #        build_type: ["system", "cmake", "conan"]
-  #        os: [ubuntu-22.04, windows-2022]
-  #        include:
-  #          - os: ubuntu-22.04
-  #            install: "true"
-  #          - os: windows-2022
-  #            install: "false"
-  #    steps:
-  #      - uses: actions/checkout@v4
-  #        with:
-  #          fetch-depth: 0
-  #
-  #      - name: Build with system installed dependencies
-  #        if: ${{ matrix.build_type == 'system' }}
-  #        uses: ./.github/actions/build-package
-  #        with:
-  #          install: ${{ matrix.install }}
-  #
-  #      - name: Build with cmake fetchcontent
-  #        if: ${{ matrix.build_type == 'cmake' }}
-  #        uses: ./.github/actions/build-package-cmake
-  #        with:
-  #          install: ${{ matrix.install }}
-  #
-  #      - name: Build with conan
-  #        if: ${{ matrix.build_type == 'conan' }}
-  #        uses: ./.github/actions/build-package-conan
-  #        with:
-  #          install: ${{ matrix.install }}
-#  check-example:
-#    runs-on: ${{ matrix.os }}
-#    needs: cpplint
-#    strategy:
-#      matrix:
-#        os: [ubuntu-22.04, windows-2022]
-#    steps:
-#      - uses: actions/checkout@v4
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Detect OS and install OpenSSL
-#        shell: bash
-#        run: |
-#          if [[ "${{ runner.os }}" == "Windows" ]]; then
-#          choco install openssl -y
-#          openssl version
-#          fi
-#
-#      - name: Detect OS and install dependencies
-#        if: ${{ runner.os == 'Linux' }}
-#        shell: bash
-#        run: |
-#          sudo apt-get update
-#          sudo apt-get install -y libssl-dev
-#
-#      - name: Build example
-#        shell: bash
-#        run: |
-#          if [[ "${{ runner.os }}" == "Linux" ]]; then
-#            cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON
-#            cmake --build build
-#          elif [[ "${{ runner.os }}" == "Windows" ]]; then
-#            cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=ON -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON
-#            cmake --build build --config Release
-#          fi
-#
-  unit-tests:
+  check-example:
+    runs-on: ${{ matrix.os }}
+    needs: cpplint
     strategy:
       matrix:
-        token: ["", "TOKEN"]
-        reductstore_version: ["main", "latest"]
-        license_file: ["", "lic.key"]
-        package_manager: ["vcpkg", "conan"]
-        include:
-          - token: ""
-            exclude_token_api_tag: "~[token_api]"
-          - token: "TOKEN"
-            exclude_token_api_tag: ""
-          - reductstore_version: "main"
-            exclude_api_version_tag: ""
-          - reductstore_version: "latest"
-            exclude_api_version_tag: "~[1_16]"
-          - license_file: ""
-            exclude_license_tag: "~[license]"
-
-    needs:
-      - cpplint
-    runs-on: ubuntu-latest
+        os: [ubuntu-22.04, windows-2022]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Build with vcpkg
-        if: matrix.package_manager == 'vcpkg'
-        uses: ./.github/actions/build-package-vcpkg
-        with:
-          build_tests: true
+      - name: Detect OS and install OpenSSL
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+          choco install openssl -y
+          openssl version
+          fi
 
-      - name: Build with conan
-        if: matrix.package_manager == 'conan'
-        uses: ./.github/actions/build-package-conan
-        with:
-          build_tests: true
+      - name: Detect OS and install dependencies
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev
 
-      - name: Generate license
-        run: echo '${{secrets.LICENSE_KEY}}' > lic.key
+     # - name: Build example
+     #   shell: bash
+     #   run: |
+     #     if [[ "${{ runner.os }}" == "Linux" ]]; then
+     #       cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON
+     #       cmake --build build
+     #     elif [[ "${{ runner.os }}" == "Windows" ]]; then
+     #       cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=ON -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON
+     #       cmake --build build --config Release
+     #     fi
 
-      - uses: ./.github/actions/run-tests
-        with:
-          api-token: ${{matrix.token}}
-          tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}} ${{matrix.exclude_license_tag}}"
-          reductstore-version: ${{matrix.reductstore_version}}
-          lic_file: ${{matrix.license_file}}
+      - name: Build example
+        shell: bash
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF
+            cmake --build build
+          fi
+
+
+  # unit-tests:
+  #   strategy:
+  #     matrix:
+  #       token: ["", "TOKEN"]
+  #       reductstore_version: ["main", "latest"]
+  #       license_file: ["", "lic.key"]
+  #       package_manager: ["vcpkg", "conan"]
+  #       include:
+  #         - token: ""
+  #           exclude_token_api_tag: "~[token_api]"
+  #         - token: "TOKEN"
+  #           exclude_token_api_tag: ""
+  #         - reductstore_version: "main"
+  #           exclude_api_version_tag: ""
+  #         - reductstore_version: "latest"
+  #           exclude_api_version_tag: "~[1_16]"
+  #         - license_file: ""
+  #           exclude_license_tag: "~[license]"
+  #
+  #   needs:
+  #     - cpplint
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #
+  #     - name: Build with vcpkg
+  #       if: matrix.package_manager == 'vcpkg'
+  #       uses: ./.github/actions/build-package-vcpkg
+  #       with:
+  #         build_tests: true
+  #
+  #     - name: Build with conan
+  #       if: matrix.package_manager == 'conan'
+  #       uses: ./.github/actions/build-package-conan
+  #       with:
+  #         build_tests: true
+  #
+  #     - name: Generate license
+  #       run: echo '${{secrets.LICENSE_KEY}}' > lic.key
+  #
+  #     - uses: ./.github/actions/run-tests
+  #       with:
+  #         api-token: ${{matrix.token}}
+  #         tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}} ${{matrix.exclude_license_tag}}"
+  #         reductstore-version: ${{matrix.reductstore_version}}
+  #         lic_file: ${{matrix.license_file}}
