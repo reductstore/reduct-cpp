@@ -26,8 +26,7 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        build_type: ["cmake", "conan"]
-        os: [ubuntu-22.04, windows-2022]
+        os: [ubuntu-22.04]
         include:
           - os: ubuntu-22.04
             install: "true"
@@ -63,6 +62,14 @@ jobs:
      #       cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=ON -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON
      #       cmake --build build --config Release
      #     fi
+
+      - name: Build and install package
+        shell: bash
+        run: |
+          apt install -y libfmt-dev
+          cmake -S . -B build
+          cmake --build build
+          cmake --install build
 
       - name: Build example
         shell: bash
