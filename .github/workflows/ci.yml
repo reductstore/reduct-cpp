@@ -67,7 +67,6 @@ jobs:
             libcpp-httplib-dev \
             libconcurrentqueue-dev \
             libhowardhinnant-date-dev
-          dpkg -L libconcurrentqueue-dev
           cmake -S . -B build
           cmake --build build
           sudo cmake --install build
@@ -76,7 +75,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF
+            cmake -S examples -B examples/build -DREDUCT_CPP_USE_STD_CHRONO=OFF
             cmake --build build
           fi
 
