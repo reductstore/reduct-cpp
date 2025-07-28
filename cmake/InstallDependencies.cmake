@@ -32,9 +32,6 @@ if(REDUCT_CPP_USE_FETCHCONTENT)
         URL_HASH MD5=ef76f7ebfd97778a6653b1d8413541c0
     )
 
-    # Use system OpenSSL
-    find_package(OpenSSL REQUIRED)
-
     FetchContent_MakeAvailable(
         fmt
         nlohmann_json
@@ -47,11 +44,11 @@ if(REDUCT_CPP_USE_FETCHCONTENT)
     add_library(concurrentqueue::concurrentqueue ALIAS concurrentqueue)
     add_library(ZLIB::ZLIB ALIAS zlib)
 else()
-    find_package(fmt REQUIRED)
-    find_package(nlohmann_json REQUIRED)
+    find_package(fmt 11.0.2 REQUIRED)
+    find_package(nlohmann_json 3.11.3 REQUIRED)
 
     # If cpp-httplib is not found via find_package() search for it using pkg-config
-    find_package(httplib QUIET)
+    find_package(httplib 0.16.0 QUIET)
     if(NOT httplib_FOUND)
         message(
             STATUS
@@ -63,17 +60,18 @@ else()
     endif()
 
     if(NOT VCPKG_ENABLED)
-        find_package(concurrentqueue REQUIRED)
+        find_package(concurrentqueue 0.16.0 REQUIRED)
     else()
-        find_package(unofficial-concurrentqueue REQUIRED)
+        find_package(unofficial-concurrentqueue 0.16.0 REQUIRED)
         add_library(
             concurrentqueue::concurrentqueue
             ALIAS unofficial::concurrentqueue::concurrentqueue
         )
     endif()
-    find_package(ZLIB REQUIRED)
-    find_package(OpenSSL REQUIRED)
+    find_package(ZLIB 1.3.1 REQUIRED)
 endif()
+
+find_package(OpenSSL 3.2.2 REQUIRED)
 
 # Set dependencies list
 set(RCPP_DEPENDENCIES
@@ -99,7 +97,7 @@ if(NOT REDUCT_CPP_USE_STD_CHRONO)
         )
         FetchContent_MakeAvailable(date)
     else()
-        find_package(date REQUIRED)
+        find_package(date 3.0.1 REQUIRED)
     endif()
 
     list(APPEND RCPP_DEPENDENCIES date::date)

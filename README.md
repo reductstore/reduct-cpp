@@ -96,6 +96,8 @@ int main() {
 * nlohmann_json >= 3.11.3
 * httplib >= 0.16.0
 * concurrentqueue >= 1.0.4
+* date >= 3.0.1 (for `REDUCT_CPP_USE_STD_CHRONO=OFF`)
+* zlib >= 1.3.1
 
 ```shell
 # Ubuntu
