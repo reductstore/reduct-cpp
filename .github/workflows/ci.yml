@@ -27,6 +27,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04]
+        dependency: [system, fetchcontent]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,6 +47,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libssl-dev
+
+#      - name: Set use_fetchcontent
+#        shell: bash
+#        if: matrix.dependency == 'fetchcontent'
+#        run: echo "REDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON" >> $GITHUB_ENV
 
       # - name: Build example
       #   shell: bash
@@ -79,51 +85,51 @@ jobs:
             cmake --build build
           fi
 
-  # unit-tests:
-  #   strategy:
-  #     matrix:
-  #       token: ["", "TOKEN"]
-  #       reductstore_version: ["main", "latest"]
-  #       license_file: ["", "lic.key"]
-  #       package_manager: ["vcpkg", "conan"]
-  #       include:
-  #         - token: ""
-  #           exclude_token_api_tag: "~[token_api]"
-  #         - token: "TOKEN"
-  #           exclude_token_api_tag: ""
-  #         - reductstore_version: "main"
-  #           exclude_api_version_tag: ""
-  #         - reductstore_version: "latest"
-  #           exclude_api_version_tag: "~[1_16]"
-  #         - license_file: ""
-  #           exclude_license_tag: "~[license]"
-  #
-  #   needs:
-  #     - cpplint
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #
-  #     - name: Build with vcpkg
-  #       if: matrix.package_manager == 'vcpkg'
-  #       uses: ./.github/actions/build-package-vcpkg
-  #       with:
-  #         build_tests: true
-  #
-  #     - name: Build with conan
-  #       if: matrix.package_manager == 'conan'
-  #       uses: ./.github/actions/build-package-conan
-  #       with:
-  #         build_tests: true
-  #
-  #     - name: Generate license
-  #       run: echo '${{secrets.LICENSE_KEY}}' > lic.key
-  #
-  #     - uses: ./.github/actions/run-tests
-  #       with:
-  #         api-token: ${{matrix.token}}
-  #         tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}} ${{matrix.exclude_license_tag}}"
-  #         reductstore-version: ${{matrix.reductstore_version}}
-  #         lic_file: ${{matrix.license_file}}
+  unit-tests:
+    strategy:
+      matrix:
+        token: ["", "TOKEN"]
+        reductstore_version: ["main", "latest"]
+        license_file: ["", "lic.key"]
+        package_manager: ["vcpkg", "conan"]
+        include:
+          - token: ""
+            exclude_token_api_tag: "~[token_api]"
+          - token: "TOKEN"
+            exclude_token_api_tag: ""
+          - reductstore_version: "main"
+            exclude_api_version_tag: ""
+          - reductstore_version: "latest"
+            exclude_api_version_tag: "~[1_16]"
+          - license_file: ""
+            exclude_license_tag: "~[license]"
+
+    needs:
+      - cpplint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build with vcpkg
+        if: matrix.package_manager == 'vcpkg'
+        uses: ./.github/actions/build-package-vcpkg
+        with:
+          build_tests: true
+
+      - name: Build with conan
+        if: matrix.package_manager == 'conan'
+        uses: ./.github/actions/build-package-conan
+        with:
+          build_tests: true
+
+      - name: Generate license
+        run: echo '${{secrets.LICENSE_KEY}}' > lic.key
+
+      - uses: ./.github/actions/run-tests
+        with:
+          api-token: ${{matrix.token}}
+          tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}} ${{matrix.exclude_license_tag}}"
+          reductstore-version: ${{matrix.reductstore_version}}
+          lic_file: ${{matrix.license_file}}
