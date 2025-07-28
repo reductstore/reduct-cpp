@@ -99,6 +99,16 @@ int main() {
 * ZLIB
 * OpenSSL
 
+```shell
+# Ubuntu
+sudo apt install libfmt-dev \
+        nlohmann-json3-dev \
+        libcpp-httplib-dev \
+        libconcurrentqueue-dev \
+        libhowardhinnant-date-dev \
+        libssl-dev
+```
+
 To build the library, follow these steps:
 
 ```shell
