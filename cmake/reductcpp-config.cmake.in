@@ -16,7 +16,7 @@ if(NOT httplib_FOUND)
 endif()
 find_dependency(concurrentqueue REQUIRED)
 find_dependency(ZLIB REQUIRED)
-find_dependency(OpenSSL REQUIRED)
+find_dependency(OpenSSL 3.2.2 REQUIRED)
 
 @DATE_DEPENDENCY@
 
