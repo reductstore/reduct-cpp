@@ -90,14 +90,12 @@ int main() {
 
 ### Dependencies
 * GCC 11.2 or higher (support C++20)
-* CMake 3.18 or higher
-* OpenSSL 1.1 or 3.0
-* fmt
-* nlohmann_json
-* httplib
-* concurrentqueue
-* ZLIB
-* OpenSSL
+* CMake >= 3.23
+* OpenSSL >= 3.2.2
+* fmt >= 11.0.2
+* nlohmann_json >= 3.11.3
+* httplib >= 0.16.0
+* concurrentqueue >= 1.0.4
 
 ```shell
 # Ubuntu
