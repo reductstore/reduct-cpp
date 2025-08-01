@@ -4,7 +4,7 @@ if(REDUCT_CPP_USE_FETCHCONTENT)
     FetchContent_Declare(
         fmt
         URL https://github.com/fmtlib/fmt/archive/refs/tags/9.1.0.zip
-        URL_HASH MD5=6e20923e12c4b78a99e528c802f459ef
+        URL_HASH MD5=e6754011ff56bfc37631fcc90961e377
     )
 
     FetchContent_Declare(
@@ -59,7 +59,7 @@ else()
     endif()
 
     if(NOT VCPKG_ENABLED)
-        find_package(concurrentqueue 1.0.4 REQUIRED)
+        find_package(concurrentqueue 1.0 REQUIRED)
     else()
         find_package(unofficial-concurrentqueue 1.0.4 REQUIRED)
         add_library(

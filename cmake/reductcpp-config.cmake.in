@@ -14,7 +14,7 @@ if(NOT httplib_FOUND)
     pkg_check_modules(httplib REQUIRED IMPORTED_TARGET cpp-httplib>=0.14.3)
     add_library(httplib::httplib ALIAS PkgConfig::httplib)
 endif()
-find_dependency(concurrentqueue 1.0.4 REQUIRED)
+find_dependency(concurrentqueue 1.0 REQUIRED)
 find_dependency(OpenSSL 3.0.13 REQUIRED)
 
 @DATE_DEPENDENCY@
