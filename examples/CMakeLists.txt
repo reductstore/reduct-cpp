@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.23)
 
-project(ReductCppExamples)
+project(ReductCppExamples LANGUAGES CXX)
 
 if(REDUCT_CPP_EXAMPLE_USE_FETCHCONTENT)
     include(FetchContent)
