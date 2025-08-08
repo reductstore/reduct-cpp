@@ -30,7 +30,7 @@ class DriftFrameworkConan(ConanFile):
 
     requires = (
         "fmt/9.1.0",
-        "cpp-httplib/0.14.0",
+        "cpp-httplib/0.14.3",
         "nlohmann_json/3.11.3",
         "openssl/3.0.13",
         "concurrentqueue/1.0.4",

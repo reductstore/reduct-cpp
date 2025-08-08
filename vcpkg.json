@@ -1,10 +1,16 @@
 {
   "dependencies": [
     {"name":"openssl", "version>=": "3.0.8"},
-    {"name":"cpp-httplib", "version>=": "0.14.0"},
+    {"name":"cpp-httplib", "version>=": "0.14.3"},
     {"name":"fmt", "version>=": "9.1.0"},
     {"name":"nlohmann-json", "version>=": "3.11.3"},
     {"name":"concurrentqueue", "version>=": "1.0.4"},
     {"name":"date", "version>=": "3.0.1"}
+  ],
+  "overrides": [
+    {
+      "name": "cpp-httplib",
+      "version": "0.14.3"
+    }
   ]
 }
