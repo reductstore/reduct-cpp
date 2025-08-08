@@ -47,7 +47,7 @@ else()
     find_package(nlohmann_json 3.11.3 REQUIRED)
 
     # If cpp-httplib is not found via find_package() search for it using pkg-config
-    find_package(httplib 0.14.3 QUIET)
+    find_package(httplib 0.14 CONFIG REQUIRED)
     if(NOT httplib_FOUND)
         message(
             STATUS
@@ -61,7 +61,7 @@ else()
     if(NOT VCPKG_ENABLED)
         find_package(concurrentqueue 1.0 REQUIRED)
     else()
-        find_package(unofficial-concurrentqueue 1.0.4 REQUIRED)
+        find_package(unofficial-concurrentqueue REQUIRED)
         add_library(
             concurrentqueue::concurrentqueue
             ALIAS unofficial::concurrentqueue::concurrentqueue
