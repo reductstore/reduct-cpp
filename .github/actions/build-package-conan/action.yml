@@ -3,9 +3,7 @@ description: "Install package with conan and build example"
 inputs:
   build_tests:
     default: "false"
-  install:
-    default: "true"
-    description: "Install the package after build"
+    description: "Build package with tests enabled"
 runs:
   using: "composite"
   steps:
@@ -42,8 +40,3 @@ runs:
         elif [[ "${{ runner.os }}" == "Windows" ]]; then
           cmake --build build --config Release
         fi
-
-    - name: Install package
-      if: ${{inputs.install == 'true' }}
-      run: sudo cmake --install build/Release
-      shell: bash

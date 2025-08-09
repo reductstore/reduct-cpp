@@ -3,9 +3,7 @@ description: "Install package with vcpkg and build example"
 inputs:
   build_tests:
     default: "false"
-  install:
-    default: "true"
-    description: "Install the package after build"
+    description: "Build package with tests enabled"
 runs:
   using: "composite"
   steps:
