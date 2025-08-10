@@ -47,7 +47,7 @@ else()
     find_package(nlohmann_json 3.11.3 REQUIRED)
 
     # If cpp-httplib is not found via find_package() search for it using pkg-config
-    find_package(httplib 0.14 CONFIG REQUIRED)
+    find_package(httplib 0.14 CONFIG QUIET)
     if(NOT httplib_FOUND)
         message(
             STATUS
