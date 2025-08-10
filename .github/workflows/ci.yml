@@ -8,7 +8,7 @@ on:
     branches: [main]
 jobs:
   cpplint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
@@ -26,64 +26,48 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        os: [ubuntu-24.04]
+        os: [ubuntu-24.04, windows-2022]
         dependency: [system, fetchcontent]
+        exclude:
+          - os: windows-2022
+            dependency: system
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Detect OS and install OpenSSL
+      - name: Install OpenSSL on Windows
+        if: ${{ runner.os == 'Windows' }}
         shell: bash
         run: |
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
           choco install openssl -y
           openssl version
-          fi
+          echo "BUILD_TAIL=--config Release" >> $GITHUB_ENV
+          echo "USE_CHRONO=ON" >> $GITHUB_ENV
 
-      - name: Detect OS and install dependencies
+      - name: Install OpenSSL on Linux
         if: ${{ runner.os == 'Linux' }}
         shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y libssl-dev
+          echo "USE_CHRONO=OFF" >> $GITHUB_ENV
 
-      #      - name: Set use_fetchcontent
-      #        shell: bash
-      #        if: matrix.dependency == 'fetchcontent'
-      #        run: echo "REDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON" >> $GITHUB_ENV
-
-      # - name: Build example
-      #   shell: bash
-      #   run: |
-      #     if [[ "${{ runner.os }}" == "Linux" ]]; then
-      #       cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON
-      #       cmake --build build
-      #     elif [[ "${{ runner.os }}" == "Windows" ]]; then
-      #       cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=ON -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON
-      #       cmake --build build --config Release
-      #     fi
-
-      - name: Build and install package
+      - name: Set use_fetchcontent
         shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt install -y libfmt-dev \
-            nlohmann-json3-dev \
-            libcpp-httplib-dev \
-            libconcurrentqueue-dev \
-            libhowardhinnant-date-dev
-          cmake -S . -B build
-          cmake --build build
-          sudo cmake --install build
+        if: matrix.dependency == 'fetchcontent'
+        run: echo "USE_FETCHCONTENT=ON" >> $GITHUB_ENV
+
+      - name: Install package
+        if: matrix.dependency == 'system'
+        uses: ./.github/actions/build-package-system
 
       - name: Build example
         shell: bash
         run: |
           if [[ "${{ runner.os }}" == "Linux" ]]; then
-            cmake -S examples -B examples/build -DREDUCT_CPP_USE_STD_CHRONO=OFF
-            cmake --build build
-          fi
+            cmake -S examples -B build -DREDUCT_CPP_USE_STD_CHRONO=${USE_CHRONO} -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
+            cmake --build build ${BUILD_TAIL}
 
   unit-tests:
     strategy:
@@ -106,7 +90,7 @@ jobs:
 
     needs:
       - cpplint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:

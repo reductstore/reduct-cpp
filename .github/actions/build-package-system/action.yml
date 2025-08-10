@@ -1,50 +1,31 @@
-name: "build-package-cmake"
-description: "Install package and build example"
+name: "build-package-systen"
+description: "Build package with dependencies installed system wide"
 inputs:
-  build_tests:
-    default: "false"
   install:
     default: "true"
     description: "Install the package after build"
 runs:
   using: "composite"
   steps:
-    - name: Detect OS and install OpenSSL
+    - name: Install dependencies
       shell: bash
       run: |
-        if [[ "${{ runner.os }}" == "Windows" ]]; then
-          choco install openssl -y
-          openssl version
-        fi
+        sudo apt-get update
+        sudo apt install -y libfmt-dev \
+          nlohmann-json3-dev \
+          libcpp-httplib-dev \
+          libconcurrentqueue-dev \
+          libhowardhinnant-date-dev
 
-    - name: Detect OS and set std::chrono flag
+    - name: Cmake configuration
       shell: bash
-      run: |
-        if [[ "${{ runner.os }}" == "Linux" ]]; then
-          echo "USE_CHRONO=OFF" >> $GITHUB_ENV
-        elif [[ "${{ runner.os }}" == "Windows" ]]; then
-          echo "USE_CHRONO=ON" >> $GITHUB_ENV
-        fi
-    - name: Cmake configuration without tests
-      if: ${{inputs.build_tests == 'false'}}
-      shell: bash
-      run: cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=$USE_CHRONO -DREDUCT_CPP_USE_FETCHCONTENT=ON
-
-    - name: Cmake configuration with tests
-      if: ${{inputs.build_tests == 'true'}}
-      shell: bash
-      run: cmake -S . -B build -DREDUCT_CPP_ENABLE_TESTS=ON -DREDUCT_CPP_USE_STD_CHRONO=$USE_CHRONO -DREDUCT_CPP_USE_FETCHCONTENT=ON
+      run: cmake -S . -B build
 
     - name: Build package
       shell: bash
-      run: |
-        if [[ "${{ runner.os }}" == "Linux" ]]; then
-          cmake --build build
-        elif [[ "${{ runner.os }}" == "Windows" ]]; then
-          cmake --build build --config Release
-        fi
+      run: cmake --build build
 
     - name: Install package
       if: ${{inputs.install == 'true' }}
-      run: sudo cmake --install build
       shell: bash
+      run: sudo cmake --install build
