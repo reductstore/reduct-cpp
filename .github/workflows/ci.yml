@@ -40,7 +40,6 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         shell: bash
         run: |
-          choco install openssl -y
           openssl version
           echo "BUILD_TAIL=--config Release" >> $GITHUB_ENV
           echo "USE_CHRONO=ON" >> $GITHUB_ENV
