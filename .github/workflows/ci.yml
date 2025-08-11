@@ -30,7 +30,6 @@ jobs:
         dependency: [system, fetchcontent]
         exclude:
           - os: windows-2022
-            dependency: system
     steps:
       - uses: actions/checkout@v4
         with:
