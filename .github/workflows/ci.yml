@@ -38,13 +38,12 @@ jobs:
 
       - name: Install OpenSSL on Windows
         if: ${{ runner.os == 'Windows' }}
-        shell: pwsh
+        shell: bash
         run: |
-          $bin = "$Env:ProgramFiles\Git\usr\bin"
-          if (!(Test-Path "$bin\openssl.exe")) { throw "openssl.exe not found in Git\usr\bin" }
-          echo "$bin" >> $env:GITHUB_PATH
-          echo "BUILD_TAIL=--config Release" >> $env:GITHUB_ENV
-          echo "USE_CHRONO=ON" >> $env:GITHUB_ENV
+          choco install openssl --version=3.5.0 -y
+          openssl version
+          echo "BUILD_TAIL=--config Release" >> $GITHUB_ENV
+          echo "USE_CHRONO=ON" >> $GITHUB_ENV
 
       - name: Install OpenSSL on Linux
         if: ${{ runner.os == 'Linux' }}
