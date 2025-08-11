@@ -15,7 +15,7 @@ if(NOT httplib_FOUND)
     add_library(httplib::httplib ALIAS PkgConfig::httplib)
 endif()
 find_dependency(concurrentqueue 1.0 REQUIRED)
-find_dependency(OpenSSL 3.0.13 REQUIRED)
+find_dependency(OpenSSL 3.2.2 REQUIRED)
 
 @DATE_DEPENDENCY@
 

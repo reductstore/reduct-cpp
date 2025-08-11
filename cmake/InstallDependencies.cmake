@@ -69,7 +69,7 @@ else()
     endif()
 endif()
 
-find_package(OpenSSL 3.0.13 REQUIRED)
+find_package(OpenSSL 3.2.2 REQUIRED)
 
 # Set dependencies list
 set(RCPP_DEPENDENCIES
