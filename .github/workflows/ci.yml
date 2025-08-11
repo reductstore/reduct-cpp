@@ -40,7 +40,8 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         shell: bash
         run: |
-          choco install openssl --version=3.5.0 -y
+          winget install -e --id ShiningLight.OpenSSL.Light --silent
+          echo "C:\\Program Files\\OpenSSL-Win64\\bin" >> $GITHUB_PATH
           openssl version
           echo "BUILD_TAIL=--config Release" >> $GITHUB_ENV
           echo "USE_CHRONO=ON" >> $GITHUB_ENV
