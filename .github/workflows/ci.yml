@@ -43,8 +43,8 @@ jobs:
           $bin = "$Env:ProgramFiles\Git\usr\bin"
           if (!(Test-Path "$bin\openssl.exe")) { throw "openssl.exe not found in Git\usr\bin" }
           echo "$bin" >> $env:GITHUB_PATH
-          echo "BUILD_TAIL=--config Release" >> $env:$GITHUB_ENV
-          echo "USE_CHRONO=ON" >> $env:$GITHUB_ENV
+          echo "BUILD_TAIL=--config Release" >> $env:GITHUB_ENV
+          echo "USE_CHRONO=ON" >> $env:GITHUB_ENV
 
       - name: Install OpenSSL on Linux
         if: ${{ runner.os == 'Linux' }}
