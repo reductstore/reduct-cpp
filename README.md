@@ -91,7 +91,7 @@ int main() {
 #### Dependencies
 * GCC 11.2 or higher (support C++20)
 * CMake >= 3.23
-* OpenSSL >= 3.2.2
+* OpenSSL >= 3.0.13
 * fmt >= 11.0.2
 * nlohmann_json >= 3.11.3
 * httplib >= 0.16.0
