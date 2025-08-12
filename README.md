@@ -12,6 +12,7 @@ in C++20. It allows developers to easily interact with the database from their C
 * Support ReductStore https://www.reduct.store/docs/http-api
 * Support HTTP and HTTPS protocols
 * Support Linux AMD64 and Windows
+* Conan and Vpkg package managers support
 
 ## Example
 
@@ -87,8 +88,11 @@ int main() {
 ```
 
 ## Integration
+
 ### Build and Install reduct-cpp system-wide
+
 #### Dependencies
+
 * GCC 11.2 or higher (support C++20)
 * CMake >= 3.23
 * OpenSSL >= 3.0.13
@@ -97,6 +101,8 @@ int main() {
 * httplib >= 0.16.0
 * concurrentqueue >= 1.0.4
 * date >= 3.0.1 (for `REDUCT_CPP_USE_STD_CHRONO=OFF`)
+
+For Ubuntu, you can install the dependencies using the following command:
 
 ```shell
 # Ubuntu
@@ -109,6 +115,9 @@ sudo apt install g++ cmake libssl-dev \
 ```
 
 #### Build and Install
+
+To build and install the ReductStore C++ SDK system-wide, you can use the following steps:
+
 ```shell
 git clone https://github.com/reductstore/reduct-cpp.git
 cd reduct-cpp
@@ -124,7 +133,11 @@ cmake --build build --config Release # for windows
 # Install
 sudo cmake --install build
 ```
+
 #### CMake Configuration
+
+You can use the ReductStore C++ SDK in your CMake project by linking against the `reductcpp` target. Here is an example of how to do this:
+
 ```cmake
 cmake_minimum_required(VERSION 3.23)
 
@@ -137,19 +150,25 @@ target_link_libraries(quick_start reductcpp::reductcpp)
 ```
 
 ### Using fetchContent (recommended)
+
 If you want to use the ReductStore C++ in your project without installing it system-wide, you can use `FetchContent` to
 download the ReductStore C++ SDK and its dependencies automatically. This way, you don't need to install the
 dependencies (except OpenSSL)
+
 #### Dependencies
 * GCC 11.2 or higher (support C++20)
 * CMake >= 3.23
 * OpenSSL >= 3.2.2
 ```shell
+
 # Ubuntu
 sudo apt install g++ cmake libssl-dev
 ```
 
 #### CMake Integration
+
+You can use the following CMake code to integrate the ReductStore C++ SDK into your project using `FetchContent`:
+
 ```cmake
 cmake_minimum_required(VERSION 3.23)
 
@@ -169,20 +188,19 @@ add_executable(quick_start quick_start.cc)
 target_link_libraries(quick_start reductcpp::reductcpp)
 ```
 
-### Examples
-For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
-
-## For developers
 ### Building with Conan
 
 Alternatively, you can use Conan to install the dependencies and build the library:
 
 ```shell
 conan install . --build=missing
-cmake --preset conan-release -DREDUCT_CPP_USE_CONAN=ON
+cmake --preset conan-release
 cmake --build --preset conan-release --config Release
 ```
 
+### Examples
+
+For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
 
 ### Supported ReductStore Versions and  Backward Compatibility
 
