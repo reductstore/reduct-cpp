@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2025-08-12
+
 ## Added
 
 - **CMake**: Added `LANGUAGES CXX` to `project()` for explicit C++ language declaration, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
@@ -53,7 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated CMake minimum version to 3.23 in examples, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
 - **README**:
   - Reorganized integration section: added system-wide build/install, FetchContent integration, and updated dependency list, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-
 
 ## Deprecated
 
@@ -320,7 +321,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.15.0...1.16.0
 [1.15.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.14.0...1.15.0
 [1.14.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.13.0...1.14.0
 [1.13.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.12.0...1.13.0

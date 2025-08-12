@@ -10,11 +10,11 @@ if(REDUCT_CPP_EXAMPLE_USE_FETCHCONTENT)
     FetchContent_Declare(
         reductcpp
         GIT_REPOSITORY https://github.com/reductstore/reduct-cpp
-        GIT_TAG refactor-cmake
+        GIT_TAG v1.16.0
     )
     FetchContent_MakeAvailable(reductcpp)
 else()
-    find_package(reductcpp 1.15.0)
+    find_package(reductcpp 1.16.0)
 endif()
 
 add_executable(usage-example usage_example.cc)
