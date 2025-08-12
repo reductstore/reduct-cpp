@@ -86,15 +86,29 @@ int main() {
 }
 ```
 
-## Installing
-
+## Integration
+### Build and Install reduct-cpp system-wide
+#### Dependencies
 * GCC 11.2 or higher (support C++20)
-* CMake 3.18 or higher
-* OpenSSL 1.1 or 3.0
-* Conan >=2.0 (optionally)
+* CMake >= 3.23
+* OpenSSL >= 3.0.13
+* fmt >= 11.0.2
+* nlohmann_json >= 3.11.3
+* httplib >= 0.16.0
+* concurrentqueue >= 1.0.4
+* date >= 3.0.1 (for `REDUCT_CPP_USE_STD_CHRONO=OFF`)
 
-To build the library, follow these steps:
+```shell
+# Ubuntu
+sudo apt install g++ cmake libssl-dev \
+        libfmt-dev \
+        nlohmann-json3-dev \
+        libcpp-httplib-dev \
+        libconcurrentqueue-dev \
+        libhowardhinnant-date-dev
+```
 
+#### Build and Install
 ```shell
 git clone https://github.com/reductstore/reduct-cpp.git
 cd reduct-cpp
@@ -110,26 +124,55 @@ cmake --build build --config Release # for windows
 # Install
 sudo cmake --install build
 ```
-
-CMake downloads all dependencies using `FetchContent` except OpenSLL which needs to be installed in the system.
-Now to use the SDK in your C++ project, you need to add the `find_package` to CMakeLists.txt:
-
+#### CMake Configuration
 ```cmake
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.23)
 
 project(ReductCppExample)
-set(CMAKE_CXX_STANDARD 20)
 
-find_package(ZLIB)
-find_package(OpenSSL)
-
-
-find_package(ReductCpp)
+find_package(reductcpp)
 
 add_executable(quick_start quick_start.cc)
-target_link_libraries(quick_start ${REDUCT_CPP_LIBRARIES} ${ZLIB_LIBRARIES} OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(quick_start reductcpp::reductcpp)
 ```
 
+### Using fetchContent (recommended)
+If you want to use the ReductStore C++ in your project without installing it system-wide, you can use `FetchContent` to
+download the ReductStore C++ SDK and its dependencies automatically. This way, you don't need to install the
+dependencies (except OpenSSL)
+#### Dependencies
+* GCC 11.2 or higher (support C++20)
+* CMake >= 3.23
+* OpenSSL >= 3.2.2
+```shell
+# Ubuntu
+sudo apt install g++ cmake libssl-dev
+```
+
+#### CMake Integration
+```cmake
+cmake_minimum_required(VERSION 3.23)
+
+project(ReductCppExample)
+
+include(FetchContent)
+
+# Enable using fetchcontent for reductcpp dependencies
+set(REDUCT_CPP_USE_FETCHCONTENT ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    reductcpp
+        URL https://github.com/reductstore/reduct-cpp/archive/refs/tags/v1.15.0.zip
+)
+FetchContent_MakeAvailable(reductcpp)
+
+add_executable(quick_start quick_start.cc)
+target_link_libraries(quick_start reductcpp::reductcpp)
+```
+
+### Examples
+For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
+
+## For developers
 ### Building with Conan
 
 Alternatively, you can use Conan to install the dependencies and build the library:
@@ -140,7 +183,6 @@ cmake --preset conan-release -DREDUCT_CPP_USE_CONAN=ON
 cmake --build --preset conan-release --config Release
 ```
 
-For more examples, see the [Guides](https://reduct.store/docs/guides) section in the ReductStore documentation.
 
 ### Supported ReductStore Versions and  Backward Compatibility
 

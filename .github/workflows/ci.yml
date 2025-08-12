@@ -8,46 +8,65 @@ on:
     branches: [main]
 jobs:
   cpplint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
       - name: Build cpplint image
         run: pip install "cpplint<2"
       - name: Check code in /src
-        run: find src/ -name "*.cc" -o -name "*.h"  | xargs cpplint
+        run: find src/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs -0 cpplint
       - name: Check code in /tests
-        run: find tests/ -name "*.cc" -o -name "*.h"  | xargs cpplint
+        run: find tests/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
       - name: Check code in /examples
-        run: find examples/ -name "*.cc" -o -name "*.h"  | xargs cpplint
+        run: find examples/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
 
-  test-pkg:
+  check-example:
     runs-on: ${{ matrix.os }}
     needs: cpplint
     strategy:
       matrix:
-        build_type: ["cmake", "conan"]
-        os: [ubuntu-22.04, windows-2022]
-        include:
-          - os: ubuntu-22.04
-            install: "true"
+        os: [ubuntu-24.04, windows-2022]
+        dependency: [system, fetchcontent]
+        exclude:
           - os: windows-2022
-            install: "false"
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Build without conan
-        if: ${{ matrix.build_type == 'cmake' }}
-        uses: ./.github/actions/build-package-cmake
-        with:
-          install: ${{ matrix.install }}
 
-      - name: Build with conan
-        if: ${{ matrix.build_type == 'conan' }}
-        uses: ./.github/actions/build-package
-        with:
-          install: ${{ matrix.install }}
+      - name: Install OpenSSL on Windows
+        if: ${{ runner.os == 'Windows' }}
+        shell: bash
+        run: |
+          cd && vcpkg install openssl && cd -
+          openssl version
+          echo "BUILD_TAIL=--config Release" >> $GITHUB_ENV
+          echo "USE_CHRONO=ON" >> $GITHUB_ENV
+
+      - name: Install OpenSSL on Linux
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev
+          echo "USE_CHRONO=OFF" >> $GITHUB_ENV
+
+      - name: Set use_fetchcontent
+        shell: bash
+        if: matrix.dependency == 'fetchcontent'
+        run: echo "USE_FETCHCONTENT=ON" >> $GITHUB_ENV
+
+      - name: Install package
+        if: matrix.dependency == 'system'
+        uses: ./.github/actions/build-package-system
+
+      - name: Build example
+        shell: bash
+        run: |
+          cd examples
+          cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=${USE_CHRONO} -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
+          cmake --build build ${BUILD_TAIL}
 
   unit-tests:
     strategy:
@@ -55,6 +74,7 @@ jobs:
         token: ["", "TOKEN"]
         reductstore_version: ["main", "latest"]
         license_file: ["", "lic.key"]
+        package_manager: ["vcpkg", "conan"]
         include:
           - token: ""
             exclude_token_api_tag: "~[token_api]"
@@ -69,13 +89,21 @@ jobs:
 
     needs:
       - cpplint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: ./.github/actions/build-package
+      - name: Build with vcpkg
+        if: matrix.package_manager == 'vcpkg'
+        uses: ./.github/actions/build-package-vcpkg
+        with:
+          build_tests: true
+
+      - name: Build with conan
+        if: matrix.package_manager == 'conan'
+        uses: ./.github/actions/build-package-conan
         with:
           build_tests: true
 

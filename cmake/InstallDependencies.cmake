@@ -1,42 +1,10 @@
-if(REDUCT_CPP_USE_CONAN)
-    message(STATUS "Using Conan to fetch dependencies")
-    find_program(CONAN conan)
-    if(NOT CONAN)
-        message(
-            FATAL_ERROR
-            "Conan not found. Please install Conan and run cmake again"
-        )
-    endif()
-
-    find_package(fmt REQUIRED)
-    find_package(nlohmann_json REQUIRED)
-    find_package(httplib REQUIRED)
-    find_package(concurrentqueue REQUIRED)
-
-    add_library(dependencies INTERFACE)
-    target_link_libraries(
-        dependencies
-        INTERFACE
-            fmt::fmt
-            nlohmann_json::nlohmann_json
-            httplib::httplib
-            concurrentqueue::concurrentqueue
-    )
-    if(NOT REDUCT_CPP_USE_STD_CHRONO)
-        message(STATUS "Using date library")
-
-        find_package(date REQUIRED)
-        target_link_libraries(dependencies INTERFACE date::date)
-    else()
-        message(STATUS "Using std::chrono")
-    endif()
-else()
-    message(STATUS "Conan not found. Fetch dependencies")
+if(REDUCT_CPP_USE_FETCHCONTENT)
+    message(STATUS "Using Fetchcontent for dependencies")
     include(FetchContent)
     FetchContent_Declare(
         fmt
-        URL https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.zip
-        URL_HASH MD5=6e20923e12c4b78a99e528c802f459ef
+        URL https://github.com/fmtlib/fmt/archive/refs/tags/9.1.0.zip
+        URL_HASH MD5=e6754011ff56bfc37631fcc90961e377
     )
 
     FetchContent_Declare(
@@ -47,8 +15,8 @@ else()
 
     FetchContent_Declare(
         httplib
-        URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.16.0.zip
-        URL_HASH MD5=c5367889819d677bd06d6c7739896b2b
+        URL https://github.com/yhirose/cpp-httplib/archive/refs/tags/v0.14.3.zip
+        URL_HASH MD5=af82eb38506ca531b6d1d53524ff7912
     )
 
     FetchContent_Declare(
@@ -58,36 +26,66 @@ else()
         URL_HASH MD5=814c5e121b29e37ee836312f0eb0328f
     )
 
-    FetchContent_Declare(
-        zlib
-        URL https://github.com/madler/zlib/releases/download/v1.3.1/zlib131.zip
-        URL_HASH MD5=ef76f7ebfd97778a6653b1d8413541c0
-    )
+    #    FetchContent_Declare(
+    #        zlib
+    #        URL https://github.com/madler/zlib/releases/download/v1.3.1/zlib131.zip
+    #        URL_HASH MD5=ef76f7ebfd97778a6653b1d8413541c0
+    #    )
 
-    # use system OpenSSL
-    find_package(OpenSSL REQUIRED)
-
-    add_library(dependencies INTERFACE)
     FetchContent_MakeAvailable(
         fmt
         nlohmann_json
         httplib
         concurrentqueue
-        zlib
-    )
-    target_link_libraries(
-        dependencies
-        INTERFACE
-            fmt
-            nlohmann_json
-            httplib
-            concurrentqueue
-            zlib
-            OpenSSL::SSL
-            OpenSSL::Crypto
+        #        zlib
     )
 
-    if(NOT REDUCT_CPP_USE_STD_CHRONO)
+    # Add aliases
+    add_library(concurrentqueue::concurrentqueue ALIAS concurrentqueue)
+else()
+    find_package(fmt 9.1.0 REQUIRED)
+    find_package(nlohmann_json 3.11.3 REQUIRED)
+
+    # If cpp-httplib is not found via find_package() search for it using pkg-config
+    find_package(httplib 0.14 CONFIG QUIET)
+    if(NOT httplib_FOUND)
+        message(
+            STATUS
+            "cpp-httplib not found via find_package(), checking pkg-config"
+        )
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(httplib REQUIRED IMPORTED_TARGET cpp-httplib>=0.14.3)
+        add_library(httplib::httplib ALIAS PkgConfig::httplib)
+    endif()
+
+    if(NOT VCPKG_ENABLED)
+        find_package(concurrentqueue 1.0 REQUIRED)
+    else()
+        find_package(unofficial-concurrentqueue REQUIRED)
+        add_library(
+            concurrentqueue::concurrentqueue
+            ALIAS unofficial::concurrentqueue::concurrentqueue
+        )
+    endif()
+endif()
+
+find_package(OpenSSL 3.0.13 REQUIRED)
+
+# Set dependencies list
+set(RCPP_DEPENDENCIES
+    fmt::fmt
+    nlohmann_json::nlohmann_json
+    httplib::httplib
+    concurrentqueue::concurrentqueue
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
+
+# std::chrono
+if(NOT REDUCT_CPP_USE_STD_CHRONO)
+    message(STATUS "Using date library")
+
+    if(REDUCT_CPP_USE_FETCHCONTENT)
         FetchContent_Declare(
             date
             URL
@@ -95,6 +93,11 @@ else()
             URL_HASH MD5=cf556cc376d15055b8235b05b2fc6253
         )
         FetchContent_MakeAvailable(date)
-        target_link_libraries(dependencies INTERFACE date)
+    else()
+        find_package(date 3.0.1 REQUIRED)
     endif()
+
+    list(APPEND RCPP_DEPENDENCIES date::date)
+else()
+    message(STATUS "Using std::chrono")
 endif()

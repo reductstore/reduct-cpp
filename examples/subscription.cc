@@ -41,7 +41,7 @@ int main() {
   }
 
   const auto opts = IBucket::QueryOptions{
-      .include = {{"good", "true"}},
+      // .include = {{"good", "true"}},
       .continuous = true,
       .poll_interval = std::chrono::milliseconds{100},
   };

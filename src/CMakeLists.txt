@@ -15,51 +15,105 @@ set(PUBLIC_HEADERS
     reduct/diagnostics.h
 )
 
-add_library(${CMAKE_PROJECT_NAME} STATIC ${SRC_FILES})
-set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+# Create reductcpp target
+add_library(${RCPP_TARGET_NAME} ${SRC_FILES})
 
+# Add alias
+add_library(${RCPP_TARGET_NAME}::${RCPP_TARGET_NAME} ALIAS ${RCPP_TARGET_NAME})
+
+# Set C++ standard
+target_compile_features(${RCPP_TARGET_NAME} PUBLIC cxx_std_20)
+set_target_properties(${RCPP_TARGET_NAME} PROPERTIES CXX_EXTENSIONS OFF)
+
+# Set PIC
+set_property(TARGET ${RCPP_TARGET_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# Include paths
 target_include_directories(
-    ${CMAKE_PROJECT_NAME}
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-)
-target_include_directories(
-    ${CMAKE_PROJECT_NAME}
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../3dparty
+    ${RCPP_TARGET_NAME}
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE dependencies)
+# Link dependencies
+target_link_libraries(${RCPP_TARGET_NAME} PRIVATE ${RCPP_DEPENDENCIES})
+
 set_target_properties(
-    ${CMAKE_PROJECT_NAME}
+    ${RCPP_TARGET_NAME}
     PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}"
 )
+
+# Add definitions
 target_compile_definitions(
-    ${CMAKE_PROJECT_NAME}
-    PUBLIC CPPHTTPLIB_OPENSSL_SUPPORT
+    ${RCPP_TARGET_NAME}
+    PRIVATE CPPHTTPLIB_OPENSSL_SUPPORT
 )
 target_compile_definitions(
-    ${CMAKE_PROJECT_NAME}
+    ${RCPP_TARGET_NAME}
     PUBLIC
         REDUCT_CPP_MAJOR_VERSION=${MAJOR_VERSION}
         REDUCT_CPP_MINOR_VERSION=${MINOR_VERSION}
 )
 
+# Correct concurrentqueue.h filepath
+if(REDUCT_CPP_USE_FETCHCONTENT)
+    target_compile_definitions(
+        ${RCPP_TARGET_NAME}
+        PRIVATE CONCURRENTQUEUE_H_FILEPATH=\"concurrentqueue.h\"
+    )
+elseif(VCPKG_ENABLED)
+    target_compile_definitions(
+        ${RCPP_TARGET_NAME}
+        PRIVATE CONCURRENTQUEUE_H_FILEPATH=\"concurrentqueue/concurrentqueue.h\"
+    )
+endif()
+
 if(REDUCT_CPP_USE_STD_CHRONO)
     target_compile_definitions(
-        ${CMAKE_PROJECT_NAME}
+        ${RCPP_TARGET_NAME}
         PRIVATE REDUCT_CPP_USE_STD_CHRONO
     )
 endif()
 
-include(GNUInstallDirs)
-install(
-    TARGETS ${CMAKE_PROJECT_NAME}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR}
-    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_FULL_INCLUDEDIR}/reduct
-)
+if(RCPP_INSTALL)
+    # Install rules
+    include(GNUInstallDirs)
 
-install(
-    FILES
-        "${CMAKE_BINARY_DIR}/cmake/ReductCppConfig.cmake"
-        "${CMAKE_BINARY_DIR}/cmake/ReductCppConfigVersion.cmake"
-    DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/cmake/${PROJECT_NAME}"
-)
+    # Install
+    install(
+        TARGETS ${RCPP_TARGET_NAME}
+        EXPORT ${RCPP_TARGET_NAME}-target
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/reduct
+    )
+
+    install(
+        EXPORT ${RCPP_TARGET_NAME}-target
+        FILE ${RCPP_TARGET_NAME}-targets.cmake
+        NAMESPACE ${RCPP_TARGET_NAME}::
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
+    )
+
+    include(CMakePackageConfigHelpers)
+
+    # Create package config file
+    configure_package_config_file(
+        "${PROJECT_SOURCE_DIR}/cmake/${RCPP_TARGET_NAME}-config.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/${RCPP_TARGET_NAME}-config.cmake"
+        INSTALL_DESTINATION
+            ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
+    )
+    # Create package version file
+    write_basic_package_version_file(
+        ${CMAKE_CURRENT_BINARY_DIR}/${RCPP_TARGET_NAME}-config-version.cmake
+        COMPATIBILITY ExactVersion
+    )
+
+    # Install cmake files
+    install(
+        FILES
+            "${CMAKE_CURRENT_BINARY_DIR}/${RCPP_TARGET_NAME}-config.cmake"
+            "${CMAKE_CURRENT_BINARY_DIR}/${RCPP_TARGET_NAME}-config-version.cmake"
+        DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${RCPP_TARGET_NAME}/cmake
+    )
+endif()

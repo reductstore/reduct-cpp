@@ -1,0 +1,31 @@
+name: "build-package-systen"
+description: "Build package with dependencies installed system wide"
+inputs:
+  install:
+    default: "true"
+    description: "Install the package after build"
+runs:
+  using: "composite"
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt install -y libfmt-dev \
+          nlohmann-json3-dev \
+          libcpp-httplib-dev \
+          libconcurrentqueue-dev \
+          libhowardhinnant-date-dev
+
+    - name: Cmake configuration
+      shell: bash
+      run: cmake -S . -B build
+
+    - name: Build package
+      shell: bash
+      run: cmake --build build
+
+    - name: Install package
+      if: ${{inputs.install == 'true' }}
+      shell: bash
+      run: sudo cmake --install build
