@@ -29,6 +29,7 @@ class Bucket : public IBucket {
  public:
   Bucket(std::string_view url, std::string_view name, const HttpOptions& options)
       : path_(fmt::format("/b/{}", name)), stop_{} {
+    name_ = name;
     client_ = IHttpClient::Build(url, options);
 
     worker_ = std::thread([this] {
@@ -274,6 +275,25 @@ class Bucket : public IBucket {
     }
     path_ = fmt::format("/b/{}", new_name);
     return Error::kOk;
+  }
+
+  Result<std::string> CreateQueryLink(std::string entry_name, QueryLinkOptions options) const noexcept override {
+    auto [json_payload, json_err] = internal::QueryLinkOptionsToJsonString(name_, entry_name, options);
+
+    auto file_name =
+        options.file_name ? *options.file_name : fmt::format("{}_{}.bin", entry_name, options.record_index);
+    auto [body, err] = client_->PostWithResponse(fmt::format("/links/{}", file_name),
+                                                 json_payload.dump());
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      auto data = nlohmann::json::parse(body);
+      return {data.at("link").get<std::string>(), Error::kOk};
+    } catch (const std::exception& ex) {
+      return {{}, Error{.code = -1, .message = ex.what()}};
+    }
   }
 
  private:
@@ -606,6 +626,7 @@ class Bucket : public IBucket {
   }
 
   std::unique_ptr<internal::IHttpClient> client_;
+  std::string name_;
   std::string path_;
   std::thread worker_;
 

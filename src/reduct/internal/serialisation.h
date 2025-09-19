@@ -55,6 +55,9 @@ Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::opti
                                                 std::optional<IBucket::Time> stop,
                                                 const IBucket::QueryOptions& options);
 
+Result<nlohmann::json> QueryLinkOptionsToJsonString(std::string_view bucket, std::string_view entry_name,
+                                                    const IBucket::QueryLinkOptions& options);
+
 };  // namespace reduct::internal
 
 #endif  // REDUCTCPP_SERIALISATION_H

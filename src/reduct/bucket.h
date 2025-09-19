@@ -330,9 +330,10 @@ class IBucket {
 
     std::optional<std::chrono::milliseconds> ttl;  ///< time to live
 
-    bool continuous;  ///< continuous query. If true, the method returns the latest record and waits for the next one
-    std::chrono::milliseconds poll_interval;  ///< poll interval for continuous query
-    bool head_only;                           ///< read only metadata
+    bool continuous = false;  ///< continuous query. If true,
+                              /// the method returns the latest record and waits for the next one
+    std::chrono::milliseconds poll_interval = std::chrono::milliseconds(1000);  ///< poll interval for continuous query
+    bool head_only = false;                                                     ///< read only metadata
   };
 
   /**
@@ -426,6 +427,23 @@ class IBucket {
    * @return
    */
   virtual Error Rename(std::string_view new_name) noexcept = 0;
+
+  struct QueryLinkOptions {
+    std::optional<Time> start;
+    std::optional<Time> stop;
+    QueryOptions query_options = {};
+    uint64_t record_index = 0;  // index of record in the query result to return
+    std::optional<Time> expire_at = std::nullopt;
+    std::optional<std::string> file_name = std::nullopt;
+  };
+
+  /**
+   * @brief  Creates a query link for accessing data
+   * @param entry_name entry in the bucket
+   * @param options options for the query link
+   * @return a query link or an error
+   */
+  virtual Result<std::string> CreateQueryLink(std::string entry_name, QueryLinkOptions options) const noexcept = 0;
 
   /**
    * @brief Creates a new bucket
