@@ -13,74 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.16.0] - 2025-08-12
 
-## Added
-
-- **CMake**: Added `LANGUAGES CXX` to `project()` for explicit C++ language declaration, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **Build options**:
-  - Added `REDUCT_CPP_USE_FETCHCONTENT` option for fetching dependencies via FetchContent, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Added detection of vcpkg usage via `CMAKE_TOOLCHAIN_FILE`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Added `RCPP_INSTALL` option to control installation, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Added `RCPP_TARGET_NAME` and target alias (`reductcpp::reductcpp`), [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **Dependencies**:
-  - Added vcpkg configuration files: `vcpkg.json` and `vcpkg-configuration.json`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Added pkg-config fallback for `cpp-httplib`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **CMake package config**:
-  - Added modern `reductcpp-config.cmake.in` with `find_dependency` support, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **CI**:
-  - Added separate build-package actions for system, vcpkg, and conan, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Added `package_manager` matrix for unit tests (`vcpkg` and `conan`), [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Added `check-example` job for testing examples with different dependency sources, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Added `actionlint` hook to `.pre-commit-config.yaml`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **Examples**:
-  - Added option to build examples with FetchContent (`REDUCT_CPP_EXAMPLE_USE_FETCHCONTENT`), [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
+### Added
 
 - Check server API version and warn if it's too old, [PR-89](https://github.com/reductstore/reduct-cpp/pull/89)
 
 ## Changed
 
-- **Dependencies**:
-  - Updated minimal required versions for dependencies (`fmt` 9.1.0, `cpp-httplib` 0.14.3, `OpenSSL` 3.0.13), [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Unified dependency handling via `RCPP_DEPENDENCIES` list, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Moved `concurrentqueue` include path handling into CMake definitions, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **Build system**:
-  - Refactored `InstallDependencies.cmake` to split FetchContent and system dependency modes, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Removed legacy Conan-specific handling from core build logic, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Improved include directories handling using `BUILD_INTERFACE` / `INSTALL_INTERFACE`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Removed `STATIC` library type requirement for `reductcpp` target, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Disabled `CXX_EXTENSIONS`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **Installation**:
-  - Updated install rules to use modern `configure_package_config_file` and `write_basic_package_version_file`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **CI**:
-  - Migrated to `ubuntu-24.04` runners, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Improved `cpplint` step to use `-print0`/`xargs -0` for robust file name handling, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Refactored CI workflows to separate dependency modes (system, fetchcontent, vcpkg, conan), [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **Examples**:
-  - Switched example targets to link against `reductcpp::reductcpp`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-  - Updated CMake minimum version to 3.23 in examples, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- **README**:
-  - Reorganized integration section: added system-wide build/install, FetchContent integration, and updated dependency list, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
+- Refactor CMake and CI to support FetchContent, vcpkg, and system dependencies with modern packaging,  [PR-90](https://github.com/reductstore/reduct-cpp/pull/90)
 
 ## Deprecated
 
 - `each_n`, `each_s`, `limit` in `IBucket::QueryOptions` and `IBucket::ReplicationSettings` are deprecated, [PR-89](https://github.com/reductstore/reduct-cpp/pull/89)
-
-## Removed
-
-- Removed old `ReductCppConfig.cmake.in` and `ReductCppConfigVersion.cmake.in`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- Removed `build-package-cmake` GitHub Action, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- Removed redundant Conan dependency fetching logic from `InstallDependencies.cmake`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- Removed `zlib` FetchContent declaration (now expected from system or package manager), [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- Removed hardcoded installation of package in Conan CI action, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-
-- Deprecated `include` and `exclude` parameters in `QueryOptions` and `ReplicationSettings`, [PR-92](https://github.com/reductstore/reduct-cpp/pull/92)
-
-## Fixed
-
-- Fixed `concurrentqueue` include path handling for different build environments (FetchContent, vcpkg), [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- Fixed various CI workflow typos and paths, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- Fixed example CMake scripts to support both system-installed and FetchContent modes, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- Fixed `subscription.cc` example to comment out `.include` filter in `QueryOptions`, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
-- Fixed output directories for test binaries, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90).
 
 ## [1.15.0] - 2025-05-05
 
