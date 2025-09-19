@@ -244,4 +244,32 @@ Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::opti
   return {json_data, Error::kOk};
 }
 
+Result<nlohmann::json> QueryLinkOptionsToJsonString(std::string_view bucket, std::string_view entry_name,
+                                                    const IBucket::QueryLinkOptions& options) {
+  nlohmann::json json_data;
+
+  json_data["bucket"] = bucket;
+  json_data["entry"] = entry_name;
+  json_data["index"] = options.record_index;
+
+  auto [query_json, query_err] = QueryOptionsToJsonString("QUERY", options.start, options.stop, options.query_options);
+  if (query_err) {
+    return {{}, std::move(query_err)};
+  }
+
+  json_data["query"] = std::move(query_json);
+
+  if (options.expire_at) {
+    json_data["expire_at"] =
+        std::chrono::duration_cast<std::chrono::seconds>(options.expire_at->time_since_epoch()).count();
+  } else {
+    // Default expire time is 24 hours
+    json_data["expire_at"] = std::chrono::duration_cast<std::chrono::seconds>(
+                                 (IBucket::Time::clock::now() + std::chrono::hours(24)).time_since_epoch())
+                                 .count();
+  }
+
+  return {json_data, Error::kOk};
+}
+
 }  // namespace reduct::internal

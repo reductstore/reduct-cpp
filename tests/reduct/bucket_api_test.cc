@@ -1,13 +1,15 @@
-// Copyright 2022-2024 Alexey Timin
+// Copyright 2022-2025 Alexey Timin
 
 #include <catch2/catch.hpp>
 
 #include "fixture.h"
 #include "reduct/client.h"
+#include "reduct/internal/http_client.h"
 
 using reduct::Error;
 using reduct::IBucket;
 using reduct::IClient;
+using reduct::Result;
 
 using s = std::chrono::seconds;
 
@@ -196,10 +198,65 @@ TEST_CASE("reduct::IBucket should remove entry", "[bucket_api][1_6]") {
 TEST_CASE("reduct::IBucket should rename bucket", "[bucket_api][1_12]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
-  auto err =  bucket->Rename("test_bucket_new");
+  auto err = bucket->Rename("test_bucket_new");
   REQUIRE(err == Error::kOk);
   REQUIRE(bucket->GetInfo().result.name == "test_bucket_new");
 
   auto [bucket_old, get_err] = ctx.client->GetBucket(kBucketName);
   REQUIRE(get_err == Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
+}
+
+Result<std::string> download_link(std::string_view link) {
+  auto http_client = reduct::internal::IHttpClient::Build("http://127.0.0.1:8383", {});
+  return http_client->Get(link.substr(link.find("/links/")));
+}
+
+
+TEST_CASE("reduct::IBucket should create a query link", "[bucket_api][1_17]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+
+  auto [link, err] = bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{});
+  REQUIRE(err == Error::kOk);
+
+  auto [data, http_err] = download_link(link);
+  REQUIRE(http_err == Error::kOk);
+  REQUIRE(data == "data-1");
+}
+
+TEST_CASE("reduct::IBucket should create a query link with index", "[bucket_api][1_17]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+
+  auto [link, err] = bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{.record_index = 1});
+  REQUIRE(err == Error::kOk);
+
+  auto [data, http_err] = download_link(link);
+  REQUIRE(http_err == Error::kOk);
+  REQUIRE(data == "data-2");
+}
+
+TEST_CASE("reduct::IBucket should create a query link with file name", "[bucket_api][1_17]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+
+  auto [link, err] = bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{
+                                                            .file_name = "my_file.txt",
+                                                        });
+  REQUIRE(err == Error::kOk);
+  REQUIRE(link.find("/links/my_file.txt") != std::string::npos);
+}
+
+TEST_CASE("reduct::IBucket should create a query link with expire time", "[bucket_api][1_17]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+
+  auto [link, err] =
+      bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{
+                                             .expire_at = IBucket::Time::clock::now() - std::chrono::hours(1),
+                                         });
+  REQUIRE(err == Error::kOk);
+
+  auto [_data, http_err] = download_link(link);
+  REQUIRE(http_err == Error{.code = 422, .message = "Query link has expired"});
 }

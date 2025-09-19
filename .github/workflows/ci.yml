@@ -83,7 +83,7 @@ jobs:
           - reductstore_version: "main"
             exclude_api_version_tag: ""
           - reductstore_version: "latest"
-            exclude_api_version_tag: "~[1_16]"
+            exclude_api_version_tag: "~[1_17]"
           - license_file: ""
             exclude_license_tag: "~[license]"
 
