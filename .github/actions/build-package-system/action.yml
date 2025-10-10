@@ -1,6 +1,5 @@
 name: "build-package-systen"
 description: "Build package with dependencies installed system wide"
-inputs:
 runs:
   using: "composite"
   steps:
