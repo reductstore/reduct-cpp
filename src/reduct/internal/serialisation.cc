@@ -116,7 +116,7 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
   json_data["dst_bucket"] = settings.dst_bucket;
   json_data["dst_host"] = settings.dst_host;
   if (settings.dst_token) {
-    json_data["dst_token"] = nullptr;
+    json_data["dst_token"] = *settings.dst_token;
   }
   json_data["entries"] = settings.entries;
   if (settings.each_s) {
