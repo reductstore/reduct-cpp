@@ -74,7 +74,7 @@ jobs:
           cd examples
           cmake -S . -B build \
             -DREDUCT_CPP_USE_STD_CHRONO=ON \
-            -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=USE_FETCHCONTENT=ON\
+            -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON\
             -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL"
           cmake --build build ${BUILD_TAIL} --config Release
 
