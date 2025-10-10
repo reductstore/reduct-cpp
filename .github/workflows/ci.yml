@@ -38,8 +38,7 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         shell: bash
         run: |
-          cd && vcpkg install openssl && cd -
-          openssl version
+          choco install openssl.light
           echo "BUILD_TAIL=--config Release" >> $GITHUB_ENV
           echo "USE_CHRONO=ON" >> $GITHUB_ENV
 
