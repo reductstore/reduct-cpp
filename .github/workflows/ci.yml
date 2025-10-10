@@ -53,8 +53,8 @@ jobs:
         shell: bash
         run: |
           cd examples
-          cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=${USE_CHRONO} -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
-          cmake --build build ${BUILD_TAIL}
+          cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=FF -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
+          cmake --build build --config Release
 
   check-example-windows:
     runs-on: windows-2022
@@ -77,7 +77,7 @@ jobs:
         run: |
           cd examples
           cmake -S . -B build \
-            -DREDUCT_CPP_USE_STD_CHRONO=${USE_CHRONO} \
+            -DREDUCT_CPP_USE_STD_CHRONO=ON \
             -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=USE_FETCHCONTENT=ON -DUSE_CHRONO=OFF\
             -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL"
           cmake --build build ${BUILD_TAIL} --config Release
@@ -178,4 +178,4 @@ jobs:
 
       - name: Test package
         shell: bash
-        run:  conan test examples reduct-cpp/$(git describe --tags --always).local@local/test
+        run: conan test examples reduct-cpp/$(git describe --tags --always).local@local/test
