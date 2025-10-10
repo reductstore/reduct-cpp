@@ -172,4 +172,4 @@ jobs:
 
       - name: Export package
         shell: bash
-        run: conan create . --user=local --channel=testing --build=missing --version=1.0.0 -s build_type=Release
+        run: conan create . --user=local --channel=testing --build=missing -s build_type=Release
