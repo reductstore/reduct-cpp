@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## Added
+### Added
 
 - Implement `IBucket.CreateQueryLink` method, [PR-93](https://github.com/reductstore/reduct-cpp/pull/93)
+
+### Fixed
+
+- Windows CI build, [PR-94](https://github.com/reductstore/reduct-cpp/pull/94)
 
 ## [1.16.0] - 2025-08-12
 
