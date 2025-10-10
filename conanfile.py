@@ -93,16 +93,19 @@ class DriftFrameworkConan(ConanFile):
         cmake.build()
 
     def package(self):
+        # headers
         copy(
             self,
             "*.h",
-            dst=join(self.package_folder, "include", "reduct"),
             src=join(self.source_folder, "src", "reduct"),
+            dst=join(self.package_folder, "include", "reduct"),
         )
+
+        # binaries (Windows/MSVC uses per-config dirs like Release/Debug)
         copy(
             self,
-            "*reductcpp.lib",
-            src=join(self.build_folder, "lib"),
+            "*.lib",
+            src=self.build_folder,
             dst=join(self.package_folder, "lib"),
             keep_path=False,
         )
@@ -113,9 +116,11 @@ class DriftFrameworkConan(ConanFile):
             dst=join(self.package_folder, "bin"),
             keep_path=False,
         )
+
+        # unix
         copy(
             self,
-            "*.so",
+            "*.so*",
             src=self.build_folder,
             dst=join(self.package_folder, "lib"),
             keep_path=False,

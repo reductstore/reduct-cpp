@@ -38,7 +38,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libssl-dev
-          echo "USE_CHRONO=OFF" >> $GITHUB_ENV
 
       - name: Set use_fetchcontent
         shell: bash
@@ -53,7 +52,7 @@ jobs:
         shell: bash
         run: |
           cd examples
-          cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=FF -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
+          cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
           cmake --build build --config Release
 
   check-example-windows:
@@ -78,7 +77,7 @@ jobs:
           cd examples
           cmake -S . -B build \
             -DREDUCT_CPP_USE_STD_CHRONO=ON \
-            -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=USE_FETCHCONTENT=ON -DUSE_CHRONO=OFF\
+            -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=USE_FETCHCONTENT=ON\
             -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL"
           cmake --build build ${BUILD_TAIL} --config Release
 
