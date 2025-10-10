@@ -162,3 +162,23 @@ jobs:
           tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}} ${{matrix.exclude_license_tag}}"
           reductstore-version: ${{matrix.reductstore_version}}
           lic_file: ${{matrix.license_file}}
+
+
+  conan-test-package:
+    runs-on: ${{ matrix.os }}
+    needs: cpplint
+    strategy:
+        matrix:
+            os: [ ubuntu-24.04, windows-2022 ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create conan package
+
+        uses: ./.github/actions/install-conan
+
+      - name: Export package
+        shell: bash
+        run: conan create . reduct_cpp/1.0@local/test --build=missing

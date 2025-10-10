@@ -1,5 +1,5 @@
 name: "install-conan"
-
+description: "Install conan package manager and create default profile"
 runs:
   using: "composite"
   steps:
