@@ -70,7 +70,7 @@ jobs:
       - name: Install OpenSSL on Windows
         shell: bash
         run: |
-          vcpkg install openssl
+          vcpkg install openssl:x64-windows
           echo "BUILD_TAIL=--config Release" >> $GITHUB_ENV
           echo "USE_CHRONO=ON" >> $GITHUB_ENV
 
