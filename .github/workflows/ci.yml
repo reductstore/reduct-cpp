@@ -1,11 +1,11 @@
 name: ci
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     tags:
       - "v*"
   pull_request:
-    branches: [main]
+    branches: [ main ]
 jobs:
   cpplint:
     runs-on: ubuntu-24.04
@@ -26,8 +26,8 @@ jobs:
     needs: cpplint
     strategy:
       matrix:
-        os: [ubuntu-24.04, windows-2022]
-        dependency: [system, fetchcontent]
+        os: [ ubuntu-24.04, windows-2022 ]
+        dependency: [ system, fetchcontent ]
 
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +57,7 @@ jobs:
         run: echo "USE_FETCHCONTENT=ON" >> $GITHUB_ENV
 
       - name: Install package
-        if: matrix.dependency == 'system'
+        if: matrix.dependency == 'system' && matrix.os == 'Linux'
         uses: ./.github/actions/build-package-system
 
       - name: Build example
@@ -67,28 +67,13 @@ jobs:
           cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=${USE_CHRONO} -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
           cmake --build build ${BUILD_TAIL}
 
-  unit-tests:
+
+  build:
+    runs-on: ubuntu-24.04
+    needs: cpplint
     strategy:
       matrix:
-        token: ["", "TOKEN"]
-        reductstore_version: ["main", "latest"]
-        license_file: ["", "lic.key"]
-        package_manager: ["vcpkg", "conan"]
-        include:
-          - token: ""
-            exclude_token_api_tag: "~[token_api]"
-          - token: "TOKEN"
-            exclude_token_api_tag: ""
-          - reductstore_version: "main"
-            exclude_api_version_tag: ""
-          - reductstore_version: "latest"
-            exclude_api_version_tag: "~[1_17]"
-          - license_file: ""
-            exclude_license_tag: "~[license]"
-
-    needs:
-      - cpplint
-    runs-on: ubuntu-24.04
+        package_manager: [ "vcpkg", "conan" ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -105,6 +90,46 @@ jobs:
         uses: ./.github/actions/build-package-conan
         with:
           build_tests: true
+
+      - name: Upload test artifacts
+        if: matrix.package_manager == 'conan'
+        uses: actions/upload-artifact@v4
+        with:
+          name: reduct-tests
+          path: build/Release/bin/reduct-tests
+
+
+  unit-tests:
+    needs:
+      - cpplint
+      - build
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        token: [ "", "TOKEN" ]
+        reductstore_version: [ "main", "latest" ]
+        license_file: [ "", "lic.key" ]
+        include:
+          - token: ""
+            exclude_token_api_tag: "~[token_api]"
+          - token: "TOKEN"
+            exclude_token_api_tag: ""
+          - reductstore_version: "main"
+            exclude_api_version_tag: ""
+          - reductstore_version: "latest"
+            exclude_api_version_tag: "~[1_17]"
+          - license_file: ""
+            exclude_license_tag: "~[license]"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download test artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: reduct-tests
 
       - name: Generate license
         run: echo '${{secrets.LICENSE_KEY}}' > lic.key
