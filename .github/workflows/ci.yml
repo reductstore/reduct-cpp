@@ -178,4 +178,4 @@ jobs:
 
       - name: Test package
         shell: bash
-        run: conan test test_package reductcpp/${{ github.ref_name }}@local/test
+        run: conan test test_package reductcpp/`git describe --tags --always`@local/test
