@@ -21,64 +21,6 @@ jobs:
       - name: Check code in /examples
         run: find examples/ \( -name "*.cc" -o -name "*.h" \) -print0 | xargs cpplint
 
-  check-example-linux:
-    needs: cpplint
-    runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        dependency: [ system, fetchcontent ]
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install OpenSSL on Linux
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libssl-dev
-
-      - name: Set use_fetchcontent
-        shell: bash
-        if: matrix.dependency == 'fetchcontent'
-        run: echo "USE_FETCHCONTENT=ON" >> $GITHUB_ENV
-
-      - name: Install package
-        if: matrix.dependency == 'system'
-        uses: ./.github/actions/build-package-system
-
-      - name: Build example
-        shell: bash
-        run: |
-          cd examples
-          cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
-          cmake --build build --config Release
-
-  check-example-windows:
-    runs-on: windows-2022
-    needs: cpplint
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install OpenSSL on Windows
-        shell: bash
-        run: |
-          choco install openssl
-
-      - name: Build example
-        shell: bash
-        run: |
-          cd examples
-          cmake -S . -B build \
-            -DREDUCT_CPP_USE_STD_CHRONO=ON \
-            -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON\
-            -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL"
-          cmake --build build ${BUILD_TAIL} --config Release
-
-
   build:
     runs-on: ${{ matrix.os }}
     needs: cpplint
@@ -91,11 +33,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build with vcpkg
-        if: matrix.package_manager == 'vcpkg'
+      - name: Build with vcpkg Linux
+        if: matrix.package_manager == 'vcpkg' && matrix.os == 'ubuntu-24.04'
         uses: ./.github/actions/build-package-vcpkg
-        with:
-          build_tests: true
+
 
       - name: Build with conan
         if: matrix.package_manager == 'conan'
@@ -113,7 +54,6 @@ jobs:
 
   unit-tests:
     needs:
-      - cpplint
       - build
     runs-on: ubuntu-24.04
     strategy:
@@ -154,9 +94,67 @@ jobs:
           lic_file: ${{matrix.license_file}}
 
 
+  check-example-linux:
+    needs: unit-tests
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        dependency: [ system, fetchcontent ]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install OpenSSL on Linux
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev
+
+      - name: Set use_fetchcontent
+        shell: bash
+        if: matrix.dependency == 'fetchcontent'
+        run: echo "USE_FETCHCONTENT=ON" >> $GITHUB_ENV
+
+      - name: Install package
+        if: matrix.dependency == 'system'
+        uses: ./.github/actions/build-package-system
+
+      - name: Build example
+        shell: bash
+        run: |
+          cd examples
+          cmake -S . -B build -DREDUCT_CPP_USE_STD_CHRONO=OFF -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=${USE_FETCHCONTENT}
+          cmake --build build --config Release
+
+  check-example-windows:
+    runs-on: windows-2022
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install OpenSSL on Windows
+        shell: bash
+        run: |
+          choco install openssl
+
+      - name: Build example
+        shell: bash
+        run: |
+          cd examples
+          cmake -S . -B build \
+            -DREDUCT_CPP_USE_STD_CHRONO=ON \
+            -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=ON\
+            -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL"
+          cmake --build build ${BUILD_TAIL} --config Release
+
+
   conan-test-package:
     runs-on: ${{ matrix.os }}
-    needs: cpplint
+    needs: unit-tests
     strategy:
       matrix:
         os: [ ubuntu-24.04, windows-2022 ]

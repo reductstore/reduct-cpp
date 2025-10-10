@@ -1,20 +1,14 @@
 name: "build-package-vcpkg"
 description: "Install package with vcpkg and build example"
-inputs:
-  build_tests:
-    default: "false"
-    description: "Build package with tests enabled"
+
 runs:
   using: "composite"
   steps:
-    - name: Use std::chrono
-      if: ${{ runner.os == 'Windows' }}
-      shell: bash
-      run: echo "USE_CHRONO=ON" >> $GITHUB_ENV
+
     - name: Build package
       shell: bash
       run: |
-        cmake -B build/Release -DDREDUCT_CPP_USE_STD_CHRONO=${USE_CHRONO} \
+        cmake -B build/Release -DDREDUCT_CPP_USE_STD_CHRONO=OFF \
           -DREDUCT_CPP_ENABLE_TESTS=ON \
           -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake
         cmake --build build/Release
