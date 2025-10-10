@@ -58,8 +58,6 @@ jobs:
       - name: Install package
         if: matrix.dependency == 'system' && matrix.os == 'Linux'
         uses: ./.github/actions/build-package-system
-        with:
-          install: true
 
       - name: Build example
         shell: bash
@@ -131,7 +129,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: reduct-tests
-          path: build/Release/bin/reduct-tests
+          path: build/Release/bin/
 
       - name: Generate license
         run: echo '${{secrets.LICENSE_KEY}}' > lic.key
