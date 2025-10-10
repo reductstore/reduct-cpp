@@ -58,9 +58,6 @@ jobs:
   check-example-windows:
     runs-on: windows-2022
     needs: cpplint
-    strategy:
-      matrix:
-        os: [ ubuntu-24.04, windows-2022 ]
     steps:
       - uses: actions/checkout@v4
         with:
