@@ -195,7 +195,7 @@ class IClient {
     std::string src_bucket;  // Source bucket
     std::string dst_bucket;  // Destination bucket
     std::string dst_host;    // Destination host URL (e.g. https://reductstore.com)
-    std::string dst_token;   // Destination access token
+    std::optional<std::string> dst_token;   // Destination access token
     std::vector<std::string>
         entries;                // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
     [[deprecated("Use when instead. Will be removed in v1.18.0")]]

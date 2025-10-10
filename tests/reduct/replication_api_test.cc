@@ -24,7 +24,7 @@ TEST_CASE("reduct::Client should get list of replications", "[replication_api][1
   REQUIRE(replications.size() == 0);
 }
 
-TEST_CASE("reduct::Client should create a replication", "[replication_api][1_8]") {
+TEST_CASE("reduct::Client should create a replication", "[replication_api][1_17]") {
   Fixture ctx;
 
   auto err = ctx.client->CreateReplication("test_replication", settings);
@@ -39,7 +39,6 @@ TEST_CASE("reduct::Client should create a replication", "[replication_api][1_8]"
                                   .pending_records = 0,
                               });
 
-  settings.dst_token = "***";
   REQUIRE(replication.settings == settings);
   REQUIRE(replication.diagnostics == reduct::Diagnostics{});
 
@@ -49,7 +48,7 @@ TEST_CASE("reduct::Client should create a replication", "[replication_api][1_8]"
   }
 }
 
-TEST_CASE("reduct::Client should update a replication", "[replication_api][1_8]") {
+TEST_CASE("reduct::Client should update a replication", "[replication_api][1_17]") {
   Fixture ctx;
   auto err = ctx.client->CreateReplication("test_replication", settings);
   REQUIRE(err == Error::kOk);
@@ -61,7 +60,6 @@ TEST_CASE("reduct::Client should update a replication", "[replication_api][1_8]"
   auto [replication, err_2] = ctx.client->GetReplication("test_replication");
   REQUIRE(err_2 == Error::kOk);
 
-  settings.dst_token = "***";
   REQUIRE(replication.settings == settings);
 
   SECTION("Not found") {
@@ -87,7 +85,7 @@ TEST_CASE("reduct::Client should remove a replication", "[replication_api][1_8]"
   }
 }
 
-TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_api][1_10]") {
+TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_api][1_17]") {
   Fixture ctx;
   settings.each_s = 1.5;
   settings.each_n = 10;
@@ -104,7 +102,6 @@ TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_
                                   .pending_records = 0,
                               });
 
-  settings.dst_token = "***";
   REQUIRE(replication.settings == settings);
 }
 
