@@ -181,4 +181,4 @@ jobs:
 
       - name: Export package
         shell: bash
-        run: conan create . reduct_cpp/1.0 --user=local --channel=testing --build=missing
+        run: conan create .--user=local --channel=testing --build=missing
