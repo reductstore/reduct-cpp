@@ -1,9 +1,5 @@
-name: "build-package-systen"
+name: "build-package-system"
 description: "Build package with dependencies installed system wide"
-inputs:
-  install:
-    default: "true"
-    description: "Install the package after build"
 runs:
   using: "composite"
   steps:
@@ -26,6 +22,5 @@ runs:
       run: cmake --build build
 
     - name: Install package
-      if: ${{inputs.install == 'true' }}
       shell: bash
       run: sudo cmake --install build

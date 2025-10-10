@@ -115,7 +115,9 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
   json_data["src_bucket"] = settings.src_bucket;
   json_data["dst_bucket"] = settings.dst_bucket;
   json_data["dst_host"] = settings.dst_host;
-  json_data["dst_token"] = settings.dst_token;
+  if (settings.dst_token) {
+    json_data["dst_token"] = *settings.dst_token;
+  }
   json_data["entries"] = settings.entries;
   if (settings.each_s) {
     json_data["each_s"] = *settings.each_s;
@@ -151,9 +153,12 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
         .src_bucket = settings.at("src_bucket"),
         .dst_bucket = settings.at("dst_bucket"),
         .dst_host = settings.at("dst_host"),
-        .dst_token = settings.at("dst_token"),
         .entries = settings.at("entries"),
     };
+
+    if (settings.contains("dst_token") && !settings.at("dst_token").is_null()) {
+      info.settings.dst_token = settings.at("dst_token");
+    }
 
     if (settings.contains("each_s") && !settings.at("each_s").is_null()) {
       info.settings.each_s = settings.at("each_s");

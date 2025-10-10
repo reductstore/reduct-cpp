@@ -39,7 +39,7 @@ class DriftFrameworkConan(ConanFile):
     def set_version(self):
         if not self.version:
             git = Git(self, self.recipe_folder)
-            self.version = git.run("describe --tags") + ".local"
+            self.version = git.run("describe --tags --always") + ".local"
 
     def config_options(self):
         if self.settings.get_safe("os") == "Windows":
@@ -93,16 +93,19 @@ class DriftFrameworkConan(ConanFile):
         cmake.build()
 
     def package(self):
+        # headers
         copy(
             self,
             "*.h",
-            dst=join(self.package_folder, "include", "reduct"),
             src=join(self.source_folder, "src", "reduct"),
+            dst=join(self.package_folder, "include", "reduct"),
         )
+
+        # binaries (Windows/MSVC uses per-config dirs like Release/Debug)
         copy(
             self,
-            "*reductcpp.lib",
-            src=join(self.build_folder, "lib"),
+            "*.lib",
+            src=self.build_folder,
             dst=join(self.package_folder, "lib"),
             keep_path=False,
         )
@@ -113,9 +116,11 @@ class DriftFrameworkConan(ConanFile):
             dst=join(self.package_folder, "bin"),
             keep_path=False,
         )
+
+        # unix
         copy(
             self,
-            "*.so",
+            "*.so*",
             src=self.build_folder,
             dst=join(self.package_folder, "lib"),
             keep_path=False,
@@ -137,3 +142,5 @@ class DriftFrameworkConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = ["reductcpp"]
+        self.cpp_info.set_property("cmake_file_name", "reductcpp")
+        self.cpp_info.set_property("cmake_target_name", "reductcpp::reductcpp")
