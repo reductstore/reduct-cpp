@@ -70,9 +70,7 @@ jobs:
       - name: Install OpenSSL on Windows
         shell: bash
         run: |
-          vcpkg install openssl:x64-windows
-          echo "BUILD_TAIL=--config Release" >> $GITHUB_ENV
-          echo "USE_CHRONO=ON" >> $GITHUB_ENV
+          choco install openssl
 
       - name: Build example
         shell: bash
@@ -80,9 +78,9 @@ jobs:
           cd examples
           cmake -S . -B build \
             -DREDUCT_CPP_USE_STD_CHRONO=${USE_CHRONO} \
-            -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=USE_FETCHCONTENT=ON
-            -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
-          cmake --build build ${BUILD_TAIL}
+            -DREDUCT_CPP_EXAMPLE_USE_FETCHCONTENT=USE_FETCHCONTENT=ON USE_CHRONO=ON\
+            -DOPENSSL_ROOT_DIR="C:/Program Files/OpenSSL-Win64"
+          cmake --build build ${BUILD_TAIL} --config Release
 
 
   build:
