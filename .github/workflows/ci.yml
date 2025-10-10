@@ -172,6 +172,10 @@ jobs:
       - name: Create conan package
         uses: ./.github/actions/install-conan
 
-      - name: Export package
+      - name: Build package
         shell: bash
-        run: conan create . --user=local --channel=testing --build=missing -s build_type=Release
+        run: conan create . --user=local --channel=test --build=missing -s build_type=Release
+
+      - name: Test package
+        shell: bash
+        run: conan test test_package reductcpp/${{ github.ref_name }}@local/test
