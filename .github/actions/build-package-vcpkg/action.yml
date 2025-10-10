@@ -8,7 +8,7 @@ runs:
   using: "composite"
   steps:
     - name: Use std::chrono
-      if: ${{ github.runner.os == 'Windows' }}
+      if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: echo "USE_CHRONO=ON" >> $GITHUB_ENV
     - name: Build package
