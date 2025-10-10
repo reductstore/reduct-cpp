@@ -178,4 +178,4 @@ jobs:
 
       - name: Test package
         shell: bash
-        run:  conan test examples reductcpp/$(git describe --tags --always)@local/test
+        run:  conan test examples reductcpp/$(git describe --tags --always).local@local/test
