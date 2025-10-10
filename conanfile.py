@@ -39,7 +39,7 @@ class DriftFrameworkConan(ConanFile):
     def set_version(self):
         if not self.version:
             git = Git(self, self.recipe_folder)
-            self.version = git.run("describe --tags") + ".local"
+            self.version = git.run("describe --tags --always") + ".local"
 
     def config_options(self):
         if self.settings.get_safe("os") == "Windows":
