@@ -166,6 +166,8 @@ jobs:
         os: [ ubuntu-24.04, windows-2022 ]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-tags: 'true'
 
       - name: Create conan package
         uses: ./.github/actions/install-conan
