@@ -7,7 +7,7 @@ from conan.tools.scm import Git
 
 
 class DriftFrameworkConan(ConanFile):
-    name = "reduct-cpp"
+    name = "reductcpp"
     license = "MIT"
     author = "Alexey Timin"
     url = "https://github.com/reduct-storage/reduct-cpp"
