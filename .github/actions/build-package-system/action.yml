@@ -1,4 +1,4 @@
-name: "build-package-systen"
+name: "build-package-system"
 description: "Build package with dependencies installed system wide"
 runs:
   using: "composite"
