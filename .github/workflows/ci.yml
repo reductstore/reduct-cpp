@@ -74,6 +74,7 @@ jobs:
             exclude_license_tag: "~[license]"
 
     steps:
+      - uses: actions/checkout@v4
       - name: Download test artifacts
         uses: actions/download-artifact@v5
         with:
