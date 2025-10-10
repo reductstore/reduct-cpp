@@ -16,7 +16,7 @@ if(REDUCT_CPP_EXAMPLE_USE_FETCHCONTENT)
     )
     FetchContent_MakeAvailable(reductcpp)
 else()
-    find_package(reductcpp CONFIG REQUIRED)
+    find_package(reductcpp REQUIRED)
 endif()
 
 add_executable(usage-example usage_example.cc)

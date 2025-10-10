@@ -7,7 +7,7 @@ from conan.tools.scm import Git
 
 
 class DriftFrameworkConan(ConanFile):
-    name = "reductcpp"
+    name = "reduct-cpp"
     license = "MIT"
     author = "Alexey Timin"
     url = "https://github.com/reduct-storage/reduct-cpp"
@@ -137,3 +137,5 @@ class DriftFrameworkConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = ["reductcpp"]
+        self.cpp_info.set_property("cmake_file_name", "reductcpp")
+        self.cpp_info.set_property("cmake_target_name", "reductcpp::reductcpp")
