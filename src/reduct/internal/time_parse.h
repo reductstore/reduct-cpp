@@ -11,34 +11,37 @@
 namespace reduct {
 
 // Parse ISO8601 like "2024-10-11T13:45:30Z" or "2024-10-11T13:45:30"
-
 inline std::chrono::system_clock::time_point parse_iso8601_utc(const std::string& iso_str) {
+  // Must end with 'Z' or 'z'
+  if (iso_str.empty() || (iso_str.back() != 'Z' && iso_str.back() != 'z')) {
+    throw std::runtime_error("Invalid timestamp (missing 'Z'): " + iso_str);
+  }
+
+  // Remove trailing 'Z' and fractional part (if present)
+  std::string clean = iso_str.substr(0, iso_str.size() - 1);
+  std::size_t dot_pos = clean.find('.');
+  if (dot_pos != std::string::npos) {
+    clean = clean.substr(0, dot_pos);  // strip everything after '.'
+  }
+
   std::tm tm = {};
-  std::istringstream ss(iso_str);
+  std::istringstream ss(clean);
 
-  // Try to parse with or without trailing 'Z'
-  if (iso_str.back() == 'Z' || iso_str.back() == 'z') {
-    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
-  } else {
-    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
-  }
-
-  if (ss.fail()) {
-    throw std::runtime_error("Failed to parse ISO 8601 timestamp: " + iso_str);
-  }
+  ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
 
 #if defined(_WIN32)
-  std::time_t time = _mkgmtime(&tm);  // Windows equivalent of timegm
+  std::time_t time = _mkgmtime(&tm);  // Windows
 #else
-  std::time_t time = timegm(&tm);  // Converts tm (UTC) → time_t
+  std::time_t time = timegm(&tm);  // POSIX
 #endif
 
-  if (time == -1) {
-    throw std::runtime_error("Invalid time value for timestamp: " + iso_str);
+  if (time == static_cast<std::time_t>(-1)) {
+    throw std::runtime_error("Invalid time value: " + iso_str);
   }
 
   return std::chrono::system_clock::from_time_t(time);
 }
+
 }  // namespace reduct
 
 #define REDUCTCPP_TIME_PARSE_H
