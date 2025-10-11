@@ -1,17 +1,13 @@
-// Copyright 2022-2023 Alexey Timin
+// Copyright 2022-2025 ReductSoftware UG
 
 #include "reduct/client.h"
 
-#ifdef REDUCT_CPP_USE_STD_CHRONO
-#include <chrono>
-#else
-#include <date/date.h>
-#endif
 #include <fmt/core.h>
 #include <nlohmann/json.hpp>
 
 #include <iostream>
 
+#include "internal/time_parse.h"
 #include "reduct/internal/http_client.h"
 #include "reduct/internal/serialisation.h"
 
@@ -60,19 +56,14 @@ class Client : public IClient {
             .disk_quota = license.at("disk_quota"),
             .fingerprint = license.at("fingerprint"),
         };
-#ifdef REDUCT_CPP_USE_STD_CHRONO
-        std::istringstream(license.at("expiry_date").get<std::string>()) >>
-            std::chrono::parse("%FT%TZ", server_info.license->expiry_date);
-#else
-        std::istringstream(license.at("expiry_date").get<std::string>()) >>
-            date::parse("%FT%TZ", server_info.license->expiry_date);
-#endif
-      }
 
-      return {
-          server_info,
-          Error::kOk,
-      };
+        server_info.license->expiry_date = parse_iso8601_utc(license.at("expiry_date").get<std::string>());
+
+        return {
+            server_info,
+            Error::kOk,
+        };
+      }
     } catch (const std::exception& e) {
       return {{}, Error{.code = -1, .message = e.what()}};
     }
@@ -150,12 +141,7 @@ class Client : public IClient {
       auto json_tokens = data.at("tokens");
       token_list.reserve(json_tokens.size());
       for (const auto& token : json_tokens) {
-        Time created_at;
-#ifdef REDUCT_CPP_USE_STD_CHRONO
-        std::istringstream(token.at("created_at").get<std::string>()) >> std::chrono::parse("%FT%TZ", created_at);
-#else
-        std::istringstream(token.at("created_at").get<std::string>()) >> date::parse("%FT%TZ", created_at);
-#endif
+        Time created_at = parse_iso8601_utc(token.at("created_at").get<std::string>());
 
         token_list.push_back(Token{
             .name = token.at("name"),

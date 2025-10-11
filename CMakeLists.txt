@@ -9,18 +9,6 @@ project(reductcpp VERSION ${REDUCT_CPP_FULL_VERSION} LANGUAGES CXX)
 
 message(STATUS "Version ${REDUCT_CPP_FULL_VERSION}")
 
-# Use std::chrono
-set(REDUCT_CPP_USE_STD_CHRONO
-    OFF
-    CACHE BOOL
-    "use std::chrono instead of date library"
-)
-if(REDUCT_CPP_USE_STD_CHRONO)
-    set(DATE_DEPENDENCY "")
-else()
-    set(DATE_DEPENDENCY "find_dependency(date REQUIRED)")
-endif()
-
 # Use FetchContent
 set(REDUCT_CPP_USE_FETCHCONTENT
     OFF

@@ -9,7 +9,7 @@ from conan.tools.scm import Git
 class DriftFrameworkConan(ConanFile):
     name = "reduct-cpp"
     license = "MIT"
-    author = "Alexey Timin"
+    author = "ReductSoftware UG"
     url = "https://github.com/reduct-storage/reduct-cpp"
     description = "Reduct Storage Client SDK for C++"
     topics = ("reduct-storage", "http-client", "http-api")
@@ -17,15 +17,12 @@ class DriftFrameworkConan(ConanFile):
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
-        "with_chrono": [True, False],
     }
     default_options = {
         "shared": False,
         "fPIC": True,
-        "with_chrono": False,
         "cpp-httplib/*:with_openssl": True,
         "cpp-httplib/*:with_zlib": True,
-        "date/*:header_only": True,
     }
 
     requires = (
@@ -44,16 +41,6 @@ class DriftFrameworkConan(ConanFile):
     def config_options(self):
         if self.settings.get_safe("os") == "Windows":
             self.options.rm_safe("fPIC")
-            self.options.with_chrono = True
-        elif (
-            self.settings.get_safe("compiler") == "gcc"
-            and self.settings.get_safe("compiler.version") >= "14"
-        ):
-            self.options.with_chrono = True
-
-    def requirements(self):
-        if not self.options.with_chrono:
-            self.requires("date/3.0.1")
 
     def layout(self):
         cmake_layout(self)
@@ -62,8 +49,6 @@ class DriftFrameworkConan(ConanFile):
         deps = CMakeDeps(self)
         deps.generate()
         tc = CMakeToolchain(self)
-        if self.options.with_chrono:
-            tc.variables["REDUCT_CPP_USE_STD_CHRONO"] = "ON"
         tc.generate()
 
     def export_sources(self):
