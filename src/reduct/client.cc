@@ -58,12 +58,12 @@ class Client : public IClient {
         };
 
         server_info.license->expiry_date = parse_iso8601_utc(license.at("expiry_date").get<std::string>());
-
-        return {
-            server_info,
-            Error::kOk,
-        };
       }
+
+      return {
+          server_info,
+          Error::kOk,
+      };
     } catch (const std::exception& e) {
       return {{}, Error{.code = -1, .message = e.what()}};
     }
