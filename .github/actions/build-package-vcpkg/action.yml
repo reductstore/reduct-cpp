@@ -8,7 +8,6 @@ runs:
     - name: Build package
       shell: bash
       run: |
-        cmake -B build/Release -DDREDUCT_CPP_USE_STD_CHRONO=OFF \
-          -DREDUCT_CPP_ENABLE_TESTS=ON \
+        cmake -B build/Release -DREDUCT_CPP_ENABLE_TESTS=ON \
           -DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake
         cmake --build build/Release

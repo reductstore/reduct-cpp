@@ -69,13 +69,6 @@ elseif(VCPKG_ENABLED)
     )
 endif()
 
-if(REDUCT_CPP_USE_STD_CHRONO)
-    target_compile_definitions(
-        ${RCPP_TARGET_NAME}
-        PRIVATE REDUCT_CPP_USE_STD_CHRONO
-    )
-endif()
-
 if(RCPP_INSTALL)
     # Install rules
     include(GNUInstallDirs)

@@ -80,24 +80,3 @@ set(RCPP_DEPENDENCIES
     OpenSSL::SSL
     OpenSSL::Crypto
 )
-
-# std::chrono
-if(NOT REDUCT_CPP_USE_STD_CHRONO)
-    message(STATUS "Using date library")
-
-    if(REDUCT_CPP_USE_FETCHCONTENT)
-        FetchContent_Declare(
-            date
-            URL
-                https://github.com/HowardHinnant/date/archive/refs/tags/v3.0.1.zip
-            URL_HASH MD5=cf556cc376d15055b8235b05b2fc6253
-        )
-        FetchContent_MakeAvailable(date)
-    else()
-        find_package(date 3.0.1 REQUIRED)
-    endif()
-
-    list(APPEND RCPP_DEPENDENCIES date::date)
-else()
-    message(STATUS "Using std::chrono")
-endif()

@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Windows CI build, [PR-94](https://github.com/reductstore/reduct-cpp/pull/94)
 
+### Removed
+
+- REDUCT_CPP_USE_STD_CHRONO flag and dependency on `date` library, [PR-95](https://github.com/reductstore/reduct-cpp/pull/95)
+
+
 ## [1.16.0] - 2025-08-12
 
 ### Added

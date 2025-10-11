@@ -1,12 +1,8 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022-2025 ReductSoftware UG
 
 #include "reduct/internal/serialisation.h"
 
-#ifdef REDUCT_CPP_USE_STD_CHRONO
-#include <chrono>
-#else
-#include <date/date.h>
-#endif
+#include "time_parse.h"
 
 namespace reduct::internal {
 
@@ -73,13 +69,7 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) {
 }
 
 Result<IClient::FullTokenInfo> ParseTokenInfo(const nlohmann::json& json) {
-  IClient::Time created_at;
-#ifdef REDUCT_CPP_USE_STD_CHRONO
-  std::istringstream(json.at("created_at").get<std::string>()) >> std::chrono::parse("%FT%TZ", created_at);
-#else
-  std::istringstream(json.at("created_at").get<std::string>()) >> date::parse("%FT%TZ", created_at);
-#endif
-
+  IClient::Time created_at = parse_iso8601_utc(json.at("created_at").get<std::string>());
   return {
       IClient::FullTokenInfo{
           .name = json.at("name"),
