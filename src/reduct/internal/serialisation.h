@@ -51,7 +51,7 @@ nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings sett
  */
 Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::json& data);
 
-Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::optional<IBucket::Time> start,
+Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, std::optional<IBucket::Time> start,
                                                 std::optional<IBucket::Time> stop,
                                                 const IBucket::QueryOptions& options);
 

@@ -241,6 +241,26 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api][1_13]") {
     REQUIRE(err == Error::kOk);
     REQUIRE(all_data.empty());
   }
+
+  SECTION("order") {
+    auto err = bucket->Query("entry", ts, ts + us(3),
+                         {
+                             .when = R"({"$not": [ {"$has": "score"} ], "$limit": 2})",
+                             .strict = false,
+                         },
+                         [&all_data](auto record) {
+                           auto read_err = record.Read([&all_data](auto data) {
+                             all_data.append(data);
+                             return true;
+                           });
+
+                           REQUIRE(read_err == Error::kOk);
+                           return true;
+                         });
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(all_data == "some_data2some_data3");
+  }
 }
 
 TEST_CASE("reduct::IBucket should query records (huge blobs)", "[entry_api]") {
