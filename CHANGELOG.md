@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Windows CI build, [PR-94](https://github.com/reductstore/reduct-cpp/pull/94)
+- Fix order in when conditions, [PR-96](https://github.com/reductstore/reduct-cpp/pull/96)
 
 ### Removed
 

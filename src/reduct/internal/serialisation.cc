@@ -182,10 +182,10 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
   return {info, Error::kOk};
 }
 
-Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::optional<IBucket::Time> start,
+Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, std::optional<IBucket::Time> start,
                                                 std::optional<IBucket::Time> stop,
                                                 const IBucket::QueryOptions& options) {
-  nlohmann::json json_data;
+  nlohmann::ordered_json json_data;
   json_data["query_type"] = type;
 
   if (start) {
@@ -218,7 +218,7 @@ Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::opti
 
   if (options.when) {
     try {
-      json_data["when"] = nlohmann::json::parse(*options.when);
+      json_data["when"] = nlohmann::ordered_json::parse(*options.when);
     } catch (const std::exception& ex) {
       return {{}, Error{.code = -1, .message = ex.what()}};
     }
@@ -230,7 +230,7 @@ Result<nlohmann::json> QueryOptionsToJsonString(std::string_view type, std::opti
 
   if (options.ext) {
     try {
-      json_data["ext"] = nlohmann::json::parse(*options.ext);
+      json_data["ext"] = nlohmann::ordered_json::parse(*options.ext);
     } catch (const std::exception& ex) {
       return {{}, Error{.code = -1, .message = ex.what()}};
     }
