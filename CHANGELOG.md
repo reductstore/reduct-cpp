@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2025-10-21
+
 ### Added
 
 - Implement `IBucket.CreateQueryLink` method, [PR-93](https://github.com/reductstore/reduct-cpp/pull/93)
@@ -27,11 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Check server API version and warn if it's too old, [PR-89](https://github.com/reductstore/reduct-cpp/pull/89)
 
-## Changed
+### Changed
 
 - Refactor CMake and CI to support FetchContent, vcpkg, and system dependencies with modern packaging,  [PR-90](https://github.com/reductstore/reduct-cpp/pull/90)
 
-## Deprecated
+### Deprecated
 
 - `each_n`, `each_s`, `limit` in `IBucket::QueryOptions` and `IBucket::ReplicationSettings` are deprecated, [PR-89](https://github.com/reductstore/reduct-cpp/pull/89)
 
@@ -278,7 +280,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.17.0...1.16.0
 [1.16.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.15.0...1.16.0
 [1.15.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.14.0...1.15.0
 [1.14.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.13.0...1.14.0
