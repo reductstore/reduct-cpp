@@ -35,6 +35,9 @@ class HttpClient : public IHttpClient {
 
     if (!options.api_token.empty()) {
       client_->set_bearer_token_auth(options.api_token.data());
+      client_->set_connection_timeout(options.connection_timeout.count());
+      client_->set_read_timeout(options.request_timeout.count());
+      client_->set_write_timeout(options.request_timeout.count());
     }
   }
 
@@ -202,8 +205,8 @@ class HttpClient : public IHttpClient {
       // We support only 3 minor versions from the current one
       if (minor + 2 < REDUCT_CPP_MINOR_VERSION) {
         std::cerr << "Warning: Server API version is too old: " << api_version->second
-                  << ", please update the server up to " << REDUCT_CPP_MAJOR_VERSION << "."
-                  << REDUCT_CPP_MINOR_VERSION << std::endl;
+                  << ", please update the server up to " << REDUCT_CPP_MAJOR_VERSION << "." << REDUCT_CPP_MINOR_VERSION
+                  << std::endl;
       }
     }
 
