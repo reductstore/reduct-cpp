@@ -35,9 +35,18 @@ class HttpClient : public IHttpClient {
 
     if (!options.api_token.empty()) {
       client_->set_bearer_token_auth(options.api_token.data());
-      client_->set_connection_timeout(options.connection_timeout.count());
-      client_->set_read_timeout(options.request_timeout.count());
-      client_->set_write_timeout(options.request_timeout.count());
+    }
+
+    if (options.connection_timeout.has_value()) {
+      client_->set_connection_timeout(
+          std::chrono::duration_cast<std::chrono::seconds>(options.connection_timeout.value()).count());
+    }
+
+    if (options.request_timeout.has_value()) {
+      client_->set_read_timeout(
+          std::chrono::duration_cast<std::chrono::seconds>(options.request_timeout.value()).count());
+      client_->set_write_timeout(
+          std::chrono::duration_cast<std::chrono::seconds>(options.request_timeout.value()).count());
     }
   }
 
