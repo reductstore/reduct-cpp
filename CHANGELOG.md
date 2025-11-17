@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.1] - 2025-11-17
+
 ### Added
 
 - Add base_url to QueryLinkOptions, [PR-100](https://github.com/reductstore/reduct-cpp/pull/100)
