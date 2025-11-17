@@ -183,8 +183,8 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
 }
 
 Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, std::optional<IBucket::Time> start,
-                                                std::optional<IBucket::Time> stop,
-                                                const IBucket::QueryOptions& options) {
+                                                        std::optional<IBucket::Time> stop,
+                                                        const IBucket::QueryOptions& options) {
   nlohmann::ordered_json json_data;
   json_data["query_type"] = type;
 
@@ -246,7 +246,6 @@ Result<nlohmann::json> QueryLinkOptionsToJsonString(std::string_view bucket, std
   json_data["bucket"] = bucket;
   json_data["entry"] = entry_name;
   json_data["index"] = options.record_index;
-
   auto [query_json, query_err] = QueryOptionsToJsonString("QUERY", options.start, options.stop, options.query_options);
   if (query_err) {
     return {{}, std::move(query_err)};
@@ -262,6 +261,14 @@ Result<nlohmann::json> QueryLinkOptionsToJsonString(std::string_view bucket, std
     json_data["expire_at"] = std::chrono::duration_cast<std::chrono::seconds>(
                                  (IBucket::Time::clock::now() + std::chrono::hours(24)).time_since_epoch())
                                  .count();
+  }
+
+  if (options.file_name) {
+    json_data["file_name"] = *options.file_name;
+  }
+
+  if (options.base_url) {
+    json_data["base_url"] = *options.base_url;
   }
 
   return {json_data, Error::kOk};
