@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Alexey Timin
+// Copyright 2022-2025 Alexey Timin
 #ifndef REDUCT_CPP_BUCKET_H
 #define REDUCT_CPP_BUCKET_H
 
@@ -435,6 +435,7 @@ class IBucket {
     uint64_t record_index = 0;  // index of record in the query result to return
     std::optional<Time> expire_at = std::nullopt;
     std::optional<std::string> file_name = std::nullopt;
+    std::optional<std::string> base_url = std::nullopt;
   };
 
   /**
