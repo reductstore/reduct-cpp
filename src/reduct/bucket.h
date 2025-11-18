@@ -123,12 +123,12 @@ class IBucket {
    */
   struct WritableRecord {
     /**
-     * A write ccallbackallback is called when HTTP Client is ready to send a chunk with data.
-     * @returns last flag and data to write
+     * Called when HTTP Client is ready to send a chunk with data.
+     * @returns pair where first is true to continue sending, false to stop. Second is data chunk to send
      */
     using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
 
-    WriteCallback callback_ = [](auto offset, auto size) { return std::pair{true, ""}; };
+    WriteCallback callback_ = [](auto offset, auto size) { return std::pair{false, ""}; };
     size_t content_length_;
 
     /**
