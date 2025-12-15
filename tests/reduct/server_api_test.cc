@@ -76,7 +76,7 @@ TEST_CASE("reduct::Client should return error", "[server_api]") {
 TEST_CASE("reduct::Client should return 404 if base path wrong") {
   auto client = IClient::Build("http://127.0.0.1:8383/wrong_path");
   auto [info, err] = client->GetInfo();
-  REQUIRE(err == Error{.code = 404, .message = "Not Found"});
+  REQUIRE(err == Error{.code = 404, .message = "Not found"});
 }
 
 TEST_CASE("reduct::Client should return current token name and permissions", "[server_api][token_api]") {
