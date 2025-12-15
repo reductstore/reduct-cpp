@@ -29,12 +29,23 @@ Result<IHttpClient::Headers> NormalizeHeaders(httplib::Result res) {
 
 class HttpClient : public IHttpClient {
  public:
-  explicit HttpClient(std::string_view url, const HttpOptions& options)
-      : client_(std::make_unique<httplib::Client>(std::string(url))), api_token_(options.api_token) {
+  explicit HttpClient(const std::string_view url, const HttpOptions& options) : api_token_(options.api_token) {
+    std::string_view base_url;
+    std::string_view path_prefix;
+    auto path_start = url.find('/', url.find("://") + 3);
+    if (path_start != std::string_view::npos) {
+      base_url = url.substr(0, path_start);
+      path_prefix = url.substr(path_start);
+    } else {
+      base_url = url;
+      path_prefix = "";
+    }
+
+    client_ = std::make_unique<httplib::Client>(std::string(base_url));
     client_->enable_server_certificate_verification(options.ssl_verification);
 
     if (!options.api_token.empty()) {
-      client_->set_bearer_token_auth(options.api_token.data());
+      client_->set_bearer_token_auth(options.api_token);
     }
 
     if (options.connection_timeout.has_value()) {
@@ -48,10 +59,16 @@ class HttpClient : public IHttpClient {
       client_->set_write_timeout(
           std::chrono::duration_cast<std::chrono::seconds>(options.request_timeout.value()).count());
     }
+
+    if (path_prefix.ends_with("/")) {
+      api_prefix_ = fmt::format("{}{}", path_prefix.substr(0, path_prefix.size() - 1), kApiPrefix);
+    } else {
+      api_prefix_ = fmt::format("{}{}", path_prefix, kApiPrefix);
+    }
   }
 
   Result<std::string> Get(std::string_view path) const noexcept override {
-    auto res = client_->Get(AddApiPrefix(path).data());
+    auto res = client_->Get(AddApiPrefix(path));
     if (auto err = CheckRequest(res)) {
       return {{}, std::move(err)};
     }
@@ -63,7 +80,7 @@ class HttpClient : public IHttpClient {
     Error err = Error::kOk;
     std::string err_body;
     auto res = client_->Get(
-        AddApiPrefix(path).data(),
+        AddApiPrefix(path),
         [&](const auto& response) {
           if (response.status != 200) {
             err.code = response.status;
@@ -131,7 +148,7 @@ class HttpClient : public IHttpClient {
       httplib_headers.emplace(k, v);
     }
     auto res = client_->Post(
-        AddApiPrefix(path).data(), httplib_headers, content_length,
+        AddApiPrefix(path), httplib_headers, content_length,
         [&](size_t offset, size_t size, DataSink& sink) {
           size = std::min<size_t>(size, kMaxChunkSize);
           auto [ok, data] = callback(offset, size);
@@ -149,7 +166,7 @@ class HttpClient : public IHttpClient {
   }
 
   Error Put(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
-    auto res = client_->Put(AddApiPrefix(path).data(), std::string(body), mime.data());
+    auto res = client_->Put(AddApiPrefix(path), std::string(body), mime.data());
     return CheckRequest(res);
   }
 
@@ -159,7 +176,7 @@ class HttpClient : public IHttpClient {
     for (auto& [k, v] : headers) {
       httplib_headers.emplace(k, v);
     }
-    auto res = client_->Patch(AddApiPrefix(path).data(), httplib_headers, std::string(body), "");
+    auto res = client_->Patch(AddApiPrefix(path), httplib_headers, std::string(body), "");
     if (auto err = CheckRequest(res)) {
       return {{}, std::move(err)};
     }
@@ -174,7 +191,7 @@ class HttpClient : public IHttpClient {
       httplib_headers.emplace(k, v);
     }
 
-    auto res = client_->Delete(AddApiPrefix(path).data(), httplib_headers);
+    auto res = client_->Delete(AddApiPrefix(path), httplib_headers);
     if (auto err = CheckRequest(res)) {
       return {{}, std::move(err)};
     }
@@ -184,7 +201,7 @@ class HttpClient : public IHttpClient {
   }
 
  private:
-  Error CheckRequest(const httplib::Result& res) const noexcept {
+  static Error CheckRequest(const httplib::Result& res) noexcept {
     if (res.error() != httplib::Error::Success) {
       return Error{.code = -1, .message = httplib::to_string(res.error())};
     }
@@ -222,10 +239,11 @@ class HttpClient : public IHttpClient {
     return Error::kOk;
   }
 
-  static std::string AddApiPrefix(std::string_view path) { return fmt::format("{}{}", kApiPrefix, path); }
+  std::string AddApiPrefix(std::string_view path) const { return fmt::format("{}{}", api_prefix_, path); }
 
   std::unique_ptr<httplib::Client> client_;
   std::string api_token_;
+  std::string api_prefix_;
   mutable std::string access_token_;
 };
 

@@ -8,7 +8,7 @@ using reduct::IBucket;
 using reduct::IClient;
 
 int main() {
-  auto client = IClient::Build("http://127.0.0.1:8383");
+  auto client = IClient::Build("http://127.0.0.1:8383/reduct/");
 
   // Get information about the server
   auto [info, err] = client->GetInfo();
