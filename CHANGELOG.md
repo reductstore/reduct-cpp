@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add communication timeouts to client settings, [PR-101](https://github.com/reductstore/reduct-cpp/pull/101)
 
+### Fixed
+
+- Parsing server URLs with an additional path, [PR-102](https://github.com/reductstore/reduct-cpp/pull/102)
+
 ## [1.17.1] - 2025-11-17
 
 ### Added
