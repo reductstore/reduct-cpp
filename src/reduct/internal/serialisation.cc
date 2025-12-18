@@ -2,9 +2,49 @@
 
 #include "reduct/internal/serialisation.h"
 
+#include <stdexcept>
+
 #include "time_parse.h"
 
 namespace reduct::internal {
+
+namespace {
+
+IClient::ReplicationMode ParseReplicationMode(const nlohmann::json& mode_json) {
+  if (mode_json.is_null()) {
+    return IClient::ReplicationMode::kEnabled;
+  }
+
+  const auto mode = mode_json.get<std::string>();
+  if (mode == "enabled") {
+    return IClient::ReplicationMode::kEnabled;
+  }
+
+  if (mode == "paused") {
+    return IClient::ReplicationMode::kPaused;
+  }
+
+  if (mode == "disabled") {
+    return IClient::ReplicationMode::kDisabled;
+  }
+
+  throw std::invalid_argument("Invalid replication mode: " + mode);
+}
+
+std::string ReplicationModeToString(IClient::ReplicationMode mode) {
+  switch (mode) {
+    case IClient::ReplicationMode::kEnabled:
+      return "enabled";
+    case IClient::ReplicationMode::kPaused:
+      return "paused";
+    case IClient::ReplicationMode::kDisabled:
+      return "disabled";
+  }
+
+  throw std::invalid_argument("Invalid replication mode");
+}
+
+}  // namespace
 
 nlohmann::json BucketSettingToJsonString(const IBucket::Settings& settings) {
   nlohmann::json data;
@@ -86,46 +126,57 @@ Result<IClient::FullTokenInfo> ParseTokenInfo(const nlohmann::json& json) {
 Result<std::vector<IClient::ReplicationInfo>> ParseReplicationList(const nlohmann::json& data) {
   std::vector<IClient::ReplicationInfo> replication_list;
 
-  auto json_replications = data.at("replications");
-  replication_list.reserve(json_replications.size());
-  for (const auto& replication : json_replications) {
-    replication_list.push_back(IClient::ReplicationInfo{
-        .name = replication.at("name"),
-        .is_active = replication.at("is_active"),
-        .is_provisioned = replication.at("is_provisioned"),
-        .pending_records = replication.at("pending_records"),
-    });
+  try {
+    auto json_replications = data.at("replications");
+    replication_list.reserve(json_replications.size());
+    for (const auto& replication : json_replications) {
+      replication_list.push_back(IClient::ReplicationInfo{
+          .name = replication.at("name"),
+          .mode = replication.contains("mode") ? ParseReplicationMode(replication.at("mode"))
+                                               : IClient::ReplicationMode::kEnabled,
+          .is_active = replication.at("is_active"),
+          .is_provisioned = replication.at("is_provisioned"),
+          .pending_records = replication.at("pending_records"),
+      });
+    }
+  } catch (const std::exception& ex) {
+    return {{}, Error{.code = -1, .message = ex.what()}};
   }
 
   return {replication_list, Error::kOk};
 }
 
-nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings settings) {
-  nlohmann::json json_data;
-  json_data["src_bucket"] = settings.src_bucket;
-  json_data["dst_bucket"] = settings.dst_bucket;
-  json_data["dst_host"] = settings.dst_host;
-  if (settings.dst_token) {
-    json_data["dst_token"] = *settings.dst_token;
-  }
-  json_data["entries"] = settings.entries;
-  if (settings.each_s) {
-    json_data["each_s"] = *settings.each_s;
-  }
-
-  if (settings.each_n) {
-    json_data["each_n"] = *settings.each_n;
-  }
-
-  if (settings.when) {
-    try {
-      json_data["when"] = nlohmann::json::parse(*settings.when);
-    } catch (const std::exception& ex) {
-      return {{}, Error{.code = -1, .message = ex.what()}};
+Result<nlohmann::json> ReplicationSettingsToJsonString(IClient::ReplicationSettings settings) {
+  try {
+    nlohmann::json json_data;
+    json_data["src_bucket"] = settings.src_bucket;
+    json_data["dst_bucket"] = settings.dst_bucket;
+    json_data["dst_host"] = settings.dst_host;
+    if (settings.dst_token) {
+      json_data["dst_token"] = *settings.dst_token;
     }
-  }
+    json_data["entries"] = settings.entries;
+    json_data["mode"] = ReplicationModeToString(settings.mode);
+    if (settings.each_s) {
+      json_data["each_s"] = *settings.each_s;
+    }
 
-  return json_data;
+    if (settings.each_n) {
+      json_data["each_n"] = *settings.each_n;
+    }
+
+    if (settings.when) {
+      try {
+        json_data["when"] = nlohmann::json::parse(*settings.when);
+      } catch (const std::exception& ex) {
+        return {{}, Error{.code = -1, .message = ex.what()}};
+      }
+    }
+
+    return {json_data, Error::kOk};
+  } catch (const std::exception& ex) {
+    return {{}, Error{.code = -1, .message = ex.what()}};
+  }
 }
 
 Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::json& data) {
@@ -133,6 +184,8 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
   try {
     info.info = IClient::ReplicationInfo{
         .name = data.at("info").at("name"),
+        .mode = data.at("info").contains("mode") ? ParseReplicationMode(data.at("info").at("mode"))
+                                                 : IClient::ReplicationMode::kEnabled,
         .is_active = data.at("info").at("is_active"),
         .is_provisioned = data.at("info").at("is_provisioned"),
         .pending_records = data.at("info").at("pending_records"),
@@ -144,6 +197,8 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
         .dst_bucket = settings.at("dst_bucket"),
         .dst_host = settings.at("dst_host"),
         .entries = settings.at("entries"),
+        .mode = settings.contains("mode") ? ParseReplicationMode(settings.at("mode"))
+                                          : IClient::ReplicationMode::kEnabled,
     };
 
     if (settings.contains("dst_token") && !settings.at("dst_token").is_null()) {

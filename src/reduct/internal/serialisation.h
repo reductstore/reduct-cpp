@@ -42,7 +42,7 @@ Result<std::vector<IClient::ReplicationInfo>> ParseReplicationList(const nlohman
  * @param settings to serialize
  * @return json
  */
-nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings settings);
+Result<nlohmann::json> ReplicationSettingsToJsonString(IClient::ReplicationSettings settings);
 
 /**
  * @brief Parse full replication info from JSON string

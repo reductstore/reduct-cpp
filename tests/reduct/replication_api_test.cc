@@ -10,12 +10,19 @@
 using reduct::Error;
 using reduct::IClient;
 
-IClient::ReplicationSettings settings{
-    .src_bucket = "test_bucket_1",
-    .dst_bucket = "test_bucket_2",
-    .dst_host = "http://127.0.0.1:8383",
-    .entries = {"entry-1"},
-};
+namespace {
+
+IClient::ReplicationSettings DefaultSettings() {
+  return {
+      .src_bucket = "test_bucket_1",
+      .dst_bucket = "test_bucket_2",
+      .dst_host = "http://127.0.0.1:8383",
+      .entries = {"entry-1"},
+      .mode = IClient::ReplicationMode::kEnabled,
+  };
+}
+
+}  // namespace
 
 TEST_CASE("reduct::Client should get list of replications", "[replication_api][1_8]") {
   Fixture ctx;
@@ -26,6 +33,7 @@ TEST_CASE("reduct::Client should get list of replications", "[replication_api][1
 
 TEST_CASE("reduct::Client should create a replication", "[replication_api][1_17]") {
   Fixture ctx;
+  auto settings = DefaultSettings();
 
   auto err = ctx.client->CreateReplication("test_replication", settings);
   REQUIRE(err == Error::kOk);
@@ -34,6 +42,7 @@ TEST_CASE("reduct::Client should create a replication", "[replication_api][1_17]
   REQUIRE(err_2 == Error::kOk);
   REQUIRE(replication.info == IClient::ReplicationInfo{
                                   .name = "test_replication",
+                                  .mode = IClient::ReplicationMode::kEnabled,
                                   .is_active = true,
                                   .is_provisioned = false,
                                   .pending_records = 0,
@@ -50,6 +59,7 @@ TEST_CASE("reduct::Client should create a replication", "[replication_api][1_17]
 
 TEST_CASE("reduct::Client should update a replication", "[replication_api][1_17]") {
   Fixture ctx;
+  auto settings = DefaultSettings();
   auto err = ctx.client->CreateReplication("test_replication", settings);
   REQUIRE(err == Error::kOk);
 
@@ -68,8 +78,36 @@ TEST_CASE("reduct::Client should update a replication", "[replication_api][1_17]
   }
 }
 
+TEST_CASE("reduct::Client should set replication mode", "[replication_api][1_18]") {
+  Fixture ctx;
+  auto settings = DefaultSettings();
+  auto err = ctx.client->CreateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  err = ctx.client->SetReplicationMode("test_replication", IClient::ReplicationMode::kPaused);
+  REQUIRE(err == Error::kOk);
+
+  auto [replication, err_2] = ctx.client->GetReplication("test_replication");
+  REQUIRE(err_2 == Error::kOk);
+  REQUIRE(replication.info == IClient::ReplicationInfo{
+                                  .name = "test_replication",
+                                  .mode = IClient::ReplicationMode::kPaused,
+                                  .is_active = false,
+                                  .is_provisioned = false,
+                                  .pending_records = 0,
+                              });
+  REQUIRE(replication.settings.mode == IClient::ReplicationMode::kPaused);
+  REQUIRE(replication.settings.entries == settings.entries);
+
+  SECTION("Not found") {
+    REQUIRE(ctx.client->SetReplicationMode("unknown", IClient::ReplicationMode::kDisabled) ==
+            Error{404, "Replication 'unknown' does not exist"});
+  }
+}
+
 TEST_CASE("reduct::Client should remove a replication", "[replication_api][1_8]") {
   Fixture ctx;
+  auto settings = DefaultSettings();
   auto err = ctx.client->CreateReplication("test_replication", settings);
   REQUIRE(err == Error::kOk);
 
@@ -87,6 +125,7 @@ TEST_CASE("reduct::Client should remove a replication", "[replication_api][1_8]"
 
 TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_api][1_17]") {
   Fixture ctx;
+  auto settings = DefaultSettings();
   settings.each_s = 1.5;
   settings.each_n = 10;
 
@@ -97,6 +136,7 @@ TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_
   REQUIRE(err_2 == Error::kOk);
   REQUIRE(replication.info == IClient::ReplicationInfo{
                                   .name = "test_replication",
+                                  .mode = IClient::ReplicationMode::kEnabled,
                                   .is_active = true,
                                   .is_provisioned = false,
                                   .pending_records = 0,
@@ -107,6 +147,7 @@ TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_
 
 TEST_CASE("reduct::Client should set when condition", "[replication_api][1_14]") {
   Fixture ctx;
+  auto settings = DefaultSettings();
   settings.when = R"({"&score":{"$gt":0}})";
 
   auto err = ctx.client->CreateReplication("test_replication", settings);
