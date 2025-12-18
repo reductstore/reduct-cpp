@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add communication timeouts to client settings, [PR-101](https://github.com/reductstore/reduct-cpp/pull/101)
+- Support replication modes (`enabled`, `paused`, `disabled`) and mode updates via PATCH, [PR-103](https://github.com/reductstore/reduct-cpp/pull/103)
 
 ### Fixed
 

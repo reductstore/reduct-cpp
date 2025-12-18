@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include <iostream>
+#include <stdexcept>
 
 #include "internal/time_parse.h"
 #include "reduct/internal/http_client.h"
@@ -236,13 +237,32 @@ class Client : public IClient {
   }
 
   Error CreateReplication(std::string_view name, ReplicationSettings settings) const noexcept override {
-    auto json_data = internal::ReplicationSettingsToJsonString(std::move(settings));
+    auto [json_data, json_err] = internal::ReplicationSettingsToJsonString(std::move(settings));
+    if (json_err) {
+      return json_err;
+    }
+
     return client_->Post(fmt::format("/replications/{}", name), json_data.dump());
   }
 
   Error UpdateReplication(std::string_view name, ReplicationSettings settings) const noexcept override {
-    auto json_data = internal::ReplicationSettingsToJsonString(std::move(settings));
+    auto [json_data, json_err] = internal::ReplicationSettingsToJsonString(std::move(settings));
+    if (json_err) {
+      return json_err;
+    }
+
     return client_->Put(fmt::format("/replications/{}", name), json_data.dump());
+  }
+
+  Error SetReplicationMode(std::string_view name, ReplicationMode mode) const noexcept override {
+    try {
+      nlohmann::json payload = {{"mode", internal::ReplicationModeToString(mode)}};
+      auto patch_result = client_->Patch(fmt::format("/replications/{}/mode", name), payload.dump(),
+                                         {{"Content-Type", "application/json"}});
+      return patch_result.error;
+    } catch (const std::exception& ex) {
+      return Error{.code = -1, .message = ex.what()};
+    }
   }
 
   Error RemoveReplication(std::string_view name) const noexcept override {

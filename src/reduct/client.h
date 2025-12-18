@@ -179,8 +179,11 @@ class IClient {
   /**
    * Replication information
    */
+  enum class ReplicationMode { kEnabled, kPaused, kDisabled };
+
   struct ReplicationInfo {
     std::string name;          // Replication name
+    ReplicationMode mode = ReplicationMode::kEnabled;      // Replication mode
     bool is_active;            // Remote instance is available and replication is active
     bool is_provisioned;       // Replication settings
     uint64_t pending_records;  // Number of records pending replication
@@ -203,6 +206,7 @@ class IClient {
     [[deprecated("Use when instead. Will be removed in v1.18.0")]]
     std::optional<uint64_t> each_n;  // Replicate every Nth record if not empty
     std::optional<std::string> when;  // Replication condition
+    ReplicationMode mode = ReplicationMode::kEnabled;  // Replication mode
 
     auto operator<=>(const ReplicationSettings&) const = default;
   };
@@ -246,6 +250,14 @@ class IClient {
    * @return error
    */
   [[nodiscard]] virtual Error UpdateReplication(std::string_view name, ReplicationSettings settings) const noexcept = 0;
+
+  /**
+   * @brief Update replication mode without changing settings
+   * @param name name of replication
+   * @param mode replication mode
+   * @return error
+   */
+  [[nodiscard]] virtual Error SetReplicationMode(std::string_view name, ReplicationMode mode) const noexcept = 0;
 
   /**
    * @brief Remove replication

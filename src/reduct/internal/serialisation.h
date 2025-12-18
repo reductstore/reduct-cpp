@@ -3,6 +3,8 @@
 #ifndef REDUCTCPP_SERIALISATION_H
 #define REDUCTCPP_SERIALISATION_H
 
+#include <string>
+
 #include <nlohmann/json.hpp>
 
 #include "reduct/bucket.h"
@@ -38,11 +40,18 @@ Result<IClient::FullTokenInfo> ParseTokenInfo(const nlohmann::json& json);
 Result<std::vector<IClient::ReplicationInfo>> ParseReplicationList(const nlohmann::json& data);
 
 /**
+ * @brief Convert replication mode to string representation
+ * @param mode replication mode
+ * @return string value expected by API
+ */
+std::string ReplicationModeToString(IClient::ReplicationMode mode);
+
+/**
  * @brief Serialize replication settings
  * @param settings to serialize
  * @return json
  */
-nlohmann::json ReplicationSettingsToJsonString(IClient::ReplicationSettings settings);
+Result<nlohmann::json> ReplicationSettingsToJsonString(IClient::ReplicationSettings settings);
 
 /**
  * @brief Parse full replication info from JSON string
