@@ -31,6 +31,8 @@ IClient::ReplicationMode ParseReplicationMode(const nlohmann::json& mode_json) {
   throw std::invalid_argument("Invalid replication mode: " + mode);
 }
 
+}  // namespace
+
 std::string ReplicationModeToString(IClient::ReplicationMode mode) {
   switch (mode) {
     case IClient::ReplicationMode::kEnabled:
@@ -43,8 +45,6 @@ std::string ReplicationModeToString(IClient::ReplicationMode mode) {
 
   throw std::invalid_argument("Invalid replication mode");
 }
-
-}  // namespace
 
 nlohmann::json BucketSettingToJsonString(const IBucket::Settings& settings) {
   nlohmann::json data;

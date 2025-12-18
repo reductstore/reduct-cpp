@@ -14,23 +14,6 @@
 
 namespace reduct {
 
-namespace {
-
-std::string ReplicationModeToString(IClient::ReplicationMode mode) {
-  switch (mode) {
-    case IClient::ReplicationMode::kEnabled:
-      return "enabled";
-    case IClient::ReplicationMode::kPaused:
-      return "paused";
-    case IClient::ReplicationMode::kDisabled:
-      return "disabled";
-  }
-
-  throw std::invalid_argument("Invalid replication mode");
-}
-
-}  // namespace
-
 /**
  * Hidden implement of IClient.
  */
@@ -273,7 +256,7 @@ class Client : public IClient {
 
   Error SetReplicationMode(std::string_view name, ReplicationMode mode) const noexcept override {
     try {
-      nlohmann::json payload = {{"mode", ReplicationModeToString(mode)}};
+      nlohmann::json payload = {{"mode", internal::ReplicationModeToString(mode)}};
       auto patch_result = client_->Patch(fmt::format("/replications/{}/mode", name), payload.dump(),
                                          {{"Content-Type", "application/json"}});
       return patch_result.error;
