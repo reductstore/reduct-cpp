@@ -23,20 +23,8 @@
 namespace reduct {
 
 using internal::IHttpClient;
+using internal::ParseStatus;
 using internal::QueryOptionsToJsonString;
-
-namespace {
-// Helper function to parse status from JSON
-IBucket::Status ParseStatus(const nlohmann::json& json) {
-  if (json.contains("status")) {
-    const auto status = json.at("status").get<std::string>();
-    if (status == "DELETING") {
-      return IBucket::Status::kDeleting;
-    }
-  }
-  return IBucket::Status::kReady;
-}
-}  // namespace
 
 class Bucket : public IBucket {
  public:

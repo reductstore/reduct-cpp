@@ -67,6 +67,13 @@ Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, s
 Result<nlohmann::json> QueryLinkOptionsToJsonString(std::string_view bucket, std::string_view entry_name,
                                                     const IBucket::QueryLinkOptions& options);
 
+/**
+ * @brief Parse status from JSON
+ * @param json JSON object to parse status from
+ * @return Status enum value (defaults to kReady if not present)
+ */
+IBucket::Status ParseStatus(const nlohmann::json& json);
+
 };  // namespace reduct::internal
 
 #endif  // REDUCTCPP_SERIALISATION_H
