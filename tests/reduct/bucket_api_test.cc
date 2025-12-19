@@ -143,6 +143,7 @@ TEST_CASE("reduct::IBucket should get bucket stats", "[bucket_api]") {
                       .oldest_record = t,
                       .latest_record = t + std::chrono::seconds(1),
                       .is_provisioned = false,
+                      .status = IBucket::Status::kReady,
                   });
 }
 
@@ -161,6 +162,7 @@ TEST_CASE("reduct::IBucket should get list of entries", "[bucket_api]") {
                             .size = 78,
                             .oldest_record = t + s(1),
                             .latest_record = t + s(2),
+                            .status = IBucket::Status::kReady,
                         });
 
   REQUIRE(entries[1] == IBucket::EntryInfo{
@@ -170,6 +172,7 @@ TEST_CASE("reduct::IBucket should get list of entries", "[bucket_api]") {
                             .size = 78,
                             .oldest_record = t + s(3),
                             .latest_record = t + s(4),
+                            .status = IBucket::Status::kReady,
                         });
 }
 

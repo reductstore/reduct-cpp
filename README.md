@@ -87,6 +87,34 @@ int main() {
 }
 ```
 
+For more examples, including how to handle non-blocking deletions and bucket/entry status, see the [examples](examples/README.md) directory.
+
+## Non-blocking Deletions (v1.18+)
+
+Starting from ReductStore v1.18, bucket and entry deletions are non-blocking. When you delete a bucket or entry:
+
+- Deletion happens in the background
+- The `status` field in `BucketInfo` and `EntryInfo` indicates the state: `IBucket::Status::kReady` or `IBucket::Status::kDeleting`
+- Operations on deleting buckets/entries return HTTP 409 (Conflict)
+
+```cpp
+// Check bucket status
+auto [info, err] = bucket->GetInfo();
+if (info.status == IBucket::Status::kDeleting) {
+    std::cout << "Bucket is being deleted" << std::endl;
+}
+
+// List entries with status
+auto [entries, list_err] = bucket->GetEntryList();
+for (const auto& entry : entries) {
+    if (entry.status == IBucket::Status::kDeleting) {
+        std::cout << "Entry " << entry.name << " is being deleted" << std::endl;
+    }
+}
+```
+
+See [examples/README.md](examples/README.md) for detailed examples on handling non-blocking deletions.
+
 ## Integration
 
 ### Build and Install reduct-cpp system-wide
