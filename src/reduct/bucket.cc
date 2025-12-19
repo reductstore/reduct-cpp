@@ -25,6 +25,19 @@ namespace reduct {
 using internal::IHttpClient;
 using internal::QueryOptionsToJsonString;
 
+namespace {
+// Helper function to parse status from JSON
+IBucket::Status ParseStatus(const nlohmann::json& json) {
+  if (json.contains("status")) {
+    const auto status = json.at("status").get<std::string>();
+    if (status == "DELETING") {
+      return IBucket::Status::kDeleting;
+    }
+  }
+  return IBucket::Status::kReady;
+}
+}  // namespace
+
 class Bucket : public IBucket {
  public:
   Bucket(std::string_view url, std::string_view name, const HttpOptions& options)
@@ -85,6 +98,7 @@ class Bucket : public IBucket {
               .oldest_record = Time() + std::chrono::microseconds(info.at("oldest_record")),
               .latest_record = Time() + std::chrono::microseconds(info.at("latest_record")),
               .is_provisioned = info.value("is_provisioned", false),
+              .status = ParseStatus(info),
           },
           Error::kOk,
       };
@@ -111,6 +125,7 @@ class Bucket : public IBucket {
             .size = entry.at("size"),
             .oldest_record = Time() + std::chrono::microseconds(entry.at("oldest_record")),
             .latest_record = Time() + std::chrono::microseconds(entry.at("latest_record")),
+            .status = ParseStatus(entry),
         };
       }
 
@@ -649,17 +664,19 @@ std::ostream& operator<<(std::ostream& os, const reduct::IBucket::Settings& sett
 std::ostream& operator<<(std::ostream& os, const IBucket::BucketInfo& info) {
   os << fmt::format(
       "<BucketInfo name={}, entry_count={}, size={}, "
-      "oldest_record={}, latest_record={}, is_provisioned={}>",
+      "oldest_record={}, latest_record={}, is_provisioned={}, status={}>",
       info.name, info.entry_count, info.size, info.oldest_record.time_since_epoch().count() / 1000,
-      info.latest_record.time_since_epoch().count() / 1000, info.is_provisioned ? "true" : "false");
+      info.latest_record.time_since_epoch().count() / 1000, info.is_provisioned ? "true" : "false",
+      info.status == IBucket::Status::kReady ? "READY" : "DELETING");
   return os;
 }
 
 std::ostream& operator<<(std::ostream& os, const IBucket::EntryInfo& info) {
-  os << fmt::format("<EntryInfo name={}, record_count={}, block_count={}, size={}, oldest_record={}, latest_record={}>",
+  os << fmt::format("<EntryInfo name={}, record_count={}, block_count={}, size={}, oldest_record={}, latest_record={}, status={}>",
                     info.name, info.record_count, info.block_count, info.size,
                     info.oldest_record.time_since_epoch().count() / 1000,
-                    info.latest_record.time_since_epoch().count() / 1000);
+                    info.latest_record.time_since_epoch().count() / 1000,
+                    info.status == IBucket::Status::kReady ? "READY" : "DELETING");
   return os;
 }
 }  // namespace reduct

@@ -14,6 +14,19 @@
 
 namespace reduct {
 
+namespace {
+// Helper function to parse status from JSON
+IBucket::Status ParseStatus(const nlohmann::json& json) {
+  if (json.contains("status")) {
+    const auto status = json.at("status").get<std::string>();
+    if (status == "DELETING") {
+      return IBucket::Status::kDeleting;
+    }
+  }
+  return IBucket::Status::kReady;
+}
+}  // namespace
+
 /**
  * Hidden implement of IClient.
  */
@@ -89,6 +102,8 @@ class Client : public IClient {
             .size = bucket.at("size"),
             .oldest_record = Time() + std::chrono::microseconds(bucket.at("oldest_record")),
             .latest_record = Time() + std::chrono::microseconds(bucket.at("latest_record")),
+            .is_provisioned = bucket.value("is_provisioned", false),
+            .status = ParseStatus(bucket),
         });
       }
     } catch (const std::exception& e) {
