@@ -660,11 +660,12 @@ std::ostream& operator<<(std::ostream& os, const IBucket::BucketInfo& info) {
 }
 
 std::ostream& operator<<(std::ostream& os, const IBucket::EntryInfo& info) {
-  os << fmt::format("<EntryInfo name={}, record_count={}, block_count={}, size={}, oldest_record={}, latest_record={}, status={}>",
-                    info.name, info.record_count, info.block_count, info.size,
-                    info.oldest_record.time_since_epoch().count() / 1000,
-                    info.latest_record.time_since_epoch().count() / 1000,
-                    info.status == IBucket::Status::kReady ? "READY" : "DELETING");
+  os << fmt::format(
+      "<EntryInfo name={}, record_count={}, block_count={}, size={}, oldest_record={}, latest_record={}, status={}>",
+      info.name, info.record_count, info.block_count, info.size,
+      info.oldest_record.time_since_epoch().count() / 1000,
+      info.latest_record.time_since_epoch().count() / 1000,
+      info.status == IBucket::Status::kReady ? "READY" : "DELETING");
   return os;
 }
 }  // namespace reduct
