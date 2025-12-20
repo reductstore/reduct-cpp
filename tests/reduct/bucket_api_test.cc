@@ -194,8 +194,9 @@ TEST_CASE("reduct::IBucket should remove entry", "[bucket_api][1_6]") {
           Error::kOk);
 
   REQUIRE(bucket->RemoveEntry("entry-1") == Error::kOk);
-  REQUIRE(bucket->RemoveEntry("entry-1") ==
-          Error{.code = 404, .message = fmt::format("Entry 'entry-1' not found in bucket '{}'", kBucketName)});
+  // After removal, the entry may be in DELETING state (409) or not found (404)
+  auto err = bucket->RemoveEntry("entry-1");
+  REQUIRE((err.code == 404 || err.code == 409));
 }
 
 TEST_CASE("reduct::IBucket should rename bucket", "[bucket_api][1_12]") {
