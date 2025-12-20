@@ -329,4 +329,14 @@ Result<nlohmann::json> QueryLinkOptionsToJsonString(std::string_view bucket, std
   return {json_data, Error::kOk};
 }
 
+IBucket::Status ParseStatus(const nlohmann::json& json) {
+  if (json.contains("status")) {
+    const auto status = json.at("status").get<std::string>();
+    if (status == "DELETING") {
+      return IBucket::Status::kDeleting;
+    }
+  }
+  return IBucket::Status::kReady;
+}
+
 }  // namespace reduct::internal

@@ -14,6 +14,8 @@
 
 namespace reduct {
 
+using internal::ParseStatus;
+
 /**
  * Hidden implement of IClient.
  */
@@ -89,6 +91,8 @@ class Client : public IClient {
             .size = bucket.at("size"),
             .oldest_record = Time() + std::chrono::microseconds(bucket.at("oldest_record")),
             .latest_record = Time() + std::chrono::microseconds(bucket.at("latest_record")),
+            .is_provisioned = bucket.value("is_provisioned", false),
+            .status = ParseStatus(bucket),
         });
       }
     } catch (const std::exception& e) {

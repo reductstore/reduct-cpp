@@ -32,6 +32,11 @@ class IBucket {
   enum class QuotaType { kNone, kFifo, kHard };
 
   /**
+   * Status of bucket or entry
+   */
+  enum class Status { kReady, kDeleting };
+
+  /**
    * Bucket Settings
    */
   struct Settings {
@@ -56,6 +61,7 @@ class IBucket {
     Time oldest_record;   // timestamp of the oldest record in the bucket
     Time latest_record;   // timestamp of the latest record in the bucket
     bool is_provisioned;  // is bucket provisioned, you can't remove it or change settings
+    Status status;        // status of bucket (READY or DELETING)
 
     auto operator<=>(const BucketInfo&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const BucketInfo& info);
@@ -71,6 +77,7 @@ class IBucket {
     size_t size;          // size of stored data in the bucket in bytes
     Time oldest_record;   // timestamp of the oldest record in the entry
     Time latest_record;   // timestamp of the latest record in the entry
+    Status status;        // status of entry (READY or DELETING)
 
     auto operator<=>(const EntryInfo&) const noexcept = default;
     friend std::ostream& operator<<(std::ostream& os, const EntryInfo& info);

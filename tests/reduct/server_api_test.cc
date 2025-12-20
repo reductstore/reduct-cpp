@@ -58,12 +58,14 @@ TEST_CASE("reduct::Client should list buckets", "[server_api]") {
   REQUIRE(list[0].entry_count == 2);
   REQUIRE(list[0].oldest_record.time_since_epoch() == s(1));
   REQUIRE(list[0].latest_record.time_since_epoch() == s(4));
+  REQUIRE(list[0].status == IBucket::Status::kReady);
 
   REQUIRE(list[1].name == "test_bucket_2");
   REQUIRE(list[1].size == 78);
   REQUIRE(list[1].entry_count == 1);
   REQUIRE(list[1].oldest_record.time_since_epoch() == s(5));
   REQUIRE(list[1].latest_record.time_since_epoch() == s(6));
+  REQUIRE(list[1].status == IBucket::Status::kReady);
 }
 
 TEST_CASE("reduct::Client should return error", "[server_api]") {
