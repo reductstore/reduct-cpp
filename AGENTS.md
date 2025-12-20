@@ -24,6 +24,7 @@
 - Tests live in `tests/reduct/*_test.cc`; name cases to mirror API behaviors being verified.
 - Integration tests expect a reachable ReductStore at `http://127.0.0.1:8383`; set `REDUCT_CPP_TOKEN_API` for auth. Fixture purges `test_*` buckets/tokens/replications before each run.
 - Add or extend tests with new APIs, bug fixes, and boundary conditions that touch storage state.
+- **Version-specific testing**: Always test against both `reductstore/store:main` (dev version with new features) and `reductstore/store:latest` (stable version) before pushing changes. Tag tests for new features (e.g., `[1_18]` for v1.18+ features) to exclude them when testing against stable versions.
 
 ## Commit & PR Guidelines
 - Commits: concise, imperative summaries (`Fix parsing server url`), optionally append issue refs like `(#102)`.
