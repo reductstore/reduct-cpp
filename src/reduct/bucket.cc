@@ -12,6 +12,7 @@
 #include <nlohmann/json.hpp>
 
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <deque>
 #include <future>
@@ -262,7 +263,15 @@ class Bucket : public IBucket {
     if (json_err) {
       return json_err;
     }
-    json_payload["entries"] = nlohmann::ordered_json::array({entry_name});
+    auto entries = ParseEntryList(entry_name);
+    if (entries.empty()) {
+      return Error{.code = 400, .message = "Entry name is required"};
+    }
+
+    json_payload["entries"] = nlohmann::ordered_json::array();
+    for (const auto& entry : entries) {
+      json_payload["entries"].push_back(entry);
+    }
 
     auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/q", io_path_), json_payload.dump());
     if (resp_err) {
@@ -338,7 +347,14 @@ class Bucket : public IBucket {
     if (json_err) {
       return {0, std::move(json_err)};
     }
-    json_payload["entries"] = nlohmann::ordered_json::array({entry_name});
+    auto entries = ParseEntryList(entry_name);
+    if (entries.empty()) {
+      return {0, Error{.code = 400, .message = "Entry name is required"}};
+    }
+    json_payload["entries"] = nlohmann::ordered_json::array();
+    for (const auto& entry : entries) {
+      json_payload["entries"].push_back(entry);
+    }
 
     auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/q", io_path_), json_payload.dump());
     if (resp_err) {
@@ -583,16 +599,52 @@ class Bucket : public IBucket {
     return api_version && internal::IsCompatible("1.18", *api_version);
   }
 
+  static std::string TrimWhitespace(std::string_view value) {
+    auto start = value.find_first_not_of(" \t");
+    if (start == std::string_view::npos) {
+      return "";
+    }
+    auto end = value.find_last_not_of(" \t");
+    return std::string(value.substr(start, end - start + 1));
+  }
+
+  static std::vector<std::string> ParseEntryList(std::string_view entries_raw) {
+    std::vector<std::string> entries;
+    size_t start = 0;
+    while (start < entries_raw.size()) {
+      auto comma = entries_raw.find(',', start);
+      auto slice =
+          entries_raw.substr(start, comma == std::string_view::npos ? entries_raw.size() - start : comma - start);
+      auto trimmed = TrimWhitespace(slice);
+      if (!trimmed.empty()) {
+        entries.emplace_back(std::move(trimmed));
+      }
+      if (comma == std::string_view::npos) {
+        break;
+      }
+      start = comma + 1;
+    }
+
+    if (entries.empty() && !entries_raw.empty()) {
+      auto trimmed = TrimWhitespace(entries_raw);
+      if (!trimmed.empty()) {
+        entries.emplace_back(std::move(trimmed));
+      }
+    }
+
+    return entries;
+  }
+
   Result<WriteBatchErrors> ProcessBatch(std::string_view entry_name, BatchCallback callback,
                                         BatchType type) const noexcept {
     Batch batch;
     callback(&batch);
 
     if (SupportsBatchProtocolV2()) {
-      return internal::ProcessBatchV2(*client_, io_path_, entry_name, std::move(batch), type);
+      return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
     }
 
-    return internal::ProcessBatchV1(*client_, path_, entry_name, std::move(batch), type);
+    return internal::ProcessBatchV1(client_.get(), path_, entry_name, std::move(batch), type);
   }
 
   std::unique_ptr<internal::IHttpClient> client_;

@@ -29,7 +29,7 @@ std::vector<size_t> SortRecords(const IBucket::Batch& batch, const std::string& 
 std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV1(
     std::deque<std::optional<std::string>>* data, std::mutex* mutex, bool head, IHttpClient::Headers&& headers);
 
-Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient& client, std::string_view bucket_path,
+Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient* client, std::string_view bucket_path,
                                                  std::string_view entry_name, IBucket::Batch batch, BatchType type);
 
 }  // namespace reduct::internal

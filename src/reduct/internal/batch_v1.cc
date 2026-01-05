@@ -188,7 +188,7 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV1(
   return records;
 }
 
-Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient& client, std::string_view bucket_path,
+Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient* client, std::string_view bucket_path,
                                                  std::string_view entry_name, IBucket::Batch batch, BatchType type) {
   auto ordered = SortRecords(batch, std::string(entry_name), false);
 
@@ -230,7 +230,7 @@ Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient& client, std::strin
   switch (type) {
     case BatchType::kWrite: {
       const auto content_length = batch.size();
-      resp_result = client.Post(fmt::format("{}/{}/batch", bucket_path, entry_name), "application/octet-stream",
+      resp_result = client->Post(fmt::format("{}/{}/batch", bucket_path, entry_name), "application/octet-stream",
                                 content_length, std::move(headers),
                                 [ordered = std::move(ordered), batch = std::move(batch)](size_t offset, size_t size) {
                                   return std::pair{true, batch.Slice(ordered, offset, size)};
@@ -238,11 +238,11 @@ Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient& client, std::strin
       break;
     }
     case BatchType::kUpdate:
-      resp_result = client.Patch(fmt::format("{}/{}/batch", bucket_path, entry_name), "", std::move(headers));
+      resp_result = client->Patch(fmt::format("{}/{}/batch", bucket_path, entry_name), "", std::move(headers));
       break;
 
     case BatchType::kRemove:
-      resp_result = client.Delete(fmt::format("{}/{}/batch", bucket_path, entry_name), std::move(headers));
+      resp_result = client->Delete(fmt::format("{}/{}/batch", bucket_path, entry_name), std::move(headers));
       break;
   }
 

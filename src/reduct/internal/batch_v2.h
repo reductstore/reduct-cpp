@@ -17,6 +17,8 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV2(
 
 Result<IBucket::WriteBatchErrors> ProcessBatchV2(IHttpClient& client, std::string_view io_path,
                                                  std::string_view entry_name, IBucket::Batch batch, BatchType type);
+Result<IBucket::WriteBatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path,
+                                                 std::string_view entry_name, IBucket::Batch batch, BatchType type);
 
 }  // namespace reduct::internal
 
