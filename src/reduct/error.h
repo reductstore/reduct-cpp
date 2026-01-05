@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022 ReductSoftware UG
 
 #ifndef REDUCT_ERROR_H
 #define REDUCT_ERROR_H

@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022 ReductSoftware UG
 
 #include "reduct/error.h"
 #define FMT_HEADER_ONLY 1

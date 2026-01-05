@@ -1,9 +1,8 @@
-// Copyright 2022-2024 Alexey Timin
+// Copyright 2022-2024 ReductSoftware UG
 
 #include "reduct/bucket.h"
 #define FMT_HEADER_ONLY 1
 #include <fmt/core.h>
-#include <fmt/ranges.h>
 #ifdef CONCURRENTQUEUE_H_FILEPATH
 #include CONCURRENTQUEUE_H_FILEPATH
 #else
@@ -12,11 +11,16 @@
 
 #include <nlohmann/json.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <deque>
 #include <future>
+#include <optional>
 #include <mutex>
-#include <queue>
 #include <thread>
 
+#include "reduct/internal/batch_v1.h"
+#include "reduct/internal/batch_v2.h"
 #include "reduct/internal/http_client.h"
 #include "reduct/internal/serialisation.h"
 
@@ -27,9 +31,11 @@ using internal::ParseStatus;
 using internal::QueryOptionsToJsonString;
 
 class Bucket : public IBucket {
+  using BatchType = internal::BatchType;
+
  public:
   Bucket(std::string_view url, std::string_view name, const HttpOptions& options)
-      : path_(fmt::format("/b/{}", name)), stop_{} {
+      : path_(fmt::format("/b/{}", name)), io_path_(fmt::format("/io/{}", name)), stop_{} {
     name_ = name;
     client_ = IHttpClient::Build(url, options);
 
@@ -130,7 +136,7 @@ class Bucket : public IBucket {
   }
 
   Error RemoveRecord(std::string_view entry_name, Time timestamp) const noexcept override {
-    return client_->Delete(fmt::format("{}/{}?ts={}", path_, entry_name, ToMicroseconds(timestamp)));
+    return client_->Delete(fmt::format("{}/{}?ts={}", path_, entry_name, internal::ToMicroseconds(timestamp)));
   }
 
   Error Write(std::string_view entry_name, std::optional<Time> ts,
@@ -143,7 +149,8 @@ class Bucket : public IBucket {
     WritableRecord record;
     callback(&record);
 
-    const auto time = options.timestamp ? ToMicroseconds(*options.timestamp) : ToMicroseconds(Time::clock::now());
+    const auto time =
+        options.timestamp ? internal::ToMicroseconds(*options.timestamp) : internal::ToMicroseconds(Time::clock::now());
     const auto content_type = options.content_type.empty() ? "application/octet-stream" : options.content_type;
 
     IHttpClient::Headers headers = MakeHeadersFromLabels(options);
@@ -168,7 +175,7 @@ class Bucket : public IBucket {
       return Error{.code = 400, .message = "Timestamp is required"};
     }
 
-    const auto time = ToMicroseconds(*options.timestamp);
+    const auto time = internal::ToMicroseconds(*options.timestamp);
     IHttpClient::Headers headers = MakeHeadersFromLabels(options);
     return client_->Patch(fmt::format("{}/{}?ts={}", path_, entry_name, time), "", std::move(headers));
   }
@@ -176,7 +183,7 @@ class Bucket : public IBucket {
   Error Read(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
     auto path = fmt::format("{}/{}", path_, entry_name);
     if (ts) {
-      path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
+      path.append(fmt::format("?ts={}", internal::ToMicroseconds(*ts)));
     }
 
     auto record_err = ReadRecord(std::move(path), ReadType::kSingle, false, callback);
@@ -186,7 +193,7 @@ class Bucket : public IBucket {
   Error Head(std::string_view entry_name, std::optional<Time> ts, ReadRecordCallback callback) const noexcept override {
     auto path = fmt::format("{}/{}", path_, entry_name);
     if (ts) {
-      path.append(fmt::format("?ts={}", ToMicroseconds(*ts)));
+      path.append(fmt::format("?ts={}", internal::ToMicroseconds(*ts)));
     }
 
     auto record_err = ReadRecord(std::move(path), ReadType::kSingle, true, callback);
@@ -195,6 +202,15 @@ class Bucket : public IBucket {
 
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
               ReadRecordCallback callback) const noexcept override {
+    if (SupportsBatchProtocolV2()) {
+      return QueryV2(entry_name, start, stop, options, callback);
+    }
+
+    return QueryV1(entry_name, start, stop, options, callback);
+  }
+
+  Error QueryV1(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
+                const ReadRecordCallback& callback) const {
     std::string body;
     auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
     if (json_err) {
@@ -240,8 +256,61 @@ class Bucket : public IBucket {
     return Error::kOk;
   }
 
+  Error QueryV2(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
+                const ReadRecordCallback& callback) const {
+    auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
+    if (json_err) {
+      return json_err;
+    }
+    json_payload["entries"] = nlohmann::ordered_json::array({entry_name});
+
+    auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/q", io_path_), json_payload.dump());
+    if (resp_err) {
+      return resp_err;
+    }
+
+    uint64_t id;
+    try {
+      auto data = nlohmann::json::parse(resp);
+      id = data["id"];
+    } catch (const std::exception& ex) {
+      return Error{.code = -1, .message = ex.what()};
+    }
+
+    while (true) {
+      auto [stopped, record_err] = ReadRecordV2(id, options.head_only, callback);
+
+      if (stopped) {
+        break;
+      }
+
+      if (record_err) {
+        if (record_err.code == 204) {
+          if (options.continuous) {
+            std::this_thread::sleep_for(options.poll_interval);
+            continue;
+          }
+          break;
+        }
+
+        return record_err;
+      }
+    }
+
+    return Error::kOk;
+  }
+
   Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                QueryOptions options) const noexcept override {
+    if (SupportsBatchProtocolV2()) {
+      return RemoveQueryV2(entry_name, start, stop, options);
+    }
+
+    return RemoveQueryV1(entry_name, start, stop, options);
+  }
+
+  Result<uint64_t> RemoveQueryV1(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
+                                 QueryOptions options) const {
     std::string body;
     auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
     if (json_err) {
@@ -263,6 +332,27 @@ class Bucket : public IBucket {
     }
   }
 
+  Result<uint64_t> RemoveQueryV2(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
+                                 QueryOptions options) const {
+    auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
+    if (json_err) {
+      return {0, std::move(json_err)};
+    }
+    json_payload["entries"] = nlohmann::ordered_json::array({entry_name});
+
+    auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/q", io_path_), json_payload.dump());
+    if (resp_err) {
+      return {0, std::move(resp_err)};
+    }
+
+    try {
+      auto data = nlohmann::json::parse(resp);
+      return {data.at("removed_records"), Error::kOk};
+    } catch (const std::exception& ex) {
+      return {0, Error{.code = -1, .message = ex.what()}};
+    }
+  }
+
   Error RenameEntry(std::string_view old_name, std::string_view new_name) const noexcept override {
     nlohmann::json data;
     data["new_name"] = new_name;
@@ -277,6 +367,7 @@ class Bucket : public IBucket {
       return err;
     }
     path_ = fmt::format("/b/{}", new_name);
+    io_path_ = fmt::format("/io/{}", new_name);
     return Error::kOk;
   }
 
@@ -316,7 +407,7 @@ class Bucket : public IBucket {
                                            this](IHttpClient::Headers&& headers) {
       std::vector<ReadableRecord> records;
       if (type == ReadType::kBatched) {
-        records = ParseAndBuildBatchedRecords(&data, &data_mutex, head, std::move(headers));
+        records = internal::ParseAndBuildBatchedRecordsV1(&data, &data_mutex, head, std::move(headers));
       } else {
         records.emplace_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(headers)));
       }
@@ -369,11 +460,72 @@ class Bucket : public IBucket {
     return {stopped, err};
   }
 
+  Result<bool> ReadRecordV2(uint64_t query_id, bool head, const ReadRecordCallback& callback) const noexcept {
+    std::deque<std::optional<std::string>> data;
+    std::mutex data_mutex;
+    std::future<void> future;
+    bool stopped = false;
+
+    IHttpClient::Headers request_headers;
+    request_headers.emplace("x-reduct-query-id", std::to_string(query_id));
+
+    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, head,
+                                           this](IHttpClient::Headers&& headers) {
+      auto records = internal::ParseAndBuildBatchedRecordsV2(&data, &data_mutex, head, std::move(headers));
+      for (auto& record : records) {
+        Task task([record = std::move(record), &callback, &stopped] {
+          if (stopped) {
+            return;
+          }
+          stopped = !callback(record);
+          if (!stopped) {
+            stopped = record.last;
+          }
+        });
+
+        future = task.get_future();
+        task_queue_.enqueue(std::move(task));
+      }
+    };
+
+    Error err;
+    if (head) {
+      auto ret = client_->Head(fmt::format("{}/read", io_path_), std::move(request_headers));
+      if (ret.error) {
+        err = ret.error;
+      } else {
+        parse_headers_and_receive_data(std::move(ret.result));
+      }
+    } else {
+      err = client_->Get(fmt::format("{}/read", io_path_), std::move(request_headers),
+                         parse_headers_and_receive_data, [&data, &data_mutex](auto chunk) {
+                           {
+                             std::lock_guard lock(data_mutex);
+                             data.emplace_back(std::string(chunk));
+                           }
+                           return true;
+                         });
+    }
+
+    if (!err) {
+      if (!head) {
+        std::lock_guard lock(data_mutex);
+        data.emplace_back(std::nullopt);
+      }
+
+      if (future.valid()) {
+        future.wait();
+      }
+    }
+
+    return {stopped, err};
+  }
+
   static ReadableRecord ParseAndBuildSingleRecord(std::deque<std::optional<std::string>>* data, std::mutex* mutex,
                                                   bool head, IHttpClient::Headers&& headers) {
     ReadableRecord record;
 
-    record.timestamp = FromMicroseconds(headers["x-reduct-time"]);
+    record.timestamp = internal::FromMicroseconds(headers["x-reduct-time"]);
     record.size = std::stoi(headers["content-length"]);
     record.content_type = headers["content-type"];
     record.last = headers["x-reduct-last"] == "1";
@@ -418,128 +570,6 @@ class Bucket : public IBucket {
     return record;
   }
 
-  static std::vector<ReadableRecord> ParseAndBuildBatchedRecords(std::deque<std::optional<std::string>>* data,
-                                                                 std::mutex* mutex, bool head,
-                                                                 IHttpClient::Headers&& headers) {
-    auto parse_csv = [](const std::string& csv) {
-      std::vector<std::string> items;
-      std::string escaped, item;
-      std::stringstream ss(csv);
-
-      while (std::getline(ss, item, ',')) {
-        if (item.starts_with("\"") && escaped.empty()) {
-          escaped = item.substr(1);
-        }
-
-        if (!escaped.empty()) {
-          if (item.ends_with("\"")) {
-            escaped = escaped.substr(0, escaped.size() - 2);
-            items.push_back(escaped);
-            escaped = "";
-          } else {
-            escaped += item;
-          }
-        } else {
-          items.push_back(item);
-        }
-      }
-
-      auto size = std::stoll(items[0]);
-      // eslint-disable-next-line prefer-destructuring
-      auto content_type = items[1];
-      LabelMap labels = {};
-
-      for (auto i = 2; i < items.size(); i++) {
-        auto pos = items[i].find('=');
-        if (pos == std::string::npos) {
-          continue;
-        }
-
-        auto key = items[i].substr(0, pos);
-        labels[key] = items[i].substr(pos + 1);
-      }
-
-      return std::tuple{
-          size,
-          content_type,
-          labels,
-      };
-    };
-
-    std::vector<ReadableRecord> records;
-    size_t total_records = std::count_if(headers.begin(), headers.end(),
-                                         [](const auto& header) { return header.first.starts_with("x-reduct-time-"); });
-
-    std::map<std::string, std::string> ordered_headers(headers.begin(), headers.end());
-    for (auto header = ordered_headers.begin(); header != ordered_headers.end(); ++header) {
-      if (!header->first.starts_with("x-reduct-time-")) {
-        continue;
-      }
-
-      auto [size, content_type, labels] = parse_csv(header->second);
-
-      ReadableRecord record;
-      record.timestamp = FromMicroseconds(header->first.substr(14));
-      record.size = size;
-      record.content_type = content_type;
-      record.labels = labels;
-      record.Read = [data, mutex, size, head](auto record_callback) {
-        if (head) {
-          return Error::kOk;
-        }
-
-        size_t total = 0;
-        while (true) {
-          std::optional<std::string> chunk = "";
-          {
-            std::lock_guard lock(*mutex);
-            if (!data->empty()) {
-              chunk = std::move(data->front());
-              data->pop_front();
-
-              if (chunk->size() > size - total) {
-                auto tmp = chunk->substr(0, size - total);
-                data->push_front(chunk->substr(size - total));
-                chunk = std::move(tmp);
-              }
-            }
-          }
-
-          if (!chunk) {
-            break;
-          }
-
-          if (chunk->empty()) {
-            std::this_thread::sleep_for(std::chrono::microseconds(100));
-            continue;
-          }
-
-          total += chunk->size();
-          if (!record_callback(std::move(*chunk))) {
-            break;
-          }
-
-          if (total >= size) {
-            break;
-          }
-        }
-
-        return Error::kOk;
-      };
-
-      record.last = (records.size() == total_records - 1 && headers["x-reduct-last"] == "true");
-      records.push_back(std::move(record));
-    }
-
-    return records;
-  }
-
-  static int64_t ToMicroseconds(const Time& ts) {
-    return std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
-  }
-
-  static Time FromMicroseconds(const std::string& ts) { return Time() + std::chrono::microseconds(std::stoul(ts)); }
-
   IHttpClient::Headers MakeHeadersFromLabels(const WriteOptions& options) const {
     IHttpClient::Headers headers;
     for (const auto& [key, value] : options.labels) {
@@ -548,89 +578,27 @@ class Bucket : public IBucket {
     return headers;
   }
 
-  enum class BatchType { kWrite, kUpdate, kRemove };
+  bool SupportsBatchProtocolV2() const {
+    auto api_version = client_->ApiVersion();
+    return api_version && internal::IsCompatible("1.18", *api_version);
+  }
 
   Result<WriteBatchErrors> ProcessBatch(std::string_view entry_name, BatchCallback callback,
                                         BatchType type) const noexcept {
     Batch batch;
     callback(&batch);
 
-    IHttpClient::Headers headers;
-    for (const auto& [time, record] : batch.records()) {
-      std::vector<std::string> labels;
-      for (const auto& [label_key, label_value] : record.labels) {
-        if (label_key.find(',') == std::string::npos) {
-          labels.push_back(fmt::format("{}={}", label_key, label_value));
-        } else {
-          labels.push_back(fmt::format("{}=\"{}\"", label_key, label_value));
-        }
-      }
-
-      const auto key = fmt::format("x-reduct-time-{}", ToMicroseconds(time));
-
-      switch (type) {
-        case BatchType::kWrite: {
-          const auto value = fmt::format("{},{},{}", record.size, record.content_type, fmt::join(labels, ","));
-          headers.emplace(key, value);
-
-          break;
-        }
-        case BatchType::kUpdate: {
-          const auto value = fmt::format("0,,{}", fmt::join(labels, ","));
-          headers.emplace(key, value);
-          break;
-        }
-        case BatchType::kRemove: {
-          headers.emplace(key, "0,");
-          break;
-        }
-      }
+    if (SupportsBatchProtocolV2()) {
+      return internal::ProcessBatchV2(*client_, io_path_, entry_name, std::move(batch), type);
     }
 
-    Result<std::tuple<std::string, IHttpClient::Headers>> resp_result;
-    switch (type) {
-      case BatchType::kWrite: {
-        const auto content_length = batch.size();
-        resp_result =
-            client_->Post(fmt::format("{}/{}/batch", path_, entry_name), "application/octet-stream", content_length,
-                          std::move(headers), [batch = std::move(batch)](size_t offset, size_t size) {
-                            return std::pair{true, batch.Slice(offset, size)};
-                          });
-        break;
-      }
-      case BatchType::kUpdate:
-        resp_result = client_->Patch(fmt::format("{}/{}/batch", path_, entry_name), "", std::move(headers));
-        break;
-
-      case BatchType::kRemove:
-        resp_result = client_->Delete(fmt::format("{}/{}/batch", path_, entry_name), std::move(headers));
-        break;
-    }
-
-    auto [resp, err] = resp_result;
-    if (err) {
-      return {{}, err};
-    }
-
-    WriteBatchErrors errors;
-    for (const auto& [key, value] : std::get<1>(resp)) {
-      if (key.starts_with("x-reduct-error-")) {
-        auto pos = value.find(',');
-        if (pos == std::string::npos) {
-          continue;
-        }
-        auto status = std::stoi(value.substr(0, pos));
-        auto message = value.substr(pos + 1);
-        errors.emplace(FromMicroseconds(key.substr(15)), Error{.code = status, .message = message});
-      }
-    }
-
-    return {errors, Error::kOk};
+    return internal::ProcessBatchV1(*client_, path_, entry_name, std::move(batch), type);
   }
 
   std::unique_ptr<internal::IHttpClient> client_;
   std::string name_;
   std::string path_;
+  std::string io_path_;
   std::thread worker_;
 
   using Task = std::packaged_task<void()>;

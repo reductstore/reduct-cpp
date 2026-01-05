@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022 ReductSoftware UG
 // Copyright 2024-2025 ReductSoftware UG
 
 #ifndef REDUCTCPP_HTTP_OPTIONS_H

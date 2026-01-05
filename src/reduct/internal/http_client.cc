@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Alexey Timin
+// Copyright 2022-2026 ReductSoftware UG
 
 #include "reduct/internal/http_client.h"
 #undef CPPHTTPLIB_BROTLI_SUPPORT
@@ -8,6 +8,8 @@
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <mutex>
+#include <optional>
 #include <string>
 
 namespace reduct::internal {
@@ -77,24 +79,34 @@ class HttpClient : public IHttpClient {
   }
 
   Error Get(std::string_view path, ResponseCallback resp_callback, ReadCallback read_callback) const noexcept override {
+    return Get(path, {}, std::move(resp_callback), std::move(read_callback));
+  }
+
+  Error Get(std::string_view path, Headers headers, ResponseCallback resp_callback,
+            ReadCallback read_callback) const noexcept override {
+    httplib::Headers httplib_headers;
+    for (auto& [k, v] : headers) {
+      httplib_headers.emplace(k, v);
+    }
+
     Error err = Error::kOk;
     std::string err_body;
     auto res = client_->Get(
-        AddApiPrefix(path),
+        AddApiPrefix(path), httplib_headers,
         [&](const auto& response) {
           if (response.status != 200) {
             err.code = response.status;
           }
 
-          Headers headers;
+          Headers normalized_headers;
           for (auto& [k, v] : response.headers) {
             std::string lowcase_header = k;
             std::transform(k.begin(), k.end(), lowcase_header.begin(), [](auto ch) { return std::tolower(ch); });
-            headers[lowcase_header] = v;
+            normalized_headers[lowcase_header] = v;
           }
 
           if (!err) {
-            resp_callback(std::move(headers));
+            resp_callback(std::move(normalized_headers));
           }
           return true;
         },
@@ -109,21 +121,28 @@ class HttpClient : public IHttpClient {
     return CheckRequest(res);
   }
 
-  Result<Headers> Head(std::string_view path) const noexcept override {
-    auto res = client_->Head(AddApiPrefix(path).data());
+  Result<Headers> Head(std::string_view path) const noexcept override { return Head(path, {}); }
+
+  Result<Headers> Head(std::string_view path, Headers headers) const noexcept override {
+    httplib::Headers httplib_headers;
+    for (auto& [k, v] : headers) {
+      httplib_headers.emplace(k, v);
+    }
+
+    auto res = client_->Head(AddApiPrefix(path).data(), httplib_headers);
     auto err = CheckRequest(res);
     if (err) {
       return {{}, std::move(err)};
     }
 
-    Headers headers;
+    Headers normalized_headers;
     for (auto& [k, v] : res->headers) {
       std::string lowcase_header = k;
       std::transform(k.begin(), k.end(), lowcase_header.begin(), [](auto ch) { return std::tolower(ch); });
-      headers[lowcase_header] = v;
+      normalized_headers[lowcase_header] = v;
     }
 
-    return {std::move(headers), Error::kOk};
+    return {std::move(normalized_headers), Error::kOk};
   }
 
   Error Post(std::string_view path, std::string_view body, std::string_view mime) const noexcept override {
@@ -200,8 +219,13 @@ class HttpClient : public IHttpClient {
     return {{content, NormalizeHeaders(std::move(res)).result}};
   }
 
+  [[nodiscard]] std::optional<std::string> ApiVersion() const noexcept override {
+    std::lock_guard lock(api_version_mutex_);
+    return api_version_;
+  }
+
  private:
-  static Error CheckRequest(const httplib::Result& res) noexcept {
+  Error CheckRequest(const httplib::Result& res) const noexcept {
     if (res.error() != httplib::Error::Success) {
       return Error{.code = -1, .message = httplib::to_string(res.error())};
     }
@@ -234,6 +258,11 @@ class HttpClient : public IHttpClient {
                   << ", please update the server up to " << REDUCT_CPP_MAJOR_VERSION << "." << REDUCT_CPP_MINOR_VERSION
                   << std::endl;
       }
+
+      {
+        std::lock_guard lock(api_version_mutex_);
+        api_version_ = api_version->second;
+      }
     }
 
     return Error::kOk;
@@ -245,6 +274,8 @@ class HttpClient : public IHttpClient {
   std::string api_token_;
   std::string api_prefix_;
   mutable std::string access_token_;
+  mutable std::optional<std::string> api_version_;
+  mutable std::mutex api_version_mutex_;
 };
 
 std::unique_ptr<IHttpClient> IHttpClient::Build(std::string_view url, const HttpOptions& options) {

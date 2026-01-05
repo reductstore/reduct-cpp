@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022 ReductSoftware UG
 
 #ifndef REDUCTCPP_SERIALISATION_H
 #define REDUCTCPP_SERIALISATION_H

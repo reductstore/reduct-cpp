@@ -1,4 +1,4 @@
-// Copyright 2023 Alexey Timin
+// Copyright 2023 ReductSoftware UG
 
 #include <reduct/client.h>
 

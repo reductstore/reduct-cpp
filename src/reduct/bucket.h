@@ -1,4 +1,4 @@
-// Copyright 2022-2025 Alexey Timin
+// Copyright 2022-2025 ReductSoftware UG
 #ifndef REDUCT_CPP_BUCKET_H
 #define REDUCT_CPP_BUCKET_H
 
@@ -89,6 +89,7 @@ class IBucket {
    * ReadableRecord
    */
   struct ReadableRecord {
+    std::string entry;
     Time timestamp;
     size_t size;
     bool last;
@@ -168,10 +169,12 @@ class IBucket {
   class Batch {
    public:
     struct Record {
+      std::string entry;
       Time timestamp;
       size_t size;
       std::string content_type;
       LabelMap labels;
+      std::optional<size_t> data_index;
     };
 
     /**
@@ -182,30 +185,48 @@ class IBucket {
      * @param labels
      */
     void AddRecord(Time timestamp, std::string data, std::string content_type = "", LabelMap labels = {}) {
-      records_[timestamp] = Record{timestamp, data.size(), std::move(content_type), std::move(labels)};
-      size_ += data.size();
+      AddRecord("", timestamp, std::move(data), std::move(content_type), std::move(labels));
+    }
+
+    void AddRecord(std::string entry, Time timestamp, std::string data, std::string content_type = "",
+                   LabelMap labels = {}) {
+      const auto index = body_.size();
       body_.push_back(std::move(data));
+      size_ += body_.back().size();
+      records_.push_back(
+          Record{std::move(entry), timestamp, body_.back().size(), std::move(content_type), std::move(labels), index});
     }
 
     /**
      * Add an empty record to batch (use for removing)
      * @param timestamp
      */
-    void AddRecord(Time timestamp) { records_[timestamp] = Record{timestamp, 0, "", {}}; }
+    void AddRecord(Time timestamp) { records_.push_back(Record{{}, timestamp, 0, "", {}, std::nullopt}); }
 
-    void AddOnlyLabels(Time timestamp, LabelMap labels) {
-      records_[timestamp] = Record{timestamp, 0, "", std::move(labels)};
+    void AddRecord(std::string entry, Time timestamp) {
+      records_.push_back(Record{std::move(entry), timestamp, 0, "", {}, std::nullopt});
     }
 
-    [[nodiscard]] const std::map<Time, Record>& records() const { return records_; }
+    void AddOnlyLabels(Time timestamp, LabelMap labels) { AddOnlyLabels("", timestamp, std::move(labels)); }
+
+    void AddOnlyLabels(std::string entry, Time timestamp, LabelMap labels) {
+      records_.push_back(Record{std::move(entry), timestamp, 0, "", std::move(labels), std::nullopt});
+    }
+
+    [[nodiscard]] const std::vector<Record>& records() const { return records_; }
 
     [[nodiscard]] std::string Slice(size_t offset, size_t size) const {
+      return Slice(std::nullopt, offset, size);
+    }
+
+    [[nodiscard]] std::string Slice(const std::optional<std::vector<size_t>>& order, size_t offset,
+                                    size_t size) const {
       if (offset >= size_) {
         return "";
       }
 
       std::string result;
-      for (const auto& data : body_) {
+      const auto process_data = [&](const std::string& data) {
         if (offset < data.size()) {
           auto n = std::min(size, data.size() - offset);
           result.append(data.substr(offset, n));
@@ -214,9 +235,25 @@ class IBucket {
         } else {
           offset -= data.size();
         }
+      };
 
-        if (size == 0) {
-          break;
+      if (order) {
+        for (auto idx : *order) {
+          const auto& record = records_.at(idx);
+          if (!record.data_index) {
+            continue;
+          }
+          process_data(body_.at(*record.data_index));
+          if (size == 0) {
+            break;
+          }
+        }
+      } else {
+        for (const auto& data : body_) {
+          process_data(data);
+          if (size == 0) {
+            break;
+          }
         }
       }
 
@@ -226,7 +263,7 @@ class IBucket {
     [[nodiscard]] uint64_t size() const { return size_; }
 
    private:
-    std::map<Time, Record> records_;
+    std::vector<Record> records_;
     std::vector<std::string> body_;
     uint64_t size_ = 0;
   };

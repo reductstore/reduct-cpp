@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Alexey Timin
+// Copyright 2022-2024 ReductSoftware UG
 
 #include <catch2/catch.hpp>
 
