@@ -644,22 +644,6 @@ class Bucket : public IBucket {
     Batch batch;
     callback(&batch);
 
-    bool multiple_entries = false;
-    if (batch.records().size() > 1) {
-      std::set<std::string> entries;
-      for (const auto& record : batch.records()) {
-        entries.insert(internal::RecordEntry(record, entry_name));
-        if (entries.size() > 1) {
-          multiple_entries = true;
-          break;
-        }
-      }
-    }
-
-    if (multiple_entries) {
-      return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
-    }
-
     if (SupportsBatchProtocolV2()) {
       return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
     }
