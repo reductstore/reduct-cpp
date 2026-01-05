@@ -16,8 +16,9 @@
 #include <chrono>
 #include <deque>
 #include <future>
-#include <optional>
 #include <mutex>
+#include <optional>
+#include <set>
 #include <thread>
 
 #include "reduct/internal/batch_v1.h"
@@ -392,8 +393,7 @@ class Bucket : public IBucket {
 
     auto file_name =
         options.file_name ? *options.file_name : fmt::format("{}_{}.bin", entry_name, options.record_index);
-    auto [body, err] = client_->PostWithResponse(fmt::format("/links/{}", file_name),
-                                                 json_payload.dump());
+    auto [body, err] = client_->PostWithResponse(fmt::format("/links/{}", file_name), json_payload.dump());
     if (err) {
       return {{}, std::move(err)};
     }
@@ -513,8 +513,8 @@ class Bucket : public IBucket {
         parse_headers_and_receive_data(std::move(ret.result));
       }
     } else {
-      err = client_->Get(fmt::format("{}/read", io_path_), std::move(request_headers),
-                         parse_headers_and_receive_data, [&data, &data_mutex](auto chunk) {
+      err = client_->Get(fmt::format("{}/read", io_path_), std::move(request_headers), parse_headers_and_receive_data,
+                         [&data, &data_mutex](auto chunk) {
                            {
                              std::lock_guard lock(data_mutex);
                              data.emplace_back(std::string(chunk));
@@ -596,7 +596,11 @@ class Bucket : public IBucket {
 
   bool SupportsBatchProtocolV2() const {
     auto api_version = client_->ApiVersion();
-    return api_version && internal::IsCompatible("1.18", *api_version);
+    if (!api_version) {
+      // Optimistically assume v2 is available until proven otherwise; server will return an error if not supported.
+      return true;
+    }
+    return internal::IsCompatible("1.18", *api_version);
   }
 
   static std::string TrimWhitespace(std::string_view value) {
@@ -640,21 +644,21 @@ class Bucket : public IBucket {
     Batch batch;
     callback(&batch);
 
-    bool multiple_entries = false;
-    if (batch.records().size() > 1) {
-      std::set<std::string> entries;
-      for (const auto& record : batch.records()) {
-        entries.insert(internal::RecordEntry(record, entry_name));
-        if (entries.size() > 1) {
-          multiple_entries = true;
-          break;
-        }
-      }
-    }
-
-    if (multiple_entries) {
-      return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
-    }
+    // bool multiple_entries = false;
+    // if (batch.records().size() > 1) {
+    //   std::set<std::string> entries;
+    //   for (const auto& record : batch.records()) {
+    //     entries.insert(internal::RecordEntry(record, entry_name));
+    //     if (entries.size() > 1) {
+    //       multiple_entries = true;
+    //       break;
+    //     }
+    //   }
+    // }
+    //
+    // if (multiple_entries) {
+    //   return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
+    // }
 
     if (SupportsBatchProtocolV2()) {
       return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
@@ -698,8 +702,7 @@ std::ostream& operator<<(std::ostream& os, const IBucket::BucketInfo& info) {
 std::ostream& operator<<(std::ostream& os, const IBucket::EntryInfo& info) {
   os << fmt::format(
       "<EntryInfo name={}, record_count={}, block_count={}, size={}, oldest_record={}, latest_record={}, status={}>",
-      info.name, info.record_count, info.block_count, info.size,
-      info.oldest_record.time_since_epoch().count() / 1000,
+      info.name, info.record_count, info.block_count, info.size, info.oldest_record.time_since_epoch().count() / 1000,
       info.latest_record.time_since_epoch().count() / 1000,
       info.status == IBucket::Status::kReady ? "READY" : "DELETING");
   return os;
