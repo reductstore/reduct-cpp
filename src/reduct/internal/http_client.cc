@@ -224,6 +224,11 @@ class HttpClient : public IHttpClient {
     return api_version_;
   }
 
+  void SetApiVersion(std::optional<std::string> version) noexcept override {
+    std::lock_guard lock(api_version_mutex_);
+    api_version_ = std::move(version);
+  }
+
  private:
   Error CheckRequest(const httplib::Result& res) const noexcept {
     if (res.error() != httplib::Error::Success) {

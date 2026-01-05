@@ -36,10 +36,14 @@ class Bucket : public IBucket {
   using BatchType = internal::BatchType;
 
  public:
-  Bucket(std::string_view url, std::string_view name, const HttpOptions& options)
+  Bucket(std::string_view url, std::string_view name, const HttpOptions& options,
+         std::optional<std::string> api_version = std::nullopt)
       : path_(fmt::format("/b/{}", name)), io_path_(fmt::format("/io/{}", name)), stop_{} {
     name_ = name;
     client_ = IHttpClient::Build(url, options);
+    if (api_version) {
+      client_->SetApiVersion(api_version);
+    }
 
     worker_ = std::thread([this] {
       while (!stop_) {
@@ -596,11 +600,7 @@ class Bucket : public IBucket {
 
   bool SupportsBatchProtocolV2() const {
     auto api_version = client_->ApiVersion();
-    if (!api_version) {
-      // Optimistically assume v2 is available until proven otherwise; server will return an error if not supported.
-      return true;
-    }
-    return internal::IsCompatible("1.18", *api_version);
+    return api_version && internal::IsCompatible("1.18", *api_version);
   }
 
   static std::string TrimWhitespace(std::string_view value) {
@@ -644,21 +644,21 @@ class Bucket : public IBucket {
     Batch batch;
     callback(&batch);
 
-    // bool multiple_entries = false;
-    // if (batch.records().size() > 1) {
-    //   std::set<std::string> entries;
-    //   for (const auto& record : batch.records()) {
-    //     entries.insert(internal::RecordEntry(record, entry_name));
-    //     if (entries.size() > 1) {
-    //       multiple_entries = true;
-    //       break;
-    //     }
-    //   }
-    // }
-    //
-    // if (multiple_entries) {
-    //   return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
-    // }
+    bool multiple_entries = false;
+    if (batch.records().size() > 1) {
+      std::set<std::string> entries;
+      for (const auto& record : batch.records()) {
+        entries.insert(internal::RecordEntry(record, entry_name));
+        if (entries.size() > 1) {
+          multiple_entries = true;
+          break;
+        }
+      }
+    }
+
+    if (multiple_entries) {
+      return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
+    }
 
     if (SupportsBatchProtocolV2()) {
       return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
@@ -681,6 +681,11 @@ class Bucket : public IBucket {
 std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name,
                                         const HttpOptions& options) noexcept {
   return std::make_unique<Bucket>(server_url, name, options);
+}
+
+std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name,
+                                        const HttpOptions& options, std::optional<std::string> api_version) noexcept {
+  return std::make_unique<Bucket>(server_url, name, options, std::move(api_version));
 }
 
 // Settings

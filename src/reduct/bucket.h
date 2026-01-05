@@ -494,11 +494,14 @@ class IBucket {
    * @brief Creates a new bucket
    * @param server_url HTTP url
    * @param name name of the bucket
-   * @param options HTTP options
-   * @return a pointer to the bucket
-   */
+  * @param options HTTP options
+  * @return a pointer to the bucket
+  */
   static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
                                         const HttpOptions& options) noexcept;
+  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
+                                        const HttpOptions& options,
+                                        std::optional<std::string> api_version) noexcept;
 };
 }  // namespace reduct
 

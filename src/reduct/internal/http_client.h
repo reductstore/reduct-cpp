@@ -53,6 +53,7 @@ class IHttpClient {
                                                           Headers headers = {}) const noexcept = 0;
 
   [[nodiscard]] virtual std::optional<std::string> ApiVersion() const noexcept = 0;
+  virtual void SetApiVersion(std::optional<std::string> version) noexcept = 0;
 
   static std::unique_ptr<IHttpClient> Build(std::string_view url, const HttpOptions &options);
 };
