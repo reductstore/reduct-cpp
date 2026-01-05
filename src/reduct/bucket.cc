@@ -18,7 +18,6 @@
 #include <future>
 #include <optional>
 #include <mutex>
-#include <set>
 #include <thread>
 
 #include "reduct/internal/batch_v1.h"
@@ -642,12 +641,14 @@ class Bucket : public IBucket {
     callback(&batch);
 
     bool multiple_entries = false;
-    std::set<std::string> entries;
-    for (const auto& record : batch.records()) {
-      entries.insert(internal::RecordEntry(record, entry_name));
-      if (entries.size() > 1) {
-        multiple_entries = true;
-        break;
+    if (batch.records().size() > 1) {
+      std::set<std::string> entries;
+      for (const auto& record : batch.records()) {
+        entries.insert(internal::RecordEntry(record, entry_name));
+        if (entries.size() > 1) {
+          multiple_entries = true;
+          break;
+        }
       }
     }
 
