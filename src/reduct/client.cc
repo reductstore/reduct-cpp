@@ -111,7 +111,7 @@ class Client : public IClient {
       return {{}, std::move(err)};
     }
 
-    return {IBucket::Build(url_, name, options_), {}};
+    return {IBucket::Build(url_, name, options_, client_->ApiVersion()), {}};
   }
 
   [[nodiscard]] UPtrResult<IBucket> CreateBucket(std::string_view name,
@@ -122,7 +122,7 @@ class Client : public IClient {
       return {nullptr, std::move(err)};
     }
 
-    return {IBucket::Build(url_, name, options_), {}};
+    return {IBucket::Build(url_, name, options_, client_->ApiVersion()), {}};
   }
 
   UPtrResult<IBucket> GetOrCreateBucket(std::string_view name, IBucket::Settings settings) const noexcept override {

@@ -1,4 +1,4 @@
-// Copyright 2024 Alexey Timin
+// Copyright 2024 ReductSoftware UG
 
 #ifndef REDUCT_CPP_DIAGNOSTICS_H
 #define REDUCT_CPP_DIAGNOSTICS_H

@@ -1,4 +1,6 @@
 set(SRC_FILES
+    reduct/internal/batch_v1.cc
+    reduct/internal/batch_v2.cc
     reduct/internal/http_client.cc
     reduct/internal/serialisation.cc
     reduct/bucket.cc

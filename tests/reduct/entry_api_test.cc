@@ -1,9 +1,11 @@
-// Copyright 2022-2024 Alexey Timin
+// Copyright 2022-2024 ReductSoftware UG
 
 #include <catch2/catch.hpp>
 
 #include <fstream>
+#include <map>
 #include <sstream>
+#include <vector>
 
 #include "fixture.h"
 #include "reduct/client.h"
@@ -291,6 +293,98 @@ TEST_CASE("reduct::IBucket should query records (huge blobs)", "[entry_api]") {
   REQUIRE(err == Error::kOk);
   REQUIRE(received_data[0] == blob1);
   REQUIRE(received_data[1] == blob2);
+}
+
+TEST_CASE("reduct::IBucket should query multiple entries", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::Time ts{};
+  REQUIRE(bucket->Write("entry-a", ts, [](auto rec) { rec->WriteAll("aaa"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-b", ts + us(1), [](auto rec) { rec->WriteAll("bbb"); }) == Error::kOk);
+
+  std::map<std::string, std::string> received;
+  auto err = bucket->Query("entry-a, entry-b", ts, ts + us(2), {}, [&received](auto record) {
+    auto [data, read_err] = record.ReadAll();
+    REQUIRE(read_err == Error::kOk);
+    REQUIRE(!record.entry.empty());
+    received[record.entry] = data;
+    return true;
+  });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(received == std::map<std::string, std::string>{{"entry-a", "aaa"}, {"entry-b", "bbb"}});
+}
+
+TEST_CASE("reduct::IBucket should update a batch across entries", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::Time ts{};
+  REQUIRE(bucket->Write("entry-a", ts, [](auto rec) { rec->WriteAll("aaa"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-b", ts, [](auto rec) { rec->WriteAll("bbb"); }) == Error::kOk);
+
+  auto [errors, err] = bucket->UpdateBatch("entry-a", [ts](IBucket::Batch* batch) {
+    batch->AddOnlyLabels("entry-a", ts, {{"x", "1"}});
+    batch->AddOnlyLabels("entry-b", ts, {{"y", "2"}});
+  });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(errors.empty());
+
+  REQUIRE(bucket->Read("entry-a", ts, [](auto record) {
+    REQUIRE(record.labels == std::map<std::string, std::string>{{"x", "1"}});
+    return true;
+  }) == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-b", ts, [](auto record) {
+    REQUIRE(record.labels == std::map<std::string, std::string>{{"y", "2"}});
+    return true;
+  }) == Error::kOk);
+}
+
+TEST_CASE("reduct::IBucket should remove records across entries via query", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::Time ts{};
+  REQUIRE(bucket->Write("entry-a", ts, [](auto rec) { rec->WriteAll("aaa"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-b", ts + us(1), [](auto rec) { rec->WriteAll("bbb"); }) == Error::kOk);
+
+  auto [removed, err] = bucket->RemoveQuery("entry-a, entry-b", ts, ts + us(2), {});
+  REQUIRE(err == Error::kOk);
+  REQUIRE(removed == 2);
+
+  REQUIRE(bucket->Read("entry-a", ts, [](auto) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 0"});
+  REQUIRE(bucket->Read("entry-b", ts + us(1), [](auto) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 1"});
+}
+
+TEST_CASE("reduct::IBucket should remove a batch across entries", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::Time ts{};
+  REQUIRE(bucket->Write("entry-a", ts, [](auto rec) { rec->WriteAll("aaa"); }) == Error::kOk);
+  REQUIRE(bucket->Write("entry-b", ts + us(1), [](auto rec) { rec->WriteAll("bbb"); }) == Error::kOk);
+
+  auto [errors, err] = bucket->RemoveBatch("entry-a", [ts](IBucket::Batch* batch) {
+    batch->AddRecord("entry-a", ts);
+    batch->AddRecord("entry-b", ts + us(1));
+  });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(errors.empty());
+
+  REQUIRE(bucket->Read("entry-a", ts, [](auto) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 0"});
+  REQUIRE(bucket->Read("entry-b", ts + us(1), [](auto) { return true; }) ==
+          Error{.code = 404, .message = "No record with timestamp 1"});
 }
 
 TEST_CASE("reduct::IBucket should resample data", "[entry_api][1_10]") {
@@ -598,6 +692,37 @@ TEST_CASE("reduct::IBucket should rename an entry", "[bucket_api][1_12]") {
   }) == Error::kOk);
 }
 
+TEST_CASE("reduct::IBucket should write a batch to multiple entries", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  auto t = IBucket::Time();
+  auto [errors, err] = bucket->WriteBatch("default-entry", [t](IBucket::Batch* batch) {
+    batch->AddRecord("entry-a", t, "aaa", "text/plain", {{"label", "one"}});
+    batch->AddRecord("entry-b", t + us(1), "bbb");
+  });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(errors.empty());
+
+  REQUIRE(bucket->Read("entry-a", t, [](auto record) {
+    auto [data, read_err] = record.ReadAll();
+    REQUIRE(read_err == Error::kOk);
+    REQUIRE(data == "aaa");
+    REQUIRE(record.labels == std::map<std::string, std::string>{{"label", "one"}});
+    REQUIRE(record.content_type == "text/plain");
+    return true;
+  }) == Error::kOk);
+
+  REQUIRE(bucket->Read("entry-b", t + us(1), [](auto record) {
+    auto [data, read_err] = record.ReadAll();
+    REQUIRE(read_err == Error::kOk);
+    REQUIRE(data == "bbb");
+    return true;
+  }) == Error::kOk);
+}
+
 TEST_CASE("Batch should slice data", "[batch]") {
   auto batch = IBucket::Batch();
 
@@ -624,4 +749,10 @@ TEST_CASE("Batch should slice data", "[batch]") {
   SECTION("slice all record") { REQUIRE(batch.Slice(0, 30) == "111111111122222222223333333333"); }
 
   SECTION("slice out of range") { REQUIRE(batch.Slice(0, 31) == "111111111122222222223333333333"); }
+
+  SECTION("slice with custom order") {
+    std::vector<size_t> order{2, 0, 1};
+    REQUIRE(batch.Slice(order, 0, 30) == "333333333311111111112222222222");
+    REQUIRE(batch.Slice(order, 5, 10) == "3333311111");
+  }
 }

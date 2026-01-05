@@ -1,4 +1,4 @@
-// Copyright 2022 Alexey Timin
+// Copyright 2022 ReductSoftware UG
 
 #ifndef REDUCT_CPP_RESULT_H
 #define REDUCT_CPP_RESULT_H
