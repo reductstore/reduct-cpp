@@ -371,11 +371,6 @@ static std::string BuildHeaderValueV2(const IBucket::Batch::Record& record, Batc
   return "";
 }
 
-Result<IBucket::WriteBatchErrors> ProcessBatchV2(IHttpClient& client, std::string_view io_path,
-                                                 std::string_view entry_name, IBucket::Batch batch, BatchType type) {
-  return ProcessBatchV2(&client, io_path, entry_name, std::move(batch), type);
-}
-
 Result<IBucket::WriteBatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path,
                                                  std::string_view entry_name, IBucket::Batch batch, BatchType type) {
   auto ordered = SortRecords(batch, std::string(entry_name), true);
