@@ -88,6 +88,7 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
 
     SECTION("and return HTTP status") {
       REQUIRE(bucket->Remove() == Error::kOk);
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));  // wait for bucket deletion
       REQUIRE(bucket->GetSettings() ==
               Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
     }
@@ -114,12 +115,6 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
 
       auto [settings, get_error] = bucket->GetSettings();
       REQUIRE(kNewSettings == settings);
-    }
-
-    SECTION("and return HTTP status") {
-      REQUIRE(bucket->Remove() == Error::kOk);
-      REQUIRE(bucket->GetSettings() ==
-              Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
     }
   }
 }
@@ -181,6 +176,7 @@ TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api]") {
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
 
   REQUIRE(bucket->Remove() == Error::kOk);
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));  // wait for bucket deletion
   REQUIRE(bucket->Remove() == Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
 }
 

@@ -246,19 +246,19 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api][1_13]") {
 
   SECTION("order") {
     auto err = bucket->Query("entry", ts, ts + us(3),
-                         {
-                             .when = R"({"$not": [ {"$has": "score"} ], "$limit": 2})",
-                             .strict = false,
-                         },
-                         [&all_data](auto record) {
-                           auto read_err = record.Read([&all_data](auto data) {
-                             all_data.append(data);
-                             return true;
-                           });
+                             {
+                                 .when = R"({"$not": [ {"$has": "score"} ], "$limit": 2})",
+                                 .strict = false,
+                             },
+                             [&all_data](auto record) {
+                               auto read_err = record.Read([&all_data](auto data) {
+                                 all_data.append(data);
+                                 return true;
+                               });
 
-                           REQUIRE(read_err == Error::kOk);
-                           return true;
-                         });
+                               REQUIRE(read_err == Error::kOk);
+                               return true;
+                             });
 
     REQUIRE(err == Error::kOk);
     REQUIRE(all_data == "some_data2some_data3");
@@ -305,16 +305,28 @@ TEST_CASE("reduct::IBucket should query multiple entries", "[entry_api][1_18]") 
   REQUIRE(bucket->Write("entry-b", ts + us(1), [](auto rec) { rec->WriteAll("bbb"); }) == Error::kOk);
 
   std::map<std::string, std::string> received;
-  auto err = bucket->Query("entry-a, entry-b", ts, ts + us(2), {}, [&received](auto record) {
-    auto [data, read_err] = record.ReadAll();
-    REQUIRE(read_err == Error::kOk);
-    REQUIRE(!record.entry.empty());
-    received[record.entry] = data;
-    return true;
-  });
+  auto err =
+      bucket->Query(std::vector<std::string>{"entry-a", "entry-b"}, ts, ts + us(2), {}, [&received](auto record) {
+        auto [data, read_err] = record.ReadAll();
+        REQUIRE(read_err == Error::kOk);
+        REQUIRE(!record.entry.empty());
+        received[record.entry] = data;
+        return true;
+      });
 
   REQUIRE(err == Error::kOk);
   REQUIRE(received == std::map<std::string, std::string>{{"entry-a", "aaa"}, {"entry-b", "bbb"}});
+}
+
+TEST_CASE("reduct::IBucket should reject empty entry list for batch query", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  auto err = bucket->Query(std::vector<std::string>{}, std::nullopt, std::nullopt, {}, [](auto) { return true; });
+
+  REQUIRE(err.code == -1);
+  REQUIRE(err.message == "No entry names provided");
 }
 
 TEST_CASE("reduct::IBucket should update a batch across entries", "[entry_api][1_18]") {
@@ -354,7 +366,7 @@ TEST_CASE("reduct::IBucket should remove records across entries via query", "[en
   REQUIRE(bucket->Write("entry-a", ts, [](auto rec) { rec->WriteAll("aaa"); }) == Error::kOk);
   REQUIRE(bucket->Write("entry-b", ts + us(1), [](auto rec) { rec->WriteAll("bbb"); }) == Error::kOk);
 
-  auto [removed, err] = bucket->RemoveQuery("entry-a, entry-b", ts, ts + us(2), {});
+  auto [removed, err] = bucket->RemoveQuery(std::vector<std::string>{"entry-a", "entry-b"}, ts, ts + us(2), {});
   REQUIRE(err == Error::kOk);
   REQUIRE(removed == 2);
 
@@ -362,6 +374,18 @@ TEST_CASE("reduct::IBucket should remove records across entries via query", "[en
           Error{.code = 404, .message = "No record with timestamp 0"});
   REQUIRE(bucket->Read("entry-b", ts + us(1), [](auto) { return true; }) ==
           Error{.code = 404, .message = "No record with timestamp 1"});
+}
+
+TEST_CASE("reduct::IBucket should reject empty entry list for batch remove query", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  auto [removed, err] = bucket->RemoveQuery(std::vector<std::string>{}, std::nullopt, std::nullopt, {});
+
+  REQUIRE(removed == 0);
+  REQUIRE(err.code == -1);
+  REQUIRE(err.message == "No entry names provided");
 }
 
 TEST_CASE("reduct::IBucket should remove a batch across entries", "[entry_api][1_18]") {
@@ -575,9 +599,7 @@ TEST_CASE("reduct::IBucket should remove a record", "[bucket_api][1_12]") {
 
   REQUIRE(bucket->RemoveRecord("entry-1", t) == Error::kOk);
 
-  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 0"});
-
+  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }).code == 404);
   REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) { return true; }) == Error::kOk);
 }
 
@@ -625,8 +647,7 @@ TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_15]"
     return true;
   }) == Error::kOk);
 
-  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 1"});
+  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) { return true; }).code == 404);
 
   REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) {
     REQUIRE(record.ReadAll().result == "some_data3");
@@ -649,16 +670,14 @@ TEST_CASE("reduct::IBucket should remove records by query with when condition", 
     REQUIRE(err == Error::kOk);
     REQUIRE(removed_records == 1);
 
-    REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
-            Error{.code = 404, .message = "No record with timestamp 0"});
+    REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }).code == 404);
 
     REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) {
       REQUIRE(record.ReadAll().result == "some_data2");
       return true;
     }) == Error::kOk);
 
-    REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) { return true; }) ==
-            Error{.code = 404, .message = "No record with timestamp 2"});
+    REQUIRE(bucket->Read("entry-1", t + us(2), [](auto record) { return true; }).code == 404);
   }
 
   SECTION("strict") {

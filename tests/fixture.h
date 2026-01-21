@@ -1,4 +1,4 @@
-// Copyright 2022 ReductSoftware UG
+// Copyright 2022-2026 ReductSoftware UG
 
 #ifndef REDUCT_CPP_HELPERS_H
 #define REDUCT_CPP_HELPERS_H
@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <random>
+#include <thread>
 
 #include "reduct/client.h"
 
@@ -34,6 +35,8 @@ struct Fixture {
       std::unique_ptr<IBucket> bucket = client->GetBucket(info.name);
       [[maybe_unused]] auto ret = bucket->Remove();
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));  // wait for bucket removal
 
     for (auto&& t : client->GetTokenList().result) {
       if (!t.name.starts_with("test_token")) {

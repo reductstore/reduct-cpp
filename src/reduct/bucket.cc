@@ -209,10 +209,24 @@ class Bucket : public IBucket {
   Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
               ReadRecordCallback callback) const noexcept override {
     if (SupportsBatchProtocolV2()) {
-      return QueryV2(entry_name, start, stop, options, callback);
+      const auto entries = std::vector{std::string(entry_name)};
+      return QueryV2(entries, start, stop, options, callback);
     }
 
     return QueryV1(entry_name, start, stop, options, callback);
+  }
+
+  Error Query(const std::vector<std::string>& entry_names, std::optional<Time> start, std::optional<Time> stop,
+              QueryOptions options, ReadRecordCallback callback) const noexcept override {
+    if (!SupportsBatchProtocolV2()) {
+      return Error{.code = -1, .message = "Batch protocol v2 not supported"};
+    }
+
+    if (entry_names.empty()) {
+      return Error{.code = -1, .message = "No entry names provided"};
+    }
+
+    return QueryV2(entry_names, start, stop, options, callback);
   }
 
   Error QueryV1(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
@@ -262,15 +276,11 @@ class Bucket : public IBucket {
     return Error::kOk;
   }
 
-  Error QueryV2(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
-                const ReadRecordCallback& callback) const {
+  Error QueryV2(const std::vector<std::string>& entries, std::optional<Time> start, std::optional<Time> stop,
+                QueryOptions options, const ReadRecordCallback& callback) const {
     auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
     if (json_err) {
       return json_err;
-    }
-    auto entries = ParseEntryList(entry_name);
-    if (entries.empty()) {
-      return Error{.code = 400, .message = "Entry name is required"};
     }
 
     json_payload["entries"] = nlohmann::ordered_json::array();
@@ -317,10 +327,24 @@ class Bucket : public IBucket {
   Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                QueryOptions options) const noexcept override {
     if (SupportsBatchProtocolV2()) {
-      return RemoveQueryV2(entry_name, start, stop, options);
+      const auto entries = std::vector<std::string>{std::string(entry_name)};
+      return RemoveQueryV2(entries, start, stop, options);
     }
 
     return RemoveQueryV1(entry_name, start, stop, options);
+  }
+
+  Result<uint64_t> RemoveQuery(std::vector<std::string> entry_names, std::optional<Time> start,
+                               std::optional<Time> stop, QueryOptions options) const noexcept override {
+    if (!SupportsBatchProtocolV2()) {
+      return {0, Error{.code = -1, .message = "Batch protocol v2 not supported"}};
+    }
+
+    if (entry_names.empty()) {
+      return {0, Error{.code = -1, .message = "No entry names provided"}};
+    }
+
+    return RemoveQueryV2(entry_names, start, stop, options);
   }
 
   Result<uint64_t> RemoveQueryV1(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
@@ -346,15 +370,14 @@ class Bucket : public IBucket {
     }
   }
 
-  Result<uint64_t> RemoveQueryV2(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
-                                 QueryOptions options) const {
+  Result<uint64_t> RemoveQueryV2(const std::vector<std::string>& entries, std::optional<Time> start,
+                                 std::optional<Time> stop, QueryOptions options) const {
     auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
     if (json_err) {
       return {0, std::move(json_err)};
     }
-    auto entries = ParseEntryList(entry_name);
     if (entries.empty()) {
-      return {0, Error{.code = 400, .message = "Entry name is required"}};
+      return {0, Error{.code = 400, .message = "At least one entry name is required"}};
     }
     json_payload["entries"] = nlohmann::ordered_json::array();
     for (const auto& entry : entries) {
@@ -603,42 +626,6 @@ class Bucket : public IBucket {
     return api_version && internal::IsCompatible("1.18", *api_version);
   }
 
-  static std::string TrimWhitespace(std::string_view value) {
-    auto start = value.find_first_not_of(" \t");
-    if (start == std::string_view::npos) {
-      return "";
-    }
-    auto end = value.find_last_not_of(" \t");
-    return std::string(value.substr(start, end - start + 1));
-  }
-
-  static std::vector<std::string> ParseEntryList(std::string_view entries_raw) {
-    std::vector<std::string> entries;
-    size_t start = 0;
-    while (start < entries_raw.size()) {
-      auto comma = entries_raw.find(',', start);
-      auto slice =
-          entries_raw.substr(start, comma == std::string_view::npos ? entries_raw.size() - start : comma - start);
-      auto trimmed = TrimWhitespace(slice);
-      if (!trimmed.empty()) {
-        entries.emplace_back(std::move(trimmed));
-      }
-      if (comma == std::string_view::npos) {
-        break;
-      }
-      start = comma + 1;
-    }
-
-    if (entries.empty() && !entries_raw.empty()) {
-      auto trimmed = TrimWhitespace(entries_raw);
-      if (!trimmed.empty()) {
-        entries.emplace_back(std::move(trimmed));
-      }
-    }
-
-    return entries;
-  }
-
   Result<WriteBatchErrors> ProcessBatch(std::string_view entry_name, BatchCallback callback,
                                         BatchType type) const noexcept {
     Batch batch;
@@ -667,8 +654,8 @@ std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string
   return std::make_unique<Bucket>(server_url, name, options);
 }
 
-std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name,
-                                        const HttpOptions& options, std::optional<std::string> api_version) noexcept {
+std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name, const HttpOptions& options,
+                                        std::optional<std::string> api_version) noexcept {
   return std::make_unique<Bucket>(server_url, name, options, std::move(api_version));
 }
 
