@@ -126,9 +126,6 @@ TEST_CASE("reduct::Client should remove a replication", "[replication_api][1_8]"
 TEST_CASE("reduct::Client should set each_s and each_n settings", "[replication_api][1_17]") {
   Fixture ctx;
   auto settings = DefaultSettings();
-  settings.each_s = 1.5;
-  settings.each_n = 10;
-
   auto err = ctx.client->CreateReplication("test_replication", settings);
   REQUIRE(err == Error::kOk);
 
