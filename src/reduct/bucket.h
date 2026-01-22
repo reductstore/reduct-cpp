@@ -530,7 +530,19 @@ class IBucket {
    * @param options options for the query link
    * @return a query link or an error
    */
-  virtual Result<std::string> CreateQueryLink(std::string entry_name, QueryLinkOptions options) const noexcept = 0;
+  virtual Result<std::string> CreateQueryLink(std::string_view entry_name, QueryLinkOptions options) const noexcept = 0;
+
+  /**
+   * @brief  Creates a query link for accessing data
+   *
+   * You can specify multiple entries in the bucket
+   *
+   * @param entries list of entries in the bucket
+   * @param options options for the query link
+   * @return a query link or an error
+   */
+  virtual Result<std::string> CreateQueryLink(const std::vector<std::string>& entries,
+                                              QueryLinkOptions options) const noexcept = 0;
 
   /**
    * @brief Creates a new bucket

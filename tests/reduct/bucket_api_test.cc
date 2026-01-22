@@ -2,6 +2,8 @@
 
 #include <catch2/catch.hpp>
 
+#include <vector>
+
 #include "fixture.h"
 #include "reduct/client.h"
 #include "reduct/internal/http_client.h"
@@ -222,6 +224,28 @@ TEST_CASE("reduct::IBucket should create a query link", "[bucket_api][1_17]") {
   auto [data, http_err] = download_link(link);
   REQUIRE(http_err == Error::kOk);
   REQUIRE(data == "data-1");
+}
+
+TEST_CASE("reduct::IBucket should create a query link for multiple entries", "[bucket_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+
+  auto [link, err] = bucket->CreateQueryLink(std::vector<std::string>{"entry-1", "entry-2"},
+                                             IBucket::QueryLinkOptions{});
+  REQUIRE(err == Error::kOk);
+
+  auto [data, http_err] = download_link(link);
+  REQUIRE(http_err == Error::kOk);
+  REQUIRE(data == "data-1");
+}
+
+TEST_CASE("reduct::IBucket should reject empty entry list for query link", "[bucket_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+
+  auto [link, err] = bucket->CreateQueryLink(std::vector<std::string>{}, IBucket::QueryLinkOptions{});
+  REQUIRE(err == Error{.code = -1, .message = "At least one entry name is required"});
+  REQUIRE(link.empty());
 }
 
 TEST_CASE("reduct::IBucket should create a query link with index", "[bucket_api][1_17]") {

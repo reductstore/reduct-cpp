@@ -3,9 +3,10 @@
 #ifndef REDUCTCPP_SERIALISATION_H
 #define REDUCTCPP_SERIALISATION_H
 
-#include <string>
-
 #include <nlohmann/json.hpp>
+
+#include <string>
+#include <vector>
 
 #include "reduct/bucket.h"
 #include "reduct/client.h"
@@ -60,12 +61,14 @@ Result<nlohmann::json> ReplicationSettingsToJsonString(IClient::ReplicationSetti
  */
 Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::json& data);
 
-Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, std::optional<IBucket::Time> start,
-                                                std::optional<IBucket::Time> stop,
-                                                const IBucket::QueryOptions& options);
+Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, const std::vector<std::string>& entries,
+                                                        std::optional<IBucket::Time> start,
+                                                        std::optional<IBucket::Time> stop,
+                                                        const IBucket::QueryOptions& options);
 
-Result<nlohmann::json> QueryLinkOptionsToJsonString(std::string_view bucket, std::string_view entry_name,
-                                                    const IBucket::QueryLinkOptions& options);
+Result<nlohmann::ordered_json> QueryLinkOptionsToJsonString(std::string_view type,
+                                                            const std::vector<std::string>& entries,
+                                                            const IBucket::QueryLinkOptions& options);
 
 /**
  * @brief Parse status from JSON

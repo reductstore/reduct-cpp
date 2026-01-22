@@ -245,7 +245,7 @@ class Bucket : public IBucket {
   Error QueryV1(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
                 const ReadRecordCallback& callback) const {
     std::string body;
-    auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
+    auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", {}, start, stop, options);
     if (json_err) {
       return json_err;
     }
@@ -291,14 +291,9 @@ class Bucket : public IBucket {
 
   Error QueryV2(const std::vector<std::string>& entries, std::optional<Time> start, std::optional<Time> stop,
                 QueryOptions options, const ReadRecordCallback& callback) const {
-    auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", start, stop, options);
+    auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", entries, start, stop, options);
     if (json_err) {
       return json_err;
-    }
-
-    json_payload["entries"] = nlohmann::ordered_json::array();
-    for (const auto& entry : entries) {
-      json_payload["entries"].push_back(entry);
     }
 
     auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/q", io_path_), json_payload.dump());
@@ -363,7 +358,7 @@ class Bucket : public IBucket {
   Result<uint64_t> RemoveQueryV1(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                  QueryOptions options) const {
     std::string body;
-    auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
+    auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", {}, start, stop, options);
     if (json_err) {
       return {0, std::move(json_err)};
     }
@@ -385,16 +380,12 @@ class Bucket : public IBucket {
 
   Result<uint64_t> RemoveQueryV2(const std::vector<std::string>& entries, std::optional<Time> start,
                                  std::optional<Time> stop, QueryOptions options) const {
-    auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", start, stop, options);
+    auto [json_payload, json_err] = QueryOptionsToJsonString("REMOVE", entries, start, stop, options);
     if (json_err) {
       return {0, std::move(json_err)};
     }
     if (entries.empty()) {
-      return {0, Error{.code = 400, .message = "At least one entry name is required"}};
-    }
-    json_payload["entries"] = nlohmann::ordered_json::array();
-    for (const auto& entry : entries) {
-      json_payload["entries"].push_back(entry);
+      return {0, Error{.code = -1, .message = "At least one entry name is required"}};
     }
 
     auto [resp, resp_err] = client_->PostWithResponse(fmt::format("{}/q", io_path_), json_payload.dump());
@@ -428,11 +419,36 @@ class Bucket : public IBucket {
     return Error::kOk;
   }
 
-  Result<std::string> CreateQueryLink(std::string entry_name, QueryLinkOptions options) const noexcept override {
-    auto [json_payload, json_err] = internal::QueryLinkOptionsToJsonString(name_, entry_name, options);
+  Result<std::string> CreateQueryLink(std::string_view entry_name, QueryLinkOptions options) const noexcept override {
+    auto [json_payload, json_err] = internal::QueryLinkOptionsToJsonString(name_, {std::string(entry_name)}, options);
 
     auto file_name =
         options.file_name ? *options.file_name : fmt::format("{}_{}.bin", entry_name, options.record_index);
+    auto [body, err] = client_->PostWithResponse(fmt::format("/links/{}", file_name), json_payload.dump());
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      auto data = nlohmann::json::parse(body);
+      return {data.at("link").get<std::string>(), Error::kOk};
+    } catch (const std::exception& ex) {
+      return {{}, Error{.code = -1, .message = ex.what()}};
+    }
+  }
+
+  Result<std::string> CreateQueryLink(const std::vector<std::string>& entries,
+                                      QueryLinkOptions options) const noexcept override {
+    if (!SupportsBatchProtocolV2()) {
+      return {{}, Error{.code = -1, .message = "Batch protocol v2 not supported"}};
+    }
+    if (entries.empty()) {
+      return {{}, Error{.code = -1, .message = "At least one entry name is required"}};
+    }
+
+    auto [json_payload, json_err] = internal::QueryLinkOptionsToJsonString(name_, entries, options);
+
+    auto file_name = options.file_name ? *options.file_name : fmt::format("{}_{}.bin", name_, options.record_index);
     auto [body, err] = client_->PostWithResponse(fmt::format("/links/{}", file_name), json_payload.dump());
     if (err) {
       return {{}, std::move(err)};
