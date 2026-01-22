@@ -15,10 +15,10 @@ namespace reduct::internal {
 std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV2(
     std::deque<std::optional<std::string>>* data, std::mutex* mutex, bool head, IHttpClient::Headers&& headers);
 
-Result<IBucket::WriteBatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path,
-                                                 std::string_view entry_name, IBucket::Batch batch, BatchType type);
-Result<IBucket::WriteBatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path,
-                                                 std::string_view entry_name, IBucket::Batch batch, BatchType type);
+Result<IBucket::BatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path,
+                                            std::string_view entry_name, IBucket::Batch batch, BatchType type);
+Result<IBucket::BatchRecordErrors> ProcessBatchV2Records(IHttpClient* client, std::string_view io_path,
+                                                         IBucket::Batch batch, BatchType type);
 
 }  // namespace reduct::internal
 

@@ -197,8 +197,8 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
         .dst_bucket = settings.at("dst_bucket"),
         .dst_host = settings.at("dst_host"),
         .entries = settings.at("entries"),
-        .mode = settings.contains("mode") ? ParseReplicationMode(settings.at("mode"))
-                                          : IClient::ReplicationMode::kEnabled,
+        .mode =
+            settings.contains("mode") ? ParseReplicationMode(settings.at("mode")) : IClient::ReplicationMode::kEnabled,
     };
 
     if (settings.contains("dst_token") && !settings.at("dst_token").is_null()) {
@@ -237,11 +237,17 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
   return {info, Error::kOk};
 }
 
-Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, std::optional<IBucket::Time> start,
+Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, const std::vector<std::string>& entries,
+                                                        std::optional<IBucket::Time> start,
                                                         std::optional<IBucket::Time> stop,
                                                         const IBucket::QueryOptions& options) {
   nlohmann::ordered_json json_data;
   json_data["query_type"] = type;
+
+  json_data["entries"] = nlohmann::ordered_json::array();
+  for (const auto& entry : entries) {
+    json_data["entries"].push_back(entry);
+  }
 
   if (start) {
     json_data["start"] = std::chrono::duration_cast<std::chrono::microseconds>(start->time_since_epoch()).count();
@@ -294,14 +300,16 @@ Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, s
   return {json_data, Error::kOk};
 }
 
-Result<nlohmann::json> QueryLinkOptionsToJsonString(std::string_view bucket, std::string_view entry_name,
-                                                    const IBucket::QueryLinkOptions& options) {
-  nlohmann::json json_data;
+Result<nlohmann::ordered_json> QueryLinkOptionsToJsonString(std::string_view bucket,
+                                                            const std::vector<std::string>& entries,
+                                                            const IBucket::QueryLinkOptions& options) {
+  nlohmann::ordered_json json_data;
 
   json_data["bucket"] = bucket;
-  json_data["entry"] = entry_name;
   json_data["index"] = options.record_index;
-  auto [query_json, query_err] = QueryOptionsToJsonString("QUERY", options.start, options.stop, options.query_options);
+  json_data["entry"] = entries.at(0);
+  auto [query_json, query_err] =
+      QueryOptionsToJsonString("QUERY", entries, options.start, options.stop, options.query_options);
   if (query_err) {
     return {{}, std::move(query_err)};
   }

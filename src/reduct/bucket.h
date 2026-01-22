@@ -1,4 +1,4 @@
-// Copyright 2022-2025 ReductSoftware UG
+// Copyright 2022-2026 ReductSoftware UG
 #ifndef REDUCT_CPP_BUCKET_H
 #define REDUCT_CPP_BUCKET_H
 
@@ -36,7 +36,7 @@ class IBucket {
    */
   enum class Status { kReady, kDeleting };
 
-  /**
+  /**se
    * Bucket Settings
    */
   struct Settings {
@@ -215,12 +215,9 @@ class IBucket {
 
     [[nodiscard]] const std::vector<Record>& records() const { return records_; }
 
-    [[nodiscard]] std::string Slice(size_t offset, size_t size) const {
-      return Slice(std::nullopt, offset, size);
-    }
+    [[nodiscard]] std::string Slice(size_t offset, size_t size) const { return Slice(std::nullopt, offset, size); }
 
-    [[nodiscard]] std::string Slice(const std::optional<std::vector<size_t>>& order, size_t offset,
-                                    size_t size) const {
+    [[nodiscard]] std::string Slice(const std::optional<std::vector<size_t>>& order, size_t offset, size_t size) const {
       if (offset >= size_) {
         return "";
       }
@@ -277,8 +274,8 @@ class IBucket {
   /**
    * @deprecated Use BatchErrors instead
    */
-  using WriteBatchErrors = std::map<Time, Error>;
   using BatchErrors = std::map<Time, Error>;
+  using BatchRecordErrors = std::map<std::string, BatchErrors>;
 
   /**
    * Read a record in chunks
@@ -338,6 +335,13 @@ class IBucket {
                                                        BatchCallback callback) const noexcept = 0;
 
   /**
+   * Write a batch of records in one HTTP request (targeting multiple entries)
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  [[nodiscard]] virtual Result<BatchRecordErrors> WriteBatch(BatchCallback callback) const noexcept = 0;
+
+  /**
    * Write labels of an existing record
    *
    * Provide a label with empty value to remove it
@@ -357,6 +361,14 @@ class IBucket {
    */
   [[nodiscard]] virtual Result<BatchErrors> UpdateBatch(std::string_view entry_name,
                                                         BatchCallback callback) const noexcept = 0;
+
+  /**
+   * Update labels of existing records in a batch (targeting multiple entries)
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  [[nodiscard]] virtual Result<BatchRecordErrors> UpdateBatch(BatchCallback callback) const noexcept = 0;
+
   /**
    * Query options
    */
@@ -381,7 +393,7 @@ class IBucket {
   };
 
   /**
-   * Query data for a time interval
+   * @brief Query data for a time interval
    * @param entry_name
    * @param start start time point ,if nullopt then from very beginning
    * @param stop stop time point, if nullopt then until the last record
@@ -389,9 +401,21 @@ class IBucket {
    * @param callback return  next record If you want to stop querying, return false
    * @return
    */
-  [[nodiscard]] virtual Error Query(
-      std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop, QueryOptions options,
-      ReadRecordCallback callback = [](auto) { return false; }) const noexcept = 0;
+  [[nodiscard]] virtual Error Query(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
+                                    QueryOptions options, ReadRecordCallback callback) const noexcept = 0;
+
+  /**
+   * @brief  Query data for multiple entries for a time interval
+   * @param entry_names
+   * @param start start time point ,if nullopt then from very beginning
+   * @param stop stop time point, if nullopt then until the last record
+   * @param options
+   * @param callback return  next record If you want to stop querying, return false
+   * @return
+   */
+  [[nodiscard]] virtual Error Query(const std::vector<std::string>& entry_names, std::optional<Time> start,
+                                    std::optional<Time> stop, QueryOptions options,
+                                    ReadRecordCallback callback) const noexcept = 0;
   /**
    * @brief Get settings by HTTP request
    * @return settings or HTTP error
@@ -447,7 +471,14 @@ class IBucket {
   virtual Result<BatchErrors> RemoveBatch(std::string_view entry_name, BatchCallback callback) const noexcept = 0;
 
   /**
-   * @brief Remove revision of an entry by query
+   * @brief Remove a batch of records from multiple entries
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  virtual Result<BatchRecordErrors> RemoveBatch(BatchCallback callback) const noexcept = 0;
+
+  /**
+   * @brief Remove records of an entry by query
    * @param entry_name
    * @param start start time point
    * @param stop stop time point
@@ -456,6 +487,17 @@ class IBucket {
    */
   virtual Result<uint64_t> RemoveQuery(std::string_view entry_name, std::optional<Time> start, std::optional<Time> stop,
                                        QueryOptions options) const noexcept = 0;
+
+  /**
+   * @brief Remove records of multiple entries by query
+   * @param entries vector of entry names
+   * @param start start time point
+   * @param stop stop time point
+   * @param options query options. TTL, continuous, poll_interval, head_only are ignored
+   * @return HTTP  error or number of removed records
+   */
+  virtual Result<uint64_t> RemoveQuery(std::vector<std::string> entries, std::optional<Time> start,
+                                       std::optional<Time> stop, QueryOptions options) const noexcept = 0;
 
   /**
    * @brief Rename an entry
@@ -488,19 +530,30 @@ class IBucket {
    * @param options options for the query link
    * @return a query link or an error
    */
-  virtual Result<std::string> CreateQueryLink(std::string entry_name, QueryLinkOptions options) const noexcept = 0;
+  virtual Result<std::string> CreateQueryLink(std::string_view entry_name, QueryLinkOptions options) const noexcept = 0;
+
+  /**
+   * @brief  Creates a query link for accessing data
+   *
+   * You can specify multiple entries in the bucket
+   *
+   * @param entries list of entries in the bucket
+   * @param options options for the query link
+   * @return a query link or an error
+   */
+  virtual Result<std::string> CreateQueryLink(const std::vector<std::string>& entries,
+                                              QueryLinkOptions options) const noexcept = 0;
 
   /**
    * @brief Creates a new bucket
    * @param server_url HTTP url
    * @param name name of the bucket
-  * @param options HTTP options
-  * @return a pointer to the bucket
-  */
+   * @param options HTTP options
+   * @return a pointer to the bucket
+   */
   static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
                                         const HttpOptions& options) noexcept;
-  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name,
-                                        const HttpOptions& options,
+  static std::unique_ptr<IBucket> Build(std::string_view server_url, std::string_view name, const HttpOptions& options,
                                         std::optional<std::string> api_version) noexcept;
 };
 }  // namespace reduct
