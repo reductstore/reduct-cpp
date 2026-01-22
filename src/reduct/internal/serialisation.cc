@@ -157,13 +157,6 @@ Result<nlohmann::json> ReplicationSettingsToJsonString(IClient::ReplicationSetti
     }
     json_data["entries"] = settings.entries;
     json_data["mode"] = ReplicationModeToString(settings.mode);
-    if (settings.each_s) {
-      json_data["each_s"] = *settings.each_s;
-    }
-
-    if (settings.each_n) {
-      json_data["each_n"] = *settings.each_n;
-    }
 
     if (settings.when) {
       try {
@@ -203,14 +196,6 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
 
     if (settings.contains("dst_token") && !settings.at("dst_token").is_null()) {
       info.settings.dst_token = settings.at("dst_token");
-    }
-
-    if (settings.contains("each_s") && !settings.at("each_s").is_null()) {
-      info.settings.each_s = settings.at("each_s");
-    }
-
-    if (settings.contains("each_n") && !settings.at("each_n").is_null()) {
-      info.settings.each_n = settings.at("each_n");
     }
 
     if (settings.contains("when") && !settings.at("when").is_null()) {
@@ -255,18 +240,6 @@ Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, c
 
   if (stop) {
     json_data["stop"] = std::chrono::duration_cast<std::chrono::microseconds>(stop->time_since_epoch()).count();
-  }
-
-  if (options.each_s) {
-    json_data["each_s"] = *options.each_s;
-  }
-
-  if (options.each_n) {
-    json_data["each_n"] = *options.each_n;
-  }
-
-  if (options.limit) {
-    json_data["limit"] = *options.limit;
   }
 
   if (options.ttl) {

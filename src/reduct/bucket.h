@@ -376,16 +376,7 @@ class IBucket {
     std::optional<std::string> when;  ///< query condition
     std::optional<bool> strict;       ///< strict mode
     std::optional<std::string> ext;   ///< additional parameters for extensions
-
-    [[deprecated("Use when instead. Will be removed in v1.18.0")]]
-    std::optional<double> each_s;  ///< return one record each S seconds
-    [[deprecated("Use when instead. Will be remove in v1.18.0")]]
-    std::optional<size_t> each_n;  ///< return each N-th record
-    [[deprecated("Use when instead. Will be remove in v1.18.0")]]
-    std::optional<size_t> limit;  ///< limit number of records
-
     std::optional<std::chrono::milliseconds> ttl;  ///< time to live
-
     bool continuous = false;  ///< continuous query. If true,
                               /// the method returns the latest record and waits for the next one
     std::chrono::milliseconds poll_interval = std::chrono::milliseconds(1000);  ///< poll interval for continuous query

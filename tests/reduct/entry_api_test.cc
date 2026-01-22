@@ -411,66 +411,6 @@ TEST_CASE("reduct::IBucket should remove a batch across entries", "[entry_api][1
           Error{.code = 404, .message = "No record with timestamp 1"});
 }
 
-TEST_CASE("reduct::IBucket should resample data", "[entry_api][1_10]") {
-  Fixture ctx;
-  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
-  REQUIRE(bucket);
-
-  IBucket::Time ts{};
-  REQUIRE(bucket->Write("entry", ts, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
-  REQUIRE(bucket->Write("entry", ts + s(1), [](auto rec) { rec->WriteAll("some_data2"); }) == Error::kOk);
-  REQUIRE(bucket->Write("entry", ts + s(2), [](auto rec) { rec->WriteAll("some_data3"); }) == Error::kOk);
-
-  std::vector<std::string> received_data;
-  auto call_back = [&received_data](auto record) {
-    auto [data, err] = record.ReadAll();
-    received_data.push_back(data);
-    return true;
-  };
-
-  SECTION("return a record each 2 seconds") {
-    auto err = bucket->Query("entry", std::nullopt, std::nullopt, {.each_s = 2.0}, call_back);
-
-    REQUIRE(err == Error::kOk);
-    REQUIRE(received_data.size() == 2);
-    REQUIRE(received_data[0] == "some_data1");
-    REQUIRE(received_data[1] == "some_data3");
-  }
-
-  SECTION("return each 3th record") {
-    auto err = bucket->Query("entry", std::nullopt, std::nullopt, {.each_n = 3}, call_back);
-
-    REQUIRE(err == Error::kOk);
-    REQUIRE(received_data.size() == 1);
-    REQUIRE(received_data[0] == "some_data1");
-  }
-}
-
-TEST_CASE("reduct::IBucket should limit records in a query", "[entry_api][1_6]") {
-  Fixture ctx;
-  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
-  REQUIRE(bucket);
-
-  int count = 0;
-  auto err =
-      bucket->Query("entry-1", IBucket::Time{}, IBucket::Time::clock::now(), {.limit = 1}, [&count](auto record) {
-        count++;
-        return true;
-      });
-
-  REQUIRE(err == Error::kOk);
-  REQUIRE(count == 1);
-
-  count = 0;
-  err = bucket->Query("entry-1", IBucket::Time{}, IBucket::Time::clock::now(), {.limit = 2}, [&count](auto record) {
-    count++;
-    return true;
-  });
-
-  REQUIRE(err == Error::kOk);
-  REQUIRE(count == 2);
-}
-
 TEST_CASE("reduct::IBucket should query data with ext parameter", "[bucket_api][1_15]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
