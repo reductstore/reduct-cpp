@@ -1,6 +1,7 @@
 // Copyright 2022-2026 ReductSoftware UG
 
 #include "reduct/internal/http_client.h"
+#include "reduct/internal/headers.h"
 #undef CPPHTTPLIB_BROTLI_SUPPORT
 
 #include <fmt/format.h>
@@ -237,7 +238,7 @@ class HttpClient : public IHttpClient {
 
     auto status = res->status;
     if (status != 200) {
-      auto msg = res->headers.find("x-reduct-error");
+      auto msg = res->headers.find(std::string(kHeaderError));
       if (msg != res->headers.end()) {
         return Error{.code = status, .message = msg->second};
       }
@@ -245,7 +246,7 @@ class HttpClient : public IHttpClient {
       return Error{.code = status, .message = "Unknown error"};
     }
 
-    if (auto api_version = res->headers.find("x-reduct-api"); api_version != res->headers.end()) {
+    if (auto api_version = res->headers.find(std::string(kHeaderApi)); api_version != res->headers.end()) {
       const auto dot = api_version->second.find('.');
       if (dot == std::string::npos) {
         return Error{.code = -1, .message = "Invalid API version"};

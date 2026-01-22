@@ -1,4 +1,4 @@
-// Copyright 2022-2025 ReductSoftware UG
+// Copyright 2022-2026 ReductSoftware UG
 #ifndef REDUCT_CPP_BUCKET_H
 #define REDUCT_CPP_BUCKET_H
 
@@ -36,7 +36,7 @@ class IBucket {
    */
   enum class Status { kReady, kDeleting };
 
-  /**
+  /**se
    * Bucket Settings
    */
   struct Settings {
@@ -274,8 +274,8 @@ class IBucket {
   /**
    * @deprecated Use BatchErrors instead
    */
-  using WriteBatchErrors = std::map<Time, Error>;
   using BatchErrors = std::map<Time, Error>;
+  using BatchRecordErrors = std::map<std::string, BatchErrors>;
 
   /**
    * Read a record in chunks
@@ -335,6 +335,13 @@ class IBucket {
                                                        BatchCallback callback) const noexcept = 0;
 
   /**
+   * Write a batch of records in one HTTP request (targeting multiple entries)
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  [[nodiscard]] virtual Result<BatchRecordErrors> WriteBatch(BatchCallback callback) const noexcept = 0;
+
+  /**
    * Write labels of an existing record
    *
    * Provide a label with empty value to remove it
@@ -354,6 +361,14 @@ class IBucket {
    */
   [[nodiscard]] virtual Result<BatchErrors> UpdateBatch(std::string_view entry_name,
                                                         BatchCallback callback) const noexcept = 0;
+
+  /**
+   * Update labels of existing records in a batch (targeting multiple entries)
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  [[nodiscard]] virtual Result<BatchRecordErrors> UpdateBatch(BatchCallback callback) const noexcept = 0;
+
   /**
    * Query options
    */
@@ -454,6 +469,13 @@ class IBucket {
    * @return HTTP error or map of errors for each record
    */
   virtual Result<BatchErrors> RemoveBatch(std::string_view entry_name, BatchCallback callback) const noexcept = 0;
+
+  /**
+   * @brief Remove a batch of records from multiple entries
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  virtual Result<BatchRecordErrors> RemoveBatch(BatchCallback callback) const noexcept = 0;
 
   /**
    * @brief Remove records of an entry by query

@@ -1,4 +1,4 @@
-// Copyright 2022-2024 ReductSoftware UG
+// Copyright 2022-2026 ReductSoftware UG
 
 #include "reduct/bucket.h"
 #define FMT_HEADER_ONLY 1
@@ -23,6 +23,7 @@
 
 #include "reduct/internal/batch_v1.h"
 #include "reduct/internal/batch_v2.h"
+#include "reduct/internal/headers.h"
 #include "reduct/internal/http_client.h"
 #include "reduct/internal/serialisation.h"
 
@@ -165,15 +166,27 @@ class Bucket : public IBucket {
   }
 
   Result<BatchErrors> WriteBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
-    return ProcessBatch(entry_name, std::move(callback), BatchType::kWrite);
+    return ProcessBatchV1(entry_name, std::move(callback), BatchType::kWrite);
+  }
+
+  Result<BatchRecordErrors> WriteBatch(BatchCallback callback) const noexcept override {
+    return ProcessBatchV2(std::move(callback), BatchType::kWrite);
   }
 
   Result<BatchErrors> UpdateBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
-    return ProcessBatch(entry_name, std::move(callback), BatchType::kUpdate);
+    return ProcessBatchV1(entry_name, std::move(callback), BatchType::kUpdate);
+  }
+
+  Result<BatchRecordErrors> UpdateBatch(BatchCallback callback) const noexcept override {
+    return ProcessBatchV2(std::move(callback), BatchType::kUpdate);
   }
 
   Result<BatchErrors> RemoveBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
-    return ProcessBatch(entry_name, std::move(callback), BatchType::kRemove);
+    return ProcessBatchV1(entry_name, std::move(callback), BatchType::kRemove);
+  }
+
+  Result<BatchRecordErrors> RemoveBatch(BatchCallback callback) const noexcept override {
+    return ProcessBatchV2(std::move(callback), BatchType::kRemove);
   }
 
   Error Update(std::string_view entry_name, const WriteOptions& options) const noexcept override {
@@ -510,7 +523,7 @@ class Bucket : public IBucket {
     bool stopped = false;
 
     IHttpClient::Headers request_headers;
-    request_headers.emplace("x-reduct-query-id", std::to_string(query_id));
+    request_headers.emplace(std::string(internal::kHeaderQueryId), std::to_string(query_id));
 
     auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, head,
                                            this](IHttpClient::Headers&& headers) {
@@ -568,14 +581,14 @@ class Bucket : public IBucket {
                                                   bool head, IHttpClient::Headers&& headers) {
     ReadableRecord record;
 
-    record.timestamp = internal::FromMicroseconds(headers["x-reduct-time"]);
+    record.timestamp = internal::FromMicroseconds(headers[std::string(internal::kHeaderTime)]);
     record.size = std::stoi(headers["content-length"]);
     record.content_type = headers["content-type"];
-    record.last = headers["x-reduct-last"] == "1";
+    record.last = headers[std::string(internal::kHeaderLast)] == "1";
 
     for (const auto& [key, value] : headers) {
-      if (key.starts_with("x-reduct-label-")) {
-        record.labels.emplace(key.substr(15), value);
+      if (key.starts_with(internal::kHeaderLabelPrefix)) {
+        record.labels.emplace(std::string(key.substr(internal::kHeaderLabelPrefix.size())), value);
       }
     }
 
@@ -616,7 +629,7 @@ class Bucket : public IBucket {
   IHttpClient::Headers MakeHeadersFromLabels(const WriteOptions& options) const {
     IHttpClient::Headers headers;
     for (const auto& [key, value] : options.labels) {
-      headers.emplace(fmt::format("x-reduct-label-{}", key), value);
+      headers.emplace(fmt::format("{}{}", internal::kHeaderLabelPrefix, key), value);
     }
     return headers;
   }
@@ -626,8 +639,8 @@ class Bucket : public IBucket {
     return api_version && internal::IsCompatible("1.18", *api_version);
   }
 
-  Result<WriteBatchErrors> ProcessBatch(std::string_view entry_name, BatchCallback callback,
-                                        BatchType type) const noexcept {
+  Result<BatchErrors> ProcessBatchV1(std::string_view entry_name, BatchCallback callback,
+                                     BatchType type) const noexcept {
     Batch batch;
     callback(&batch);
 
@@ -636,6 +649,40 @@ class Bucket : public IBucket {
     }
 
     return internal::ProcessBatchV1(client_.get(), path_, entry_name, std::move(batch), type);
+  }
+
+  Result<BatchRecordErrors> ProcessBatchV2(BatchCallback callback, BatchType type) const noexcept {
+    Batch batch;
+    callback(&batch);
+
+    if (batch.records().empty()) {
+      return {BatchRecordErrors{}, Error::kOk};
+    }
+
+    if (SupportsBatchProtocolV2()) {
+      return internal::ProcessBatchV2Records(client_.get(), io_path_, std::move(batch), type);
+    }
+
+    std::string entry_name;
+    for (const auto& record : batch.records()) {
+      if (!record.entry.empty()) {
+        entry_name = record.entry;
+        break;
+      }
+    }
+
+    if (entry_name.empty()) {
+      return {{}, Error{.code = 400, .message = "Entry name is required"}};
+    }
+
+    auto [errors, err] = internal::ProcessBatchV1(client_.get(), path_, entry_name, std::move(batch), type);
+    if (err) {
+      return {{}, err};
+    }
+
+    BatchRecordErrors record_errors;
+    record_errors.emplace(std::move(entry_name), std::move(errors));
+    return {record_errors, Error::kOk};
   }
 
   std::unique_ptr<internal::IHttpClient> client_;

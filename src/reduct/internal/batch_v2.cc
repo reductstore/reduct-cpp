@@ -6,6 +6,7 @@
 #include <fmt/ranges.h>
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <deque>
 #include <limits>
@@ -20,7 +21,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <cctype>
+
+#include "reduct/internal/headers.h"
 
 namespace reduct::internal {
 
@@ -34,9 +36,9 @@ std::string EncodeEntryName(std::string_view entry) {
   std::string encoded;
   encoded.reserve(entry.size());
   for (const auto ch : entry) {
-    if (std::isalnum(static_cast<unsigned char>(ch)) ||
-        ch == '!' || ch == '#' || ch == '$' || ch == '%' || ch == '&' || ch == '\'' || ch == '*' || ch == '+' ||
-        ch == '-' || ch == '.' || ch == '^' || ch == '_' || ch == '`' || ch == '|' || ch == '~') {
+    if (std::isalnum(static_cast<unsigned char>(ch)) || ch == '!' || ch == '#' || ch == '$' || ch == '%' || ch == '&' ||
+        ch == '\'' || ch == '*' || ch == '+' || ch == '-' || ch == '.' || ch == '^' || ch == '_' || ch == '`' ||
+        ch == '|' || ch == '~') {
       encoded.push_back(ch);
     } else {
       encoded.append(fmt::format("%{:02X}", static_cast<unsigned char>(ch)));
@@ -94,11 +96,11 @@ static std::vector<std::string> ParseEncodedList(std::string_view raw) {
 }
 
 static std::optional<std::pair<size_t, uint64_t>> ParseBatchedHeaderNameV2(const std::string& name) {
-  if (!name.starts_with("x-reduct-") || name.starts_with("x-reduct-error-")) {
+  if (!name.starts_with(kHeaderPrefix) || name.starts_with(kHeaderErrorPrefix)) {
     return std::nullopt;
   }
 
-  auto suffix = name.substr(std::string("x-reduct-").size());
+  auto suffix = name.substr(kHeaderPrefix.size());
   auto dash = suffix.rfind('-');
   if (dash == std::string::npos) {
     return std::nullopt;
@@ -129,9 +131,8 @@ static std::vector<std::pair<std::string, std::optional<std::string>>> ParseLabe
     auto raw_key = Trim(raw.substr(pos, eq - pos));
     std::string key = raw_key;
     if (label_names) {
-      bool digits = !key.empty() && std::all_of(key.begin(), key.end(), [](char ch) {
-                        return std::isdigit(static_cast<unsigned char>(ch));
-                      });
+      bool digits = !key.empty() && std::all_of(key.begin(), key.end(),
+                                                [](char ch) { return std::isdigit(static_cast<unsigned char>(ch)); });
       if (digits) {
         auto idx = std::stoul(key);
         if (idx < label_names->size()) {
@@ -232,11 +233,12 @@ static std::optional<RecordHeaderV2> ParseRecordHeaderV2(const std::string& raw,
   return RecordHeaderV2{content_length, std::move(content_type), std::move(labels)};
 }
 
-std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV2(
-    std::deque<std::optional<std::string>>* data, std::mutex* mutex, bool head, IHttpClient::Headers&& headers) {
+std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV2(std::deque<std::optional<std::string>>* data,
+                                                                   std::mutex* mutex, bool head,
+                                                                   IHttpClient::Headers&& headers) {
   std::vector<IBucket::ReadableRecord> records;
-  auto entries_it = headers.find("x-reduct-entries");
-  auto start_ts_it = headers.find("x-reduct-start-ts");
+  auto entries_it = headers.find(std::string(kHeaderEntries));
+  auto start_ts_it = headers.find(std::string(kHeaderStartTs));
   if (entries_it == headers.end() || start_ts_it == headers.end()) {
     return records;
   }
@@ -254,7 +256,7 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV2(
   }
 
   std::optional<std::vector<std::string>> label_names;
-  if (auto labels_it = headers.find("x-reduct-labels"); labels_it != headers.end()) {
+  if (auto labels_it = headers.find(std::string(kHeaderLabels)); labels_it != headers.end()) {
     label_names = ParseEncodedList(labels_it->second);
   }
 
@@ -342,7 +344,7 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV2(
     records.push_back(std::move(record));
   }
 
-  if (!records.empty() && headers["x-reduct-last"] == "true") {
+  if (!records.empty() && headers[std::string(kHeaderLast)] == "true") {
     records.back().last = true;
   }
 
@@ -371,83 +373,105 @@ static std::string BuildHeaderValueV2(const IBucket::Batch::Record& record, Batc
   return "";
 }
 
-Result<IBucket::WriteBatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path,
-                                                 std::string_view entry_name, IBucket::Batch batch, BatchType type) {
-  auto ordered = SortRecords(batch, std::string(entry_name), true);
+struct BatchV2Request {
+  std::vector<size_t> ordered;
+  std::vector<std::string> entries;
+  uint64_t start_ts = 0;
+  IHttpClient::Headers headers;
+};
 
-  if (ordered.empty()) {
-    return {IBucket::WriteBatchErrors{}, Error::kOk};
+Result<BatchV2Request> BuildBatchV2Request(std::string_view default_entry, const IBucket::Batch& batch, BatchType type,
+                                           bool require_entry) {
+  BatchV2Request request;
+  request.ordered = SortRecords(batch, std::string(default_entry), true);
+  if (request.ordered.empty()) {
+    return {request, Error::kOk};
   }
 
-  uint64_t start_ts = std::numeric_limits<uint64_t>::max();
-  std::vector<std::string> entries;
+  request.start_ts = std::numeric_limits<uint64_t>::max();
   std::unordered_map<std::string, size_t> entry_indices;
-  for (auto idx : ordered) {
+  for (auto idx : request.ordered) {
     const auto& record = batch.records()[idx];
+    auto entry = RecordEntry(record, default_entry);
+    if (require_entry && entry.empty()) {
+      return {BatchV2Request{}, Error{.code = 400, .message = "Entry name is required"}};
+    }
     auto ts = static_cast<uint64_t>(ToMicroseconds(record.timestamp));
-    start_ts = std::min(start_ts, ts);
-
-    auto entry = RecordEntry(record, entry_name);
+    request.start_ts = std::min(request.start_ts, ts);
     if (!entry_indices.contains(entry)) {
-      entry_indices[entry] = entries.size();
-      entries.push_back(entry);
+      entry_indices[entry] = request.entries.size();
+      request.entries.push_back(entry);
     }
   }
 
   std::vector<std::string> encoded_entries;
-  encoded_entries.reserve(entries.size());
-  for (const auto& entry : entries) {
+  encoded_entries.reserve(request.entries.size());
+  for (const auto& entry : request.entries) {
     encoded_entries.push_back(EncodeEntryName(entry));
   }
 
-  IHttpClient::Headers headers;
-  headers.emplace("x-reduct-entries", fmt::format("{}", fmt::join(encoded_entries, ",")));
-  headers.emplace("x-reduct-start-ts", std::to_string(start_ts));
+  request.headers.emplace(std::string(kHeaderEntries), fmt::format("{}", fmt::join(encoded_entries, ",")));
+  request.headers.emplace(std::string(kHeaderStartTs), std::to_string(request.start_ts));
 
-  for (auto idx : ordered) {
+  for (auto idx : request.ordered) {
     const auto& record = batch.records()[idx];
-    const auto entry = RecordEntry(record, entry_name);
+    const auto entry = RecordEntry(record, default_entry);
     const auto entry_idx = entry_indices[entry];
-    const auto delta = static_cast<uint64_t>(ToMicroseconds(record.timestamp)) - start_ts;
+    const auto delta = static_cast<uint64_t>(ToMicroseconds(record.timestamp)) - request.start_ts;
 
-    auto key = fmt::format("x-reduct-{}-{}", entry_idx, delta);
-    headers.emplace(std::move(key), BuildHeaderValueV2(record, type));
+    auto key = fmt::format("{}{}-{}", kHeaderPrefix, entry_idx, delta);
+    request.headers.emplace(std::move(key), BuildHeaderValueV2(record, type));
   }
 
-  Result<std::tuple<std::string, IHttpClient::Headers>> resp_result;
+  return {request, Error::kOk};
+}
+
+Result<std::tuple<std::string, IHttpClient::Headers>> SendBatchV2(IHttpClient* client, std::string_view io_path,
+                                                                  BatchType type, IBucket::Batch batch,
+                                                                  std::vector<size_t> ordered,
+                                                                  IHttpClient::Headers headers) {
   switch (type) {
     case BatchType::kWrite: {
       const auto content_length = batch.size();
-      resp_result = client->Post(
-          fmt::format("{}/write", io_path), "application/octet-stream", content_length, std::move(headers),
-          [ordered = std::move(ordered), batch = std::move(batch)](size_t offset, size_t size) {
-            return std::pair{true, batch.Slice(ordered, offset, size)};
-          });
-      break;
+      return client->Post(fmt::format("{}/write", io_path), "application/octet-stream", content_length,
+                          std::move(headers),
+                          [ordered = std::move(ordered), batch = std::move(batch)](size_t offset, size_t size) {
+                            return std::pair{true, batch.Slice(ordered, offset, size)};
+                          });
     }
     case BatchType::kUpdate:
-      resp_result = client->Patch(fmt::format("{}/update", io_path), "", std::move(headers));
-      break;
-
+      return client->Patch(fmt::format("{}/update", io_path), "", std::move(headers));
     case BatchType::kRemove:
-      resp_result = client->Delete(fmt::format("{}/remove", io_path), std::move(headers));
-      break;
+      return client->Delete(fmt::format("{}/remove", io_path), std::move(headers));
   }
 
-  auto [resp, err] = resp_result;
+  return {{}, Error{.code = -1, .message = "Unsupported batch type"}};
+}
+
+Result<IBucket::BatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path, std::string_view entry_name,
+                                            IBucket::Batch batch, BatchType type) {
+  auto [request, request_err] = BuildBatchV2Request(entry_name, batch, type, false);
+  if (request_err) {
+    return {{}, std::move(request_err)};
+  }
+  if (request.ordered.empty()) {
+    return {IBucket::BatchErrors{}, Error::kOk};
+  }
+
+  auto [resp, err] =
+      SendBatchV2(client, io_path, type, std::move(batch), std::move(request.ordered), std::move(request.headers));
   if (err) {
     return {{}, err};
   }
 
-  IBucket::WriteBatchErrors errors;
+  IBucket::BatchErrors errors;
   for (const auto& [key, value] : std::get<1>(resp)) {
-    if (key.starts_with("x-reduct-error-")) {
-      auto prefix = key.substr(std::string("x-reduct-error-").size());
+    if (key.starts_with(kHeaderErrorPrefix)) {
+      auto prefix = key.substr(kHeaderErrorPrefix.size());
       auto dash = prefix.rfind('-');
       if (dash == std::string::npos) {
         continue;
       }
-      auto entry_idx = std::stoul(prefix.substr(0, dash));
       auto delta = std::stoull(prefix.substr(dash + 1));
       auto pos = value.find(',');
       if (pos == std::string::npos) {
@@ -455,8 +479,73 @@ Result<IBucket::WriteBatchErrors> ProcessBatchV2(IHttpClient* client, std::strin
       }
       auto status = std::stoi(value.substr(0, pos));
       auto message = value.substr(pos + 1);
-      errors.emplace(FromMicroseconds(std::to_string(start_ts + delta)),
+      errors.emplace(FromMicroseconds(std::to_string(request.start_ts + delta)),
                      Error{.code = status, .message = message});
+    }
+  }
+
+  return {errors, Error::kOk};
+}
+
+Result<IBucket::BatchRecordErrors> ProcessBatchV2Records(IHttpClient* client, std::string_view io_path,
+                                                         IBucket::Batch batch, BatchType type) {
+  auto [request, request_err] = BuildBatchV2Request("", batch, type, true);
+  if (request_err) {
+    return {{}, std::move(request_err)};
+  }
+  if (request.ordered.empty()) {
+    return {IBucket::BatchRecordErrors{}, Error::kOk};
+  }
+
+  auto [resp, err] =
+      SendBatchV2(client, io_path, type, std::move(batch), std::move(request.ordered), std::move(request.headers));
+  if (err) {
+    return {{}, err};
+  }
+
+  const auto& resp_headers = std::get<1>(resp);
+  auto entries_it = resp_headers.find(std::string(kHeaderEntries));
+  auto start_ts_it = resp_headers.find(std::string(kHeaderStartTs));
+
+  std::vector<std::string> entries;
+  if (entries_it != resp_headers.end()) {
+    entries = ParseEncodedList(entries_it->second);
+  }
+  if (entries.empty()) {
+    entries = request.entries;
+  }
+
+  uint64_t start_ts = request.start_ts;
+  if (start_ts_it != resp_headers.end()) {
+    try {
+      start_ts = std::stoull(start_ts_it->second);
+    } catch (...) {
+      start_ts = request.start_ts;
+    }
+  }
+
+  IBucket::BatchRecordErrors errors;
+  for (const auto& [key, value] : std::get<1>(resp)) {
+    if (key.starts_with(kHeaderErrorPrefix)) {
+      auto prefix = key.substr(kHeaderErrorPrefix.size());
+      auto dash = prefix.rfind('-');
+      if (dash == std::string::npos) {
+        continue;
+      }
+      auto entry_idx = std::stoul(prefix.substr(0, dash));
+      if (entry_idx >= entries.size()) {
+        continue;
+      }
+      auto delta = std::stoull(prefix.substr(dash + 1));
+      auto pos = value.find(',');
+      if (pos == std::string::npos) {
+        continue;
+      }
+      auto status = std::stoi(value.substr(0, pos));
+      auto message = value.substr(pos + 1);
+      const auto& entry = entries[entry_idx];
+      errors[entry].emplace(FromMicroseconds(std::to_string(start_ts + delta)),
+                            Error{.code = status, .message = message});
     }
   }
 

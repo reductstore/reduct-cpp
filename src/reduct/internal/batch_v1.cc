@@ -1,6 +1,7 @@
 // Copyright 2026 ReductSoftware UG
 
 #include "reduct/internal/batch_v1.h"
+#include "reduct/internal/headers.h"
 
 #include <fmt/core.h>
 #include <fmt/ranges.h>
@@ -121,19 +122,20 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV1(
   };
 
   std::vector<IBucket::ReadableRecord> records;
-  size_t total_records = std::count_if(
-      headers.begin(), headers.end(), [](const auto& header) { return header.first.starts_with("x-reduct-time-"); });
+  size_t total_records = std::count_if(headers.begin(), headers.end(), [](const auto& header) {
+    return header.first.starts_with(kHeaderTimePrefix);
+  });
 
   std::map<std::string, std::string> ordered_headers(headers.begin(), headers.end());
   for (auto header = ordered_headers.begin(); header != ordered_headers.end(); ++header) {
-    if (!header->first.starts_with("x-reduct-time-")) {
+    if (!header->first.starts_with(kHeaderTimePrefix)) {
       continue;
     }
 
     auto [size, content_type, labels] = parse_csv(header->second);
 
     IBucket::ReadableRecord record;
-    record.timestamp = FromMicroseconds(header->first.substr(14));
+    record.timestamp = FromMicroseconds(std::string(header->first.substr(kHeaderTimePrefix.size())));
     record.size = size;
     record.content_type = content_type;
     record.labels = labels;
@@ -181,15 +183,15 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV1(
       return Error::kOk;
     };
 
-    record.last = (records.size() == total_records - 1 && headers["x-reduct-last"] == "true");
+    record.last = (records.size() == total_records - 1 && headers[std::string(kHeaderLast)] == "true");
     records.push_back(std::move(record));
   }
 
   return records;
 }
 
-Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient* client, std::string_view bucket_path,
-                                                 std::string_view entry_name, IBucket::Batch batch, BatchType type) {
+Result<IBucket::BatchErrors> ProcessBatchV1(IHttpClient* client, std::string_view bucket_path,
+                                            std::string_view entry_name, IBucket::Batch batch, BatchType type) {
   auto ordered = SortRecords(batch, std::string(entry_name), false);
 
   std::set<std::string> unique_entries;
@@ -207,7 +209,7 @@ Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient* client, std::strin
   IHttpClient::Headers headers;
   for (auto idx : ordered) {
     const auto& record = batch.records()[idx];
-    const auto key = fmt::format("x-reduct-time-{}", ToMicroseconds(record.timestamp));
+    const auto key = fmt::format("{}{}", kHeaderTimePrefix, ToMicroseconds(record.timestamp));
 
     switch (type) {
       case BatchType::kWrite: {
@@ -251,16 +253,17 @@ Result<IBucket::WriteBatchErrors> ProcessBatchV1(IHttpClient* client, std::strin
     return {{}, err};
   }
 
-  IBucket::WriteBatchErrors errors;
+  IBucket::BatchErrors errors;
   for (const auto& [key, value] : std::get<1>(resp)) {
-    if (key.starts_with("x-reduct-error-")) {
+    if (key.starts_with(kHeaderErrorPrefix)) {
       auto pos = value.find(',');
       if (pos == std::string::npos) {
         continue;
       }
       auto status = std::stoi(value.substr(0, pos));
       auto message = value.substr(pos + 1);
-      errors.emplace(FromMicroseconds(key.substr(15)), Error{.code = status, .message = message});
+      errors.emplace(FromMicroseconds(std::string(key.substr(kHeaderErrorPrefix.size()))),
+                     Error{.code = status, .message = message});
     }
   }
 
