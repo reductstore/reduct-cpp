@@ -88,8 +88,10 @@ static std::vector<std::string> ParseEncodedList(std::string_view raw) {
   std::string item;
   while (std::getline(ss, item, ',')) {
     item = Trim(item);
-    if (auto decoded = DecodeEntryName(item)) {
-      items.push_back(std::move(*decoded));
+    if (!item.empty()) {
+      if (auto decoded = DecodeEntryName(item)) {
+        items.push_back(std::move(*decoded));
+      }
     }
   }
   return items;

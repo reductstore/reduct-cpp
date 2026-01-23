@@ -318,6 +318,26 @@ TEST_CASE("reduct::IBucket should query multiple entries", "[entry_api][1_18]") 
   REQUIRE(received == std::map<std::string, std::string>{{"entry-a", "aaa"}, {"entry-b", "bbb"}});
 }
 
+TEST_CASE("reduct::IBucket should handle empty batch for multi-entry query", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::Time ts{};
+  REQUIRE(bucket->Write("entry-a", ts, [](auto rec) { rec->WriteAll("aaa"); }) == Error::kOk);
+
+  // Query entries with a time range that has no records
+  bool called = false;
+  auto err = bucket->Query(std::vector<std::string>{"entry-a", "entry-b"}, ts + us(10), ts + us(20), {},
+                           [&called](auto record) {
+                             called = true;
+                             return true;
+                           });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(!called);  // No records should be returned for empty batch
+}
+
 TEST_CASE("reduct::IBucket should reject empty entry list for batch query", "[entry_api][1_18]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
