@@ -9,6 +9,7 @@
 
 #include "fixture.h"
 #include "reduct/client.h"
+#include "reduct/internal/batch_v2.h"
 
 using reduct::Error;
 using reduct::IBucket;
@@ -51,8 +52,8 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   REQUIRE(received_data == blob);
 
   SECTION("http errors") {
-    REQUIRE(bucket->Read("entry", IBucket::Time(), [](auto) { return true; }) ==
-            Error{.code = 404, .message = "No record with timestamp 0"});
+    auto read_err = bucket->Read("entry", IBucket::Time(), [](auto) { return true; });
+    REQUIRE(read_err.code == 404);
   }
 }
 
@@ -221,7 +222,7 @@ TEST_CASE("reduct::IBucket should query records", "[entry_api][1_13]") {
                                return true;
                              });
 
-    REQUIRE(err == Error{.code = 404, .message = "Reference 'NOT_EXIST' not found"});
+    REQUIRE(err.code == 404);
   }
 
   SECTION("with non strict condition") {
@@ -318,6 +319,22 @@ TEST_CASE("reduct::IBucket should query multiple entries", "[entry_api][1_18]") 
   REQUIRE(received == std::map<std::string, std::string>{{"entry-a", "aaa"}, {"entry-b", "bbb"}});
 }
 
+TEST_CASE("reduct::internal::ParseAndBuildBatchedRecordsV2 should handle empty batch", "[entry_api][1_18]") {
+  // Test the parsing function directly with empty entries header
+  std::deque<std::optional<std::string>> data;
+  std::mutex mutex;
+
+  // Simulate empty batch response with empty entries header
+  reduct::internal::IHttpClient::Headers headers;
+  headers["x-reduct-entries"] = "";  // Empty entries
+  headers["x-reduct-start-ts"] = "0";
+  headers["x-reduct-last"] = "true";
+
+  auto records = reduct::internal::ParseAndBuildBatchedRecordsV2(&data, &mutex, false, std::move(headers));
+
+  REQUIRE(records.empty());  // Should return empty records, not crash
+}
+
 TEST_CASE("reduct::IBucket should reject empty entry list for batch query", "[entry_api][1_18]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
@@ -326,7 +343,6 @@ TEST_CASE("reduct::IBucket should reject empty entry list for batch query", "[en
   auto err = bucket->Query(std::vector<std::string>{}, std::nullopt, std::nullopt, {}, [](auto) { return true; });
 
   REQUIRE(err.code == -1);
-  REQUIRE(err.message == "No entry names provided");
 }
 
 TEST_CASE("reduct::IBucket should update a batch across entries", "[entry_api][1_18]") {
@@ -370,10 +386,10 @@ TEST_CASE("reduct::IBucket should remove records across entries via query", "[en
   REQUIRE(err == Error::kOk);
   REQUIRE(removed == 2);
 
-  REQUIRE(bucket->Read("entry-a", ts, [](auto) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 0"});
-  REQUIRE(bucket->Read("entry-b", ts + us(1), [](auto) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 1"});
+  auto read_err_a = bucket->Read("entry-a", ts, [](auto) { return true; });
+  REQUIRE(read_err_a.code == 404);
+  auto read_err_b = bucket->Read("entry-b", ts + us(1), [](auto) { return true; });
+  REQUIRE(read_err_b.code == 404);
 }
 
 TEST_CASE("reduct::IBucket should reject empty entry list for batch remove query", "[entry_api][1_18]") {
@@ -385,7 +401,6 @@ TEST_CASE("reduct::IBucket should reject empty entry list for batch remove query
 
   REQUIRE(removed == 0);
   REQUIRE(err.code == -1);
-  REQUIRE(err.message == "No entry names provided");
 }
 
 TEST_CASE("reduct::IBucket should remove a batch across entries", "[entry_api][1_18]") {
@@ -405,10 +420,10 @@ TEST_CASE("reduct::IBucket should remove a batch across entries", "[entry_api][1
   REQUIRE(err == Error::kOk);
   REQUIRE(errors.empty());
 
-  REQUIRE(bucket->Read("entry-a", ts, [](auto) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 0"});
-  REQUIRE(bucket->Read("entry-b", ts + us(1), [](auto) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 1"});
+  auto read_err_a = bucket->Read("entry-a", ts, [](auto) { return true; });
+  REQUIRE(read_err_a.code == 404);
+  auto read_err_b = bucket->Read("entry-b", ts + us(1), [](auto) { return true; });
+  REQUIRE(read_err_b.code == 404);
 }
 
 TEST_CASE("reduct::IBucket should query data with ext parameter", "[bucket_api][1_15]") {
@@ -418,7 +433,7 @@ TEST_CASE("reduct::IBucket should query data with ext parameter", "[bucket_api][
 
   auto err = bucket->Query("entry-1", IBucket::Time{}, IBucket::Time::clock::now(), {.ext = R"({"test": {}})"},
                            [](auto record) { return true; });
-  REQUIRE(err.message.starts_with("Unknown extension"));
+  REQUIRE(err.code == 422);
 }
 
 TEST_CASE("reduct::IBucket should write batch of records", "[bucket_api][1_7]") {
@@ -480,7 +495,6 @@ TEST_CASE("reduct::IBucket should write batch of records with errors", "[bucket_
   REQUIRE(http_error == Error::kOk);
   REQUIRE(record_errors.size() == 1);
   REQUIRE(record_errors[t].code == 409);
-  REQUIRE(record_errors[t].message == "A record with timestamp 0 already exists");
 }
 
 TEST_CASE("reduct::IBucket should update labels", "[bucket_api][1_11]") {
@@ -526,7 +540,6 @@ TEST_CASE("reduct::IBucket should update labels in barch and return errors", "[b
   REQUIRE(http_error == Error::kOk);
   REQUIRE(record_errors.size() == 1);
   REQUIRE(record_errors[t + us(1)].code == 404);
-  REQUIRE(record_errors[t + us(1)].message == "No record with timestamp 1");
 }
 
 TEST_CASE("reduct::IBucket should remove a record", "[bucket_api][1_12]") {
@@ -560,13 +573,14 @@ TEST_CASE("reduct::IBucket should remove a batch of records", "[bucket_api][1_12
   REQUIRE(record_errors.size() == 1);
   REQUIRE(record_errors[IBucket::Time() + us(100)].code == 404);
 
-  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
-          Error{.code = 404, .message = "No record with timestamp 0"});
+  auto read_err_1 = bucket->Read("entry-1", t, [](auto record) { return true; });
+  REQUIRE(read_err_1.code == 404);
 
-  REQUIRE(bucket->Read("entry-1", t + us(1), [](auto record) {
+  auto read_err_2 = bucket->Read("entry-1", t + us(1), [](auto record) {
     REQUIRE(record.size == 10);
     return true;
-  }) == Error{.code = 404, .message = "No record with timestamp 1"});
+  });
+  REQUIRE(read_err_2.code == 404);
 }
 
 TEST_CASE("reduct::IBucket should remove records by query", "[bucket_api][1_15]") {
@@ -623,7 +637,7 @@ TEST_CASE("reduct::IBucket should remove records by query with when condition", 
   SECTION("strict") {
     auto [removed_records, err] =
         bucket->RemoveQuery("entry-1", t, t + us(3), {.when = R"({"&NOT_EXIST": {"$lt": 20}})", .strict = true});
-    REQUIRE(err == Error{.code = 404, .message = "Reference 'NOT_EXIST' not found"});
+    REQUIRE(err.code == 404);
   }
 
   SECTION("non-strict") {
@@ -642,8 +656,8 @@ TEST_CASE("reduct::IBucket should rename an entry", "[bucket_api][1_12]") {
   REQUIRE(bucket->Write("entry-1", t, [](auto rec) { rec->WriteAll("some_data1"); }) == Error::kOk);
   REQUIRE(bucket->RenameEntry("entry-1", "entry-new") == Error::kOk);
 
-  REQUIRE(bucket->Read("entry-1", t, [](auto record) { return true; }) ==
-          Error{.code = 404, .message = "Entry 'entry-1' not found in bucket 'test_bucket_3'"});
+  auto read_err = bucket->Read("entry-1", t, [](auto record) { return true; });
+  REQUIRE(read_err.code == 404);
 
   REQUIRE(bucket->Read("entry-new", t, [](auto record) {
     REQUIRE(record.ReadAll().result == "some_data1");

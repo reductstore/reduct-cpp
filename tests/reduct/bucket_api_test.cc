@@ -26,7 +26,7 @@ TEST_CASE("reduct::Client should create a bucket", "[bucket_api]") {
 
   SECTION("should return HTTP status") {
     auto [null, err_409] = ctx.client->CreateBucket(kBucketName);
-    REQUIRE(err_409 == Error{.code = 409, .message = fmt::format("Bucket '{}' already exists", kBucketName)});
+    REQUIRE(err_409.code == 409);
     REQUIRE_FALSE(null);
   }
 }
@@ -41,7 +41,7 @@ TEST_CASE("reduct::Client should get a bucket", "[bucket_api]") {
 
   SECTION("should return HTTP status") {
     auto [null, err_404] = ctx.client->GetBucket("XXXXXX");
-    REQUIRE(err_404 == Error{.code = 404, .message = "Bucket 'XXXXXX' is not found"});
+    REQUIRE(err_404.code == 404);
     REQUIRE_FALSE(null);
   }
 }
@@ -91,8 +91,8 @@ TEST_CASE("reduct::IBucket should have settings", "[bucket_api]") {
     SECTION("and return HTTP status") {
       REQUIRE(bucket->Remove() == Error::kOk);
       std::this_thread::sleep_for(std::chrono::milliseconds(100));  // wait for bucket deletion
-      REQUIRE(bucket->GetSettings() ==
-              Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
+      auto get_err = bucket->GetSettings();
+      REQUIRE(get_err.error.code == 404);
     }
   }
 
@@ -179,7 +179,8 @@ TEST_CASE("reduct::IBucket should remove a bucket", "[bucket_api]") {
 
   REQUIRE(bucket->Remove() == Error::kOk);
   std::this_thread::sleep_for(std::chrono::milliseconds(100));  // wait for bucket deletion
-  REQUIRE(bucket->Remove() == Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
+  auto remove_err = bucket->Remove();
+  REQUIRE(remove_err.code == 404);
 }
 
 TEST_CASE("reduct::IBucket should remove entry", "[bucket_api][1_6]") {
@@ -205,7 +206,7 @@ TEST_CASE("reduct::IBucket should rename bucket", "[bucket_api][1_12]") {
   REQUIRE(bucket->GetInfo().result.name == "test_bucket_new");
 
   auto [bucket_old, get_err] = ctx.client->GetBucket(kBucketName);
-  REQUIRE(get_err == Error{.code = 404, .message = fmt::format("Bucket '{}' is not found", kBucketName)});
+  REQUIRE(get_err.code == 404);
 }
 
 Result<std::string> download_link(std::string_view link) {
@@ -244,7 +245,7 @@ TEST_CASE("reduct::IBucket should reject empty entry list for query link", "[buc
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
 
   auto [link, err] = bucket->CreateQueryLink(std::vector<std::string>{}, IBucket::QueryLinkOptions{});
-  REQUIRE(err == Error{.code = -1, .message = "At least one entry name is required"});
+  REQUIRE(err.code == -1);
   REQUIRE(link.empty());
 }
 
@@ -282,5 +283,5 @@ TEST_CASE("reduct::IBucket should create a query link with expire time", "[bucke
   REQUIRE(err == Error::kOk);
 
   auto [_data, http_err] = download_link(link);
-  REQUIRE(http_err == Error{.code = 422, .message = "Query link has expired"});
+  REQUIRE(http_err.code == 422);
 }

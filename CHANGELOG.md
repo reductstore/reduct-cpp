@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Parsing server URLs with an additional path, [PR-102](https://github.com/reductstore/reduct-cpp/pull/102)
 - Fix Multi-entry API implementation,[PR-108](https://github.com/reductstore/reduct-cpp/pull/108)
+- Fix crash on empty batch response in multi-entry queries, [PR-110](https://github.com/reductstore/reduct-cpp/pull/110)
 
 ### Removed
 
