@@ -4,6 +4,8 @@
 
 #include <fstream>
 #include <map>
+#include <nlohmann/json.hpp>
+#include <set>
 #include <sstream>
 #include <vector>
 
@@ -694,6 +696,63 @@ TEST_CASE("reduct::IBucket should write a batch to multiple entries", "[entry_ap
     REQUIRE(data == "bbb");
     return true;
   }) == Error::kOk);
+}
+
+TEST_CASE("reduct::IBucket should write and read entry attachments", "[entry_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::AttachmentMap attachments{
+      {"meta-1", R"({"enabled":true,"values":[1,2,3]})"},
+      {"meta-2", R"({"name":"test"})"},
+  };
+
+  REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+
+  auto [stored, err] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err == Error::kOk);
+  REQUIRE(stored.size() == 2);
+  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(attachments.at("meta-2")));
+}
+
+TEST_CASE("reduct::IBucket should remove selected entry attachments", "[entry_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::AttachmentMap attachments{
+      {"meta-1", R"({"value":1})"},
+      {"meta-2", R"({"value":2})"},
+  };
+
+  REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"meta-1"}) == Error::kOk);
+
+  auto [stored, err] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err == Error::kOk);
+  REQUIRE(stored.size() == 1);
+  REQUIRE(stored.contains("meta-2"));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(attachments.at("meta-2")));
+}
+
+TEST_CASE("reduct::IBucket should remove all entry attachments", "[entry_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::AttachmentMap attachments{
+      {"meta-1", R"({"value":1})"},
+      {"meta-2", R"({"value":2})"},
+  };
+
+  REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->RemoveAttachments("entry-1", {}) == Error::kOk);
+
+  auto [stored, err] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err == Error::kOk);
+  REQUIRE(stored.empty());
 }
 
 TEST_CASE("Batch should slice data", "[batch]") {

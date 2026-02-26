@@ -7,6 +7,7 @@
 #include <map>
 #include <optional>
 #include <ostream>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -84,6 +85,7 @@ class IBucket {
   };
 
   using LabelMap = std::map<std::string, std::string>;
+  using AttachmentMap = std::map<std::string, std::string>;  // attachment key -> JSON payload
 
   /**
    * ReadableRecord
@@ -368,6 +370,38 @@ class IBucket {
    * @return HTTP error or map of errors for each record
    */
   [[nodiscard]] virtual Result<BatchRecordErrors> UpdateBatch(BatchCallback callback) const noexcept = 0;
+
+  /**
+   * @brief Write JSON attachments for an entry
+   *
+   * Attachments are stored in a metadata entry `<entry_name>/$meta`.
+   *
+   * @param entry_name entry in bucket
+   * @param attachments map of attachment keys to JSON payloads
+   * @return HTTP or communication error
+   */
+  virtual Error WriteAttachments(std::string_view entry_name,
+                                 const AttachmentMap& attachments) const noexcept = 0;
+
+  /**
+   * @brief Read JSON attachments for an entry
+   *
+   * @param entry_name entry in bucket
+   * @return map of attachment keys to JSON payloads
+   */
+  [[nodiscard]] virtual Result<AttachmentMap> ReadAttachments(std::string_view entry_name) const noexcept = 0;
+
+  /**
+   * @brief Remove JSON attachments for an entry
+   *
+   * If attachment_keys is empty, all attachments are removed.
+   *
+   * @param entry_name entry in bucket
+   * @param attachment_keys attachment keys to remove
+   * @return HTTP or communication error
+   */
+  virtual Error RemoveAttachments(std::string_view entry_name, const std::set<std::string>& attachment_keys) const
+      noexcept = 0;
 
   /**
    * Query options
