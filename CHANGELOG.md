@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add entry attachments API (`WriteAttachments`, `ReadAttachments`, `RemoveAttachments`) for ReductStore API v1.19
+- Add entry attachments API (`WriteAttachments`, `ReadAttachments`, `RemoveAttachments`) for ReductStore API v1.19, [PR-112](https://github.com/reductstore/reduct-cpp/pull/112)
 
 ## 1.18.0 - 2026-02-04
 
