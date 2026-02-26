@@ -22,7 +22,11 @@ add_executable(reduct-tests ${SRC_FILES})
 target_include_directories(reduct-tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(
     reduct-tests
-    PRIVATE ${RCPP_TARGET_NAME} fmt::fmt Catch2::Catch2
+    PRIVATE
+        ${RCPP_TARGET_NAME}
+        fmt::fmt
+        nlohmann_json::nlohmann_json
+        Catch2::Catch2
 )
 set_target_properties(
     reduct-tests
