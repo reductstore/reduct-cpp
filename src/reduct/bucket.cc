@@ -181,6 +181,108 @@ class Bucket : public IBucket {
     return ProcessBatchV2(std::move(callback), BatchType::kUpdate);
   }
 
+  Error WriteAttachments(std::string_view entry_name,
+                         const AttachmentMap& attachments) const noexcept override {
+    if (attachments.empty()) {
+      return Error::kOk;
+    }
+
+    Batch batch;
+    const auto meta_entry = fmt::format("{}/$meta", entry_name);
+    auto timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(Time::clock::now());
+    for (const auto& [key, payload] : attachments) {
+      try {
+        [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
+      } catch (const std::exception& ex) {
+        return Error{.code = -1, .message = ex.what()};
+      }
+      batch.AddRecord(meta_entry, timestamp, payload, "application/json", {{"key", key}});
+      timestamp += std::chrono::microseconds(1);
+    }
+
+    auto [errors, err] = internal::ProcessBatchV2Records(client_.get(), io_path_, std::move(batch), BatchType::kWrite);
+    if (err) {
+      return err;
+    }
+
+    return FirstBatchRecordError(errors);
+  }
+
+  Result<AttachmentMap> ReadAttachments(std::string_view entry_name) const noexcept override {
+    AttachmentMap attachments;
+    Error callback_err = Error::kOk;
+    const auto meta_entry = fmt::format("{}/$meta", entry_name);
+
+    auto err = QueryV2({meta_entry}, std::nullopt, std::nullopt, {}, [&attachments, &callback_err](const auto& record) {
+      auto key = record.labels.find("key");
+      if (key == record.labels.end()) {
+        return true;
+      }
+
+      auto [payload, read_err] = record.ReadAll();
+      if (read_err) {
+        callback_err = std::move(read_err);
+        return false;
+      }
+
+      try {
+        [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
+      } catch (const std::exception& ex) {
+        callback_err = Error{.code = -1, .message = ex.what()};
+        return false;
+      }
+
+      attachments[key->second] = std::move(payload);
+      return true;
+    });
+
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    if (callback_err) {
+      return {{}, std::move(callback_err)};
+    }
+
+    return {std::move(attachments), Error::kOk};
+  }
+
+  Error RemoveAttachments(std::string_view entry_name,
+                          const std::set<std::string>& attachment_keys) const noexcept override {
+    QueryOptions options;
+    if (!attachment_keys.empty()) {
+      nlohmann::json when;
+      when["$in"] = nlohmann::json::array();
+      when["$in"].push_back("&key");
+      for (const auto& key : attachment_keys) {
+        when["$in"].push_back(key);
+      }
+      options.when = when.dump();
+    }
+
+    Batch remove_batch;
+    const auto meta_entry = fmt::format("{}/$meta", entry_name);
+    auto query_err = QueryV2({meta_entry}, std::nullopt, std::nullopt, std::move(options),
+                             [&remove_batch](const auto& record) {
+                               auto labels = record.labels;
+                               labels["remove"] = "true";
+                               remove_batch.AddOnlyLabels(record.entry, record.timestamp, std::move(labels));
+                               return true;
+                             });
+
+    if (query_err) {
+      return query_err;
+    }
+
+    auto [errors, err] =
+        internal::ProcessBatchV2Records(client_.get(), io_path_, std::move(remove_batch), BatchType::kUpdate);
+    if (err) {
+      return err;
+    }
+
+    return FirstBatchRecordError(errors);
+  }
+
   Result<BatchErrors> RemoveBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
     return ProcessBatchV1(entry_name, std::move(callback), BatchType::kRemove);
   }
@@ -653,6 +755,16 @@ class Bucket : public IBucket {
   bool SupportsBatchProtocolV2() const {
     auto api_version = client_->ApiVersion();
     return api_version && internal::IsCompatible("1.18", *api_version);
+  }
+
+  static Error FirstBatchRecordError(const BatchRecordErrors& errors) {
+    for (const auto& [entry, record_errors] : errors) {
+      (void)entry;
+      if (!record_errors.empty()) {
+        return record_errors.begin()->second;
+      }
+    }
+    return Error::kOk;
   }
 
   Result<BatchErrors> ProcessBatchV1(std::string_view entry_name, BatchCallback callback,
