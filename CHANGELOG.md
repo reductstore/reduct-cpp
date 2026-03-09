@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add entry attachments API (`WriteAttachments`, `ReadAttachments`, `RemoveAttachments`) for ReductStore API v1.19, [PR-112](https://github.com/reductstore/reduct-cpp/pull/112)
 
+### Fixed
+
+- Fix removing attachments with numeric keys, [PR-113](https://github.com/reductstore/reduct-cpp/pull/113)
+
 ## 1.18.0 - 2026-02-04
 
 ### Added
