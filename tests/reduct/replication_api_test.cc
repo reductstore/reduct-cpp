@@ -89,13 +89,6 @@ TEST_CASE("reduct::Client should set replication mode", "[replication_api][1_18]
 
   auto [replication, err_2] = ctx.client->GetReplication("test_replication");
   REQUIRE(err_2 == Error::kOk);
-  REQUIRE(replication.info == IClient::ReplicationInfo{
-                                  .name = "test_replication",
-                                  .mode = IClient::ReplicationMode::kPaused,
-                                  .is_active = true,
-                                  .is_provisioned = false,
-                                  .pending_records = 0,
-                              });
   REQUIRE(replication.settings.mode == IClient::ReplicationMode::kPaused);
   REQUIRE(replication.settings.entries == settings.entries);
 

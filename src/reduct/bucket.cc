@@ -253,7 +253,7 @@ class Bucket : public IBucket {
     if (!attachment_keys.empty()) {
       nlohmann::json when;
       when["$in"] = nlohmann::json::array();
-      when["$in"].push_back("&key");
+      when["$in"].push_back({{"&key", {{"$cast", "string"}}}});
       for (const auto& key : attachment_keys) {
         when["$in"].push_back(key);
       }

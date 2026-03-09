@@ -755,6 +755,33 @@ TEST_CASE("reduct::IBucket should remove all entry attachments", "[entry_api][1_
   REQUIRE(stored.empty());
 }
 
+TEST_CASE("reduct::IBucket should remove entry attachments with numeric keys", "[entry_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::AttachmentMap attachments{
+      {"1", R"({"enabled":true,"values":[1,2,3]})"},
+      {"2.5", R"({"name":"test"})"},
+  };
+
+  REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+
+  auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err_before == Error::kOk);
+  REQUIRE(stored_before.size() == 2);
+  REQUIRE(stored_before.contains("1"));
+  REQUIRE(stored_before.contains("2.5"));
+  REQUIRE(nlohmann::json::parse(stored_before.at("1")) == nlohmann::json::parse(attachments.at("1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("2.5")) == nlohmann::json::parse(attachments.at("2.5")));
+
+  REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"1", "2.5"}) == Error::kOk);
+
+  auto [stored_after, err_after] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err_after == Error::kOk);
+  REQUIRE(stored_after.empty());
+}
+
 TEST_CASE("Batch should slice data", "[batch]") {
   auto batch = IBucket::Batch();
 
