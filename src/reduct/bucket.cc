@@ -251,14 +251,22 @@ class Bucket : public IBucket {
                           const std::set<std::string>& attachment_keys) const noexcept override {
     QueryOptions options;
     if (!attachment_keys.empty()) {
+      const auto escape_attachment_key = [](const std::string& key) {
+        if (!key.empty() && key.front() == '$') {
+          return fmt::format("${}", key);
+        }
+        return key;
+      };
+
       nlohmann::json when;
       when["$in"] = nlohmann::json::array();
       when["$in"].push_back({{"&key", {{"$cast", "string"}}}});
       for (const auto& key : attachment_keys) {
-        when["$in"].push_back(key);
+        when["$in"].push_back(escape_attachment_key(key));
       }
       options.when = when.dump();
     }
+
 
     Batch remove_batch;
     const auto meta_entry = fmt::format("{}/$meta", entry_name);
