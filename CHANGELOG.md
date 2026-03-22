@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix removing attachments with numeric keys, [PR-113](https://github.com/reductstore/reduct-cpp/pull/113)
+- Fix removing attachments with reserved `$`-prefixed keys, [PR-115](https://github.com/reductstore/reduct-cpp/pull/115)
 
 ## 1.18.0 - 2026-02-04
 
