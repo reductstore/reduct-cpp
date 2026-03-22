@@ -255,6 +255,8 @@ class Bucket : public IBucket {
       std::vector<std::string> escaped_keys;
       escaped_keys.reserve(attachment_keys.size());
       for (const auto& key : attachment_keys) {
+        // Keys starting with '$' must be escaped so the server treats them as literals
+        // instead of interpreting them as messagepack filter operators.
         if (!key.empty() && key.front() == '$') {
           escaped_keys.emplace_back(fmt::format("${}", key));
         } else {
