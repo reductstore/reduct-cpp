@@ -782,6 +782,29 @@ TEST_CASE("reduct::IBucket should remove entry attachments with numeric keys", "
   REQUIRE(stored_after.empty());
 }
 
+
+TEST_CASE("reduct::IBucket should remove entry attachments with reserved keys", "[entry_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  IBucket::AttachmentMap attachments{
+      {"meta-1", R"({"value":1})"},
+      {"$system", R"({"value":"test"})"},
+      {"$internal", R"({"value":"hidden"})"},
+  };
+
+  REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"$system", "$internal"}) == Error::kOk);
+
+  auto [stored, err] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err == Error::kOk);
+  REQUIRE(stored.size() == 1);
+  REQUIRE(stored.contains("meta-1"));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
+}
+
+
 TEST_CASE("Batch should slice data", "[batch]") {
   auto batch = IBucket::Batch();
 

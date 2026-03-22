@@ -20,6 +20,7 @@
 #include <optional>
 #include <set>
 #include <thread>
+#include <vector>
 
 #include "reduct/internal/batch_v1.h"
 #include "reduct/internal/batch_v2.h"
@@ -251,11 +252,21 @@ class Bucket : public IBucket {
                           const std::set<std::string>& attachment_keys) const noexcept override {
     QueryOptions options;
     if (!attachment_keys.empty()) {
+      std::vector<std::string> escaped_keys;
+      escaped_keys.reserve(attachment_keys.size());
+      for (const auto& key : attachment_keys) {
+        if (!key.empty() && key.front() == '$') {
+          escaped_keys.emplace_back(fmt::format("${}", key));
+        } else {
+          escaped_keys.emplace_back(key);
+        }
+      }
+
       nlohmann::json when;
       when["$in"] = nlohmann::json::array();
       when["$in"].push_back({{"&key", {{"$cast", "string"}}}});
-      for (const auto& key : attachment_keys) {
-        when["$in"].push_back(key);
+      for (const auto& escaped_key : escaped_keys) {
+        when["$in"].push_back(escaped_key);
       }
       options.when = when.dump();
     }
