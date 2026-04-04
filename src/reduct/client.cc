@@ -5,7 +5,10 @@
 #include <fmt/core.h>
 #include <nlohmann/json.hpp>
 
+#include <ctime>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 #include "internal/time_parse.h"
@@ -13,6 +16,18 @@
 #include "reduct/internal/serialisation.h"
 
 namespace reduct {
+
+namespace {
+
+std::string ToIso8601Utc(IClient::Time time) {
+  auto tt = std::chrono::system_clock::to_time_t(time);
+  std::tm tm = *std::gmtime(&tt);
+  std::ostringstream oss;
+  oss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");
+  return oss.str();
+}
+
+}  // namespace
 
 using internal::ParseStatus;
 
@@ -148,10 +163,30 @@ class Client : public IClient {
       for (const auto& token : json_tokens) {
         Time created_at = parse_iso8601_utc(token.at("created_at").get<std::string>());
 
+        std::optional<Time> expires_at;
+        if (token.contains("expires_at") && !token.at("expires_at").is_null()) {
+          expires_at = parse_iso8601_utc(token.at("expires_at").get<std::string>());
+        }
+
+        std::optional<Time> last_access;
+        if (token.contains("last_access") && !token.at("last_access").is_null()) {
+          last_access = parse_iso8601_utc(token.at("last_access").get<std::string>());
+        }
+
+        std::optional<uint64_t> ttl;
+        if (token.contains("ttl") && !token.at("ttl").is_null()) {
+          ttl = token.at("ttl").get<uint64_t>();
+        }
+
         token_list.push_back(Token{
             .name = token.at("name"),
             .created_at = created_at,
-            .is_provisioned = token.at("is_provisioned"),
+            .is_provisioned = token.value("is_provisioned", false),
+            .expires_at = expires_at,
+            .ttl = ttl,
+            .last_access = last_access,
+            .ip_allowlist = token.value("ip_allowlist", std::vector<std::string>{}),
+            .is_expired = token.value("is_expired", false),
         });
       }
     } catch (const std::exception& e) {
@@ -175,11 +210,40 @@ class Client : public IClient {
     }
   }
 
-  Result<std::string> CreateToken(std::string_view name, Permissions permissions) const noexcept override {
+  Result<std::string> CreateToken(std::string_view name, TokenCreateRequest request) const noexcept override {
     nlohmann::json json_data;
-    json_data["full_access"] = permissions.full_access;
-    json_data["read"] = std::move(permissions.read);
-    json_data["write"] = std::move(permissions.write);
+
+    auto api_version = client_->ApiVersion();
+    if (!api_version.has_value()) {
+      auto [_, info_err] = client_->Get("/info");
+      if (info_err) {
+        return Result<std::string>{{}, std::move(info_err)};
+      }
+      api_version = client_->ApiVersion();
+    }
+
+    auto supports_v2 = api_version && internal::IsCompatible("1.19", *api_version);
+    if (supports_v2) {
+      json_data["permissions"] = {
+          {"full_access", request.permissions.full_access},
+          {"read", std::move(request.permissions.read)},
+          {"write", std::move(request.permissions.write)},
+      };
+
+      if (request.expires_at.has_value()) {
+        json_data["expires_at"] = ToIso8601Utc(*request.expires_at);
+      }
+
+      if (request.ttl.has_value()) {
+        json_data["ttl"] = *request.ttl;
+      }
+
+      json_data["ip_allowlist"] = std::move(request.ip_allowlist);
+    } else {
+      json_data["full_access"] = request.permissions.full_access;
+      json_data["read"] = std::move(request.permissions.read);
+      json_data["write"] = std::move(request.permissions.write);
+    }
 
     auto [body, err] = client_->PostWithResponse(fmt::format("/tokens/{}", name), json_data.dump());
     if (err) {
@@ -196,6 +260,20 @@ class Client : public IClient {
 
   Error RemoveToken(std::string_view name) const noexcept override {
     return client_->Delete(fmt::format("/tokens/{}", name));
+  }
+
+  Result<std::string> RotateToken(std::string_view name) const noexcept override {
+    auto [body, err] = client_->PostWithResponse(fmt::format("/tokens/{}/rotate", name), "{}");
+    if (err) {
+      return Result<std::string>{{}, std::move(err)};
+    }
+
+    try {
+      nlohmann::json data = nlohmann::json::parse(body);
+      return {data.at("value").get<std::string>(), Error::kOk};
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
   }
 
   Result<FullTokenInfo> Me() const noexcept override {

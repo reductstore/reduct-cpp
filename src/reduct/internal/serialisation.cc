@@ -110,11 +110,32 @@ Result<IBucket::Settings> ParseBucketSettings(const nlohmann::json& json) {
 
 Result<IClient::FullTokenInfo> ParseTokenInfo(const nlohmann::json& json) {
   IClient::Time created_at = parse_iso8601_utc(json.at("created_at").get<std::string>());
+
+  std::optional<IClient::Time> expires_at;
+  if (json.contains("expires_at") && !json.at("expires_at").is_null()) {
+    expires_at = parse_iso8601_utc(json.at("expires_at").get<std::string>());
+  }
+
+  std::optional<IClient::Time> last_access;
+  if (json.contains("last_access") && !json.at("last_access").is_null()) {
+    last_access = parse_iso8601_utc(json.at("last_access").get<std::string>());
+  }
+
+  std::optional<uint64_t> ttl;
+  if (json.contains("ttl") && !json.at("ttl").is_null()) {
+    ttl = json.at("ttl").get<uint64_t>();
+  }
+
   return {
       IClient::FullTokenInfo{
           .name = json.at("name"),
           .created_at = created_at,
           .is_provisioned = json.value("is_provisioned", false),
+          .expires_at = expires_at,
+          .ttl = ttl,
+          .last_access = last_access,
+          .ip_allowlist = json.value("ip_allowlist", std::vector<std::string>{}),
+          .is_expired = json.value("is_expired", false),
           .permissions = {.full_access = json.at("permissions").at("full_access"),
                           .read = json.at("permissions").at("read"),
                           .write = json.at("permissions").at("write")},

@@ -75,4 +75,8 @@ TEST_CASE("reduct::Client should return current token name and permissions", "[s
   REQUIRE(token.permissions.full_access == true);
   REQUIRE(token.permissions.read.empty());
   REQUIRE(token.permissions.write.empty());
+  REQUIRE_FALSE(token.expires_at.has_value());
+  REQUIRE_FALSE(token.ttl.has_value());
+  REQUIRE(token.ip_allowlist.empty());
+  REQUIRE_FALSE(token.is_expired);
 }
