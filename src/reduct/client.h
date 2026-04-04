@@ -177,9 +177,9 @@ class IClient {
   [[nodiscard]] virtual Result<std::string> CreateToken(std::string_view name,
                                                         TokenCreateRequest request) const noexcept = 0;
 
-  [[nodiscard]] Result<std::string> CreateToken(std::string_view name, Permissions permissions) const noexcept {
-    return CreateToken(name, TokenCreateRequest{.permissions = std::move(permissions)});
-  }
+  [[deprecated("Use CreateToken(name, TokenCreateRequest) to set ttl/expires_at/ip_allowlist")]]
+  [[nodiscard]] virtual Result<std::string> CreateToken(std::string_view name,
+                                                        Permissions permissions) const noexcept = 0;
 
   /**
    * @brief Update token permissions

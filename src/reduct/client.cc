@@ -210,6 +210,10 @@ class Client : public IClient {
     }
   }
 
+  Result<std::string> CreateToken(std::string_view name, Permissions permissions) const noexcept override {
+    return CreateToken(name, TokenCreateRequest{.permissions = std::move(permissions)});
+  }
+
   Result<std::string> CreateToken(std::string_view name, TokenCreateRequest request) const noexcept override {
     nlohmann::json json_data;
 

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add entry attachments API (`WriteAttachments`, `ReadAttachments`, `RemoveAttachments`) for ReductStore API v1.19, [PR-112](https://github.com/reductstore/reduct-cpp/pull/112)
-- Expand token API for ReductStore v1.19 (`ttl`, `expires_at`, `last_access`, `ip_allowlist`, `is_expired`) and add `RotateToken`
+- Expand token API for ReductStore v1.19 (`ttl`, `expires_at`, `last_access`, `ip_allowlist`, `is_expired`) and add `RotateToken`, [PR-117](https://github.com/reductstore/reduct-cpp/pull/117)
 
 ### Fixed
 
