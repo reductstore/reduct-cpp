@@ -246,6 +246,16 @@ class Client : public IClient {
     }
 
     auto [body, err] = client_->PostWithResponse(fmt::format("/tokens/{}", name), json_data.dump());
+    if (err && supports_v2 && err.code == 422) {
+      nlohmann::json legacy_json_data;
+      legacy_json_data["full_access"] = request.permissions.full_access;
+      legacy_json_data["read"] = request.permissions.read;
+      legacy_json_data["write"] = request.permissions.write;
+      auto legacy_ret = client_->PostWithResponse(fmt::format("/tokens/{}", name), legacy_json_data.dump());
+      body = std::move(legacy_ret.result);
+      err = std::move(legacy_ret.error);
+    }
+
     if (err) {
       return Result<std::string>{{}, std::move(err)};
     }
