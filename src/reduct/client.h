@@ -105,10 +105,14 @@ class IClient {
    * API Token for authentication
    */
   struct Token {
-    std::string name;  // name of token
-    Time created_at;   // creation time
-    bool is_provisioned;  // true if token is provisioned, you can't remove it or change its permissions
-
+    std::string name;                  // name of token
+    Time created_at;                   // creation time
+    bool is_provisioned;               // true if token is provisioned, you can't remove it or change its permissions
+    std::optional<Time> expires_at;    // absolute expiry timestamp (UTC)
+    std::optional<uint64_t> ttl;       // inactivity TTL in seconds
+    std::optional<Time> last_access;   // last access timestamp
+    std::vector<std::string> ip_allowlist;  // allowed source IP addresses
+    bool is_expired = false;           // token cannot be used anymore
 
     auto operator<=>(const IClient::Token&) const = default;
   };
@@ -131,10 +135,24 @@ class IClient {
     std::string name;     // name of token
     Time created_at;      // creation time
     bool is_provisioned;  // true if token is provisioned, you can't remove it or change its permissions
+    std::optional<Time> expires_at;    // absolute expiry timestamp (UTC)
+    std::optional<uint64_t> ttl;       // inactivity TTL in seconds
+    std::optional<Time> last_access;   // last access timestamp
+    std::vector<std::string> ip_allowlist;  // allowed source IP addresses
+    bool is_expired = false;           // token cannot be used anymore
 
     Permissions permissions;
 
     auto operator<=>(const IClient::FullTokenInfo&) const = default;
+  };
+
+  struct TokenCreateRequest {
+    Permissions permissions;
+    std::optional<Time> expires_at;
+    std::optional<uint64_t> ttl;
+    std::vector<std::string> ip_allowlist;
+
+    auto operator<=>(const IClient::TokenCreateRequest&) const = default;
   };
 
   /**
@@ -157,6 +175,10 @@ class IClient {
    * @return token value or an error
    */
   [[nodiscard]] virtual Result<std::string> CreateToken(std::string_view name,
+                                                        TokenCreateRequest request) const noexcept = 0;
+
+  [[deprecated("Use CreateToken(name, TokenCreateRequest) to set ttl/expires_at/ip_allowlist")]]
+  [[nodiscard]] virtual Result<std::string> CreateToken(std::string_view name,
                                                         Permissions permissions) const noexcept = 0;
 
   /**
@@ -166,6 +188,8 @@ class IClient {
    * @return  an error
    */
   virtual Error RemoveToken(std::string_view name) const noexcept = 0;
+
+  [[nodiscard]] virtual Result<std::string> RotateToken(std::string_view name) const noexcept = 0;
 
   /**
    * @brief Returns information about the currently authenticated token.

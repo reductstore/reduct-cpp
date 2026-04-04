@@ -70,8 +70,10 @@ jobs:
             exclude_token_api_tag: ""
           - reductstore_version: "main"
             exclude_api_version_tag: ""
+            audit_enabled: "false"
           - reductstore_version: "latest"
             exclude_api_version_tag: "~[1_19]"
+            audit_enabled: "true"
 
     steps:
       - uses: actions/checkout@v4
@@ -89,6 +91,7 @@ jobs:
           api-token: ${{matrix.token}}
           tags: "${{matrix.exclude_token_api_tag}} ${{matrix.exclude_api_version_tag}}"
           reductstore-version: ${{matrix.reductstore_version}}
+          audit-enabled: ${{matrix.audit_enabled}}
 
 
   check-example-linux:
