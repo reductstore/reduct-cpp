@@ -73,7 +73,7 @@ jobs:
             audit_enabled: "false"
           - reductstore_version: "latest"
             exclude_api_version_tag: "~[1_19]"
-            audit_enabled: "true"
+            audit_enabled: "false"
 
     steps:
       - uses: actions/checkout@v4

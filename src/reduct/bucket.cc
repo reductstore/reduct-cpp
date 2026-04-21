@@ -535,10 +535,26 @@ class Bucket : public IBucket {
   }
 
   Result<std::string> CreateQueryLink(std::string_view entry_name, QueryLinkOptions options) const noexcept override {
-    auto [json_payload, json_err] = internal::QueryLinkOptionsToJsonString(name_, {std::string(entry_name)}, options);
+    auto [normalized_options, normalize_err] =
+        NormalizeAndValidateQueryLinkOptions({std::string(entry_name)}, std::move(options));
+    if (normalize_err) {
+      return {{}, std::move(normalize_err)};
+    }
+
+    auto [json_payload, json_err] =
+        internal::QueryLinkOptionsToJsonString(name_, {std::string(entry_name)}, normalized_options);
+    if (json_err) {
+      return {{}, std::move(json_err)};
+    }
+
+    const auto selector = normalized_options.record_timestamp
+                              ? std::chrono::duration_cast<std::chrono::microseconds>(
+                                    normalized_options.record_timestamp->time_since_epoch())
+                                    .count()
+                              : static_cast<int64_t>(normalized_options.record_index);
 
     auto file_name =
-        options.file_name ? *options.file_name : fmt::format("{}_{}.bin", entry_name, options.record_index);
+        normalized_options.file_name ? *normalized_options.file_name : fmt::format("{}_{}.bin", entry_name, selector);
     auto [body, err] = client_->PostWithResponse(fmt::format("/links/{}", file_name), json_payload.dump());
     if (err) {
       return {{}, std::move(err)};
@@ -561,9 +577,24 @@ class Bucket : public IBucket {
       return {{}, Error{.code = -1, .message = "At least one entry name is required"}};
     }
 
-    auto [json_payload, json_err] = internal::QueryLinkOptionsToJsonString(name_, entries, options);
+    auto [normalized_options, normalize_err] = NormalizeAndValidateQueryLinkOptions(entries, std::move(options));
+    if (normalize_err) {
+      return {{}, std::move(normalize_err)};
+    }
 
-    auto file_name = options.file_name ? *options.file_name : fmt::format("{}_{}.bin", name_, options.record_index);
+    auto [json_payload, json_err] = internal::QueryLinkOptionsToJsonString(name_, entries, normalized_options);
+    if (json_err) {
+      return {{}, std::move(json_err)};
+    }
+
+    const auto selector = normalized_options.record_timestamp
+                              ? std::chrono::duration_cast<std::chrono::microseconds>(
+                                    normalized_options.record_timestamp->time_since_epoch())
+                                    .count()
+                              : static_cast<int64_t>(normalized_options.record_index);
+
+    auto file_name =
+        normalized_options.file_name ? *normalized_options.file_name : fmt::format("{}_{}.bin", name_, selector);
     auto [body, err] = client_->PostWithResponse(fmt::format("/links/{}", file_name), json_payload.dump());
     if (err) {
       return {{}, std::move(err)};
@@ -768,6 +799,59 @@ class Bucket : public IBucket {
   bool SupportsBatchProtocolV2() const {
     auto api_version = client_->ApiVersion();
     return api_version && internal::IsCompatible("1.18", *api_version);
+  }
+
+  Result<std::string> EnsureApiVersion() const {
+    auto api_version = client_->ApiVersion();
+    if (api_version.has_value()) {
+      return {*api_version, Error::kOk};
+    }
+
+    auto [_, err] = client_->Get("/info");
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    api_version = client_->ApiVersion();
+    if (!api_version.has_value()) {
+      return {{}, Error{.code = -1, .message = "Failed to determine ReductStore API version"}};
+    }
+    return {*api_version, Error::kOk};
+  }
+
+  static bool HasWildcard(std::string_view entry) {
+    return entry.find('*') != std::string_view::npos || entry.find('?') != std::string_view::npos ||
+           entry.find('[') != std::string_view::npos;
+  }
+
+  Result<QueryLinkOptions> NormalizeAndValidateQueryLinkOptions(const std::vector<std::string>& entries,
+                                                                QueryLinkOptions options) const {
+    if (options.record_timestamp && !options.record_entry) {
+      if (entries.size() == 1 && !HasWildcard(entries[0])) {
+        options.record_entry = entries[0];
+      } else {
+        return {{}, Error{.code = -1, .message = "record_entry must be provided with record_timestamp"}};
+      }
+    }
+
+    if (options.record_entry && !options.record_timestamp) {
+      return {{}, Error{.code = -1, .message = "record_timestamp must be provided with record_entry"}};
+    }
+
+    auto [api_version, api_err] = EnsureApiVersion();
+    if (api_err) {
+      return {{}, std::move(api_err)};
+    }
+
+    if (internal::IsCompatible("1.19", api_version) && !options.record_entry.has_value()) {
+      return {{},
+              Error{.code = -1,
+                    .message =
+                        "record entry and timestamp must be provided for ReductStore API v1.19+; use "
+                        "record_entry and record_timestamp"}};
+    }
+
+    return {std::move(options), Error::kOk};
   }
 
   static Error FirstBatchRecordError(const BatchRecordErrors& errors) {
