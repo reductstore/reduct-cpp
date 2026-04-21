@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Sync query link creation with record identity API: support `record_entry`/`record_timestamp`, keep legacy `record_index` for older APIs, and validate selectors for API v1.19+ (#119)
+- Sync query link creation with record identity API: support `record_entry`/`record_timestamp`, keep legacy `record_index` for older APIs, and validate selectors for API v1.19+, [PR-120](https://github.com/reductstore/reduct-cpp/pull/120)
 
 ## 1.19.0 - 2026-04-08
 
