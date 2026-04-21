@@ -6,6 +6,7 @@
 
 #include "fixture.h"
 #include "reduct/client.h"
+#include "reduct/internal/http_client.h"
 
 using reduct::Error;
 using reduct::IBucket;
