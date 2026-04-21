@@ -214,12 +214,26 @@ Result<std::string> download_link(std::string_view link) {
   return http_client->Get(link.substr(link.find("/links/")));
 }
 
+bool supports_record_identity_api(const Fixture& ctx) {
+  auto [info, err] = ctx.client->GetInfo();
+  if (err) {
+    return false;
+  }
+  return reduct::internal::IsCompatible("1.19", info.version);
+}
+
 
 TEST_CASE("reduct::IBucket should create a query link", "[bucket_api][1_17]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
 
-  auto [link, err] = bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{});
+  IBucket::QueryLinkOptions options{};
+  if (supports_record_identity_api(ctx)) {
+    options.record_entry = "entry-1";
+    options.record_timestamp = IBucket::Time() + s(1);
+  }
+
+  auto [link, err] = bucket->CreateQueryLink("entry-1", options);
   REQUIRE(err == Error::kOk);
 
   auto [data, http_err] = download_link(link);
@@ -231,8 +245,13 @@ TEST_CASE("reduct::IBucket should create a query link for multiple entries", "[b
   Fixture ctx;
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
 
-  auto [link, err] = bucket->CreateQueryLink(std::vector<std::string>{"entry-1", "entry-2"},
-                                             IBucket::QueryLinkOptions{});
+  IBucket::QueryLinkOptions options{};
+  if (supports_record_identity_api(ctx)) {
+    options.record_entry = "entry-1";
+    options.record_timestamp = IBucket::Time() + s(1);
+  }
+
+  auto [link, err] = bucket->CreateQueryLink(std::vector<std::string>{"entry-1", "entry-2"}, options);
   REQUIRE(err == Error::kOk);
 
   auto [data, http_err] = download_link(link);
@@ -254,20 +273,32 @@ TEST_CASE("reduct::IBucket should create a query link with index", "[bucket_api]
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
 
   auto [link, err] = bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{.record_index = 1});
-  REQUIRE(err == Error::kOk);
+  if (supports_record_identity_api(ctx)) {
+    REQUIRE(err.code == -1);
+    REQUIRE(link.empty());
+    REQUIRE(err.message.find("record entry and timestamp must be provided") != std::string::npos);
+  } else {
+    REQUIRE(err == Error::kOk);
 
-  auto [data, http_err] = download_link(link);
-  REQUIRE(http_err == Error::kOk);
-  REQUIRE(data == "data-2");
+    auto [data, http_err] = download_link(link);
+    REQUIRE(http_err == Error::kOk);
+    REQUIRE(data == "data-2");
+  }
 }
 
 TEST_CASE("reduct::IBucket should create a query link with file name", "[bucket_api][1_17]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
 
-  auto [link, err] = bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{
-                                                            .file_name = "my_file.txt",
-                                                        });
+  IBucket::QueryLinkOptions options{
+      .file_name = "my_file.txt",
+  };
+  if (supports_record_identity_api(ctx)) {
+    options.record_entry = "entry-1";
+    options.record_timestamp = IBucket::Time() + s(1);
+  }
+
+  auto [link, err] = bucket->CreateQueryLink("entry-1", options);
   REQUIRE(err == Error::kOk);
   REQUIRE(link.find("/links/my_file.txt") != std::string::npos);
 }
@@ -276,12 +307,59 @@ TEST_CASE("reduct::IBucket should create a query link with expire time", "[bucke
   Fixture ctx;
   auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
 
-  auto [link, err] =
-      bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{
-                                             .expire_at = IBucket::Time::clock::now() - std::chrono::hours(1),
-                                         });
+  IBucket::QueryLinkOptions options{
+      .expire_at = IBucket::Time::clock::now() - std::chrono::hours(1),
+  };
+  if (supports_record_identity_api(ctx)) {
+    options.record_entry = "entry-1";
+    options.record_timestamp = IBucket::Time() + s(1);
+  }
+
+  auto [link, err] = bucket->CreateQueryLink("entry-1", options);
   REQUIRE(err == Error::kOk);
 
   auto [_data, http_err] = download_link(link);
   REQUIRE(http_err.code == 422);
+}
+
+TEST_CASE("reduct::IBucket should create a query link with explicit record identity", "[bucket_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+
+  auto [link, err] = bucket->CreateQueryLink(
+      "entry-2", IBucket::QueryLinkOptions{.record_entry = "entry-2", .record_timestamp = IBucket::Time() + s(4)});
+  REQUIRE(err == Error::kOk);
+
+  auto [data, http_err] = download_link(link);
+  REQUIRE(http_err == Error::kOk);
+  REQUIRE(data == "data-4");
+}
+
+TEST_CASE("reduct::IBucket should validate query link record identity selector", "[bucket_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->GetBucket("test_bucket_1");
+
+  SECTION("record_entry without record_timestamp") {
+    auto [link, err] = bucket->CreateQueryLink("entry-1", IBucket::QueryLinkOptions{.record_entry = "entry-1"});
+    REQUIRE(link.empty());
+    REQUIRE(err.code == -1);
+    REQUIRE(err.message.find("record_timestamp must be provided") != std::string::npos);
+  }
+
+  SECTION("record_timestamp defaults record_entry for one explicit entry") {
+    auto [link, err] =
+        bucket->CreateQueryLink("entry-2", IBucket::QueryLinkOptions{.record_timestamp = IBucket::Time() + s(4)});
+    REQUIRE(err == Error::kOk);
+    auto [data, http_err] = download_link(link);
+    REQUIRE(http_err == Error::kOk);
+    REQUIRE(data == "data-4");
+  }
+
+  SECTION("record_timestamp with wildcard entry requires record_entry") {
+    auto [link, err] =
+        bucket->CreateQueryLink("entry-*", IBucket::QueryLinkOptions{.record_timestamp = IBucket::Time() + s(4)});
+    REQUIRE(link.empty());
+    REQUIRE(err.code == -1);
+    REQUIRE(err.message.find("record_entry must be provided") != std::string::npos);
+  }
 }

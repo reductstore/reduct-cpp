@@ -543,7 +543,9 @@ class IBucket {
     std::optional<Time> start;
     std::optional<Time> stop;
     QueryOptions query_options = {};
-    uint64_t record_index = 0;  // index of record in the query result to return
+    uint64_t record_index = 0;  // legacy index selector (API < 1.19)
+    std::optional<std::string> record_entry = std::nullopt;      // explicit record entry (API >= 1.19)
+    std::optional<Time> record_timestamp = std::nullopt;         // explicit record timestamp (API >= 1.19)
     std::optional<Time> expire_at = std::nullopt;
     std::optional<std::string> file_name = std::nullopt;
     std::optional<std::string> base_url = std::nullopt;

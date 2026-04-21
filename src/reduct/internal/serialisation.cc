@@ -300,7 +300,16 @@ Result<nlohmann::ordered_json> QueryLinkOptionsToJsonString(std::string_view buc
   nlohmann::ordered_json json_data;
 
   json_data["bucket"] = bucket;
-  json_data["index"] = options.record_index;
+  if (!options.record_entry && !options.record_timestamp) {
+    json_data["index"] = options.record_index;
+  }
+  if (options.record_entry) {
+    json_data["record_entry"] = *options.record_entry;
+  }
+  if (options.record_timestamp) {
+    json_data["record_timestamp"] =
+        std::chrono::duration_cast<std::chrono::microseconds>(options.record_timestamp->time_since_epoch()).count();
+  }
   json_data["entry"] = entries.at(0);
   auto [query_json, query_err] =
       QueryOptionsToJsonString("QUERY", entries, options.start, options.stop, options.query_options);
