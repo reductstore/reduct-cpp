@@ -10,7 +10,9 @@
 #endif
 
 #include <nlohmann/json.hpp>
+#include <openssl/evp.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cctype>
 #include <chrono>
@@ -33,6 +35,43 @@ namespace reduct {
 using internal::IHttpClient;
 using internal::ParseStatus;
 using internal::QueryOptionsToJsonString;
+
+namespace {
+
+std::string Base64Encode(const std::string& input) {
+  const auto encoded_len = 4 * ((input.size() + 2) / 3);
+  std::string output(encoded_len + 1, '\0');
+  EVP_EncodeBlock(reinterpret_cast<unsigned char*>(output.data()), reinterpret_cast<const unsigned char*>(input.data()),
+                  static_cast<int>(input.size()));
+  output.resize(encoded_len);
+  return output;
+}
+
+std::string Base64Decode(const std::string& input) {
+  const auto max_decoded_len = 3 * input.size() / 4;
+  std::string output(max_decoded_len, '\0');
+  int decoded_len =
+      EVP_DecodeBlock(reinterpret_cast<unsigned char*>(output.data()),
+                      reinterpret_cast<const unsigned char*>(input.data()), static_cast<int>(input.size()));
+  // EVP_DecodeBlock doesn't account for padding, trim trailing zeros
+  if (input.size() >= 2 && input[input.size() - 1] == '=') decoded_len--;
+  if (input.size() >= 2 && input[input.size() - 2] == '=') decoded_len--;
+  output.resize(decoded_len);
+  return output;
+}
+
+bool IsJsonContentType(std::string_view content_type) {
+  auto pos = content_type.find(';');
+  auto ct = content_type.substr(0, pos);
+  while (!ct.empty() && ct.back() == ' ') ct.remove_suffix(1);
+  while (!ct.empty() && ct.front() == ' ') ct.remove_prefix(1);
+  std::string lower(ct);
+  std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+  return lower == "application/json" || lower == "text/json" ||
+         (lower.size() >= 5 && lower.substr(lower.size() - 5) == "+json");
+}
+
+}  // namespace
 
 class Bucket : public IBucket {
   using BatchType = internal::BatchType;
@@ -182,22 +221,31 @@ class Bucket : public IBucket {
     return ProcessBatchV2(std::move(callback), BatchType::kUpdate);
   }
 
-  Error WriteAttachments(std::string_view entry_name,
-                         const AttachmentMap& attachments) const noexcept override {
+  Error WriteAttachments(std::string_view entry_name, const AttachmentMap& attachments,
+                         std::string_view content_type) const noexcept override {
     if (attachments.empty()) {
       return Error::kOk;
     }
+
+    const auto ct = content_type.empty() ? "application/json" : std::string(content_type);
+    const bool is_json = IsJsonContentType(ct);
 
     Batch batch;
     const auto meta_entry = fmt::format("{}/$meta", entry_name);
     auto timestamp = std::chrono::time_point_cast<std::chrono::microseconds>(Time::clock::now());
     for (const auto& [key, payload] : attachments) {
-      try {
-        [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
-      } catch (const std::exception& ex) {
-        return Error{.code = -1, .message = ex.what()};
+      std::string data;
+      if (is_json) {
+        try {
+          [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
+        } catch (const std::exception& ex) {
+          return Error{.code = -1, .message = ex.what()};
+        }
+        data = payload;
+      } else {
+        data = Base64Decode(payload);
       }
-      batch.AddRecord(meta_entry, timestamp, payload, "application/json", {{"key", key}});
+      batch.AddRecord(meta_entry, timestamp, data, ct, {{"key", key}});
       timestamp += std::chrono::microseconds(1);
     }
 
@@ -226,14 +274,17 @@ class Bucket : public IBucket {
         return false;
       }
 
-      try {
-        [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
-      } catch (const std::exception& ex) {
-        callback_err = Error{.code = -1, .message = ex.what()};
-        return false;
+      if (IsJsonContentType(record.content_type)) {
+        try {
+          [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
+        } catch (const std::exception& ex) {
+          callback_err = Error{.code = -1, .message = ex.what()};
+          return false;
+        }
+        attachments[key->second] = std::move(payload);
+      } else {
+        attachments[key->second] = Base64Encode(payload);
       }
-
-      attachments[key->second] = std::move(payload);
       return true;
     });
 
@@ -275,13 +326,13 @@ class Bucket : public IBucket {
 
     Batch remove_batch;
     const auto meta_entry = fmt::format("{}/$meta", entry_name);
-    auto query_err = QueryV2({meta_entry}, std::nullopt, std::nullopt, std::move(options),
-                             [&remove_batch](const auto& record) {
-                               auto labels = record.labels;
-                               labels["remove"] = "true";
-                               remove_batch.AddOnlyLabels(record.entry, record.timestamp, std::move(labels));
-                               return true;
-                             });
+    auto query_err =
+        QueryV2({meta_entry}, std::nullopt, std::nullopt, std::move(options), [&remove_batch](const auto& record) {
+          auto labels = record.labels;
+          labels["remove"] = "true";
+          remove_batch.AddOnlyLabels(record.entry, record.timestamp, std::move(labels));
+          return true;
+        });
 
     if (query_err) {
       return query_err;
@@ -846,9 +897,8 @@ class Bucket : public IBucket {
     if (internal::IsCompatible("1.19", api_version) && !options.record_entry.has_value()) {
       return {{},
               Error{.code = -1,
-                    .message =
-                        "record entry and timestamp must be provided for ReductStore API v1.19+; use "
-                        "record_entry and record_timestamp"}};
+                    .message = "record entry and timestamp must be provided for ReductStore API v1.19+; use "
+                               "record_entry and record_timestamp"}};
     }
 
     return {std::move(options), Error::kOk};
