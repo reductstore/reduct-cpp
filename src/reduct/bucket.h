@@ -380,8 +380,8 @@ class IBucket {
    * @param attachments map of attachment keys to JSON payloads
    * @return HTTP or communication error
    */
-  virtual Error WriteAttachments(std::string_view entry_name, const AttachmentMap& attachments,
-                                 std::string_view content_type = "") const noexcept = 0;
+  virtual Error WriteAttachments(std::string_view entry_name,
+                                 const AttachmentMap& attachments) const noexcept = 0;
 
   /**
    * @brief Read JSON attachments for an entry
@@ -400,19 +400,19 @@ class IBucket {
    * @param attachment_keys attachment keys to remove
    * @return HTTP or communication error
    */
-  virtual Error RemoveAttachments(std::string_view entry_name,
-                                  const std::set<std::string>& attachment_keys) const noexcept = 0;
+  virtual Error RemoveAttachments(std::string_view entry_name, const std::set<std::string>& attachment_keys) const
+      noexcept = 0;
 
   /**
    * Query options
    */
   struct QueryOptions {
-    std::optional<std::string> when;               ///< query condition
-    std::optional<bool> strict;                    ///< strict mode
-    std::optional<std::string> ext;                ///< additional parameters for extensions
+    std::optional<std::string> when;  ///< query condition
+    std::optional<bool> strict;       ///< strict mode
+    std::optional<std::string> ext;   ///< additional parameters for extensions
     std::optional<std::chrono::milliseconds> ttl;  ///< time to live
-    bool continuous = false;                       ///< continuous query. If true,
-                                                   /// the method returns the latest record and waits for the next one
+    bool continuous = false;  ///< continuous query. If true,
+                              /// the method returns the latest record and waits for the next one
     std::chrono::milliseconds poll_interval = std::chrono::milliseconds(1000);  ///< poll interval for continuous query
     bool head_only = false;                                                     ///< read only metadata
   };
@@ -543,9 +543,9 @@ class IBucket {
     std::optional<Time> start;
     std::optional<Time> stop;
     QueryOptions query_options = {};
-    uint64_t record_index = 0;                               // legacy index selector (API < 1.19)
-    std::optional<std::string> record_entry = std::nullopt;  // explicit record entry (API >= 1.19)
-    std::optional<Time> record_timestamp = std::nullopt;     // explicit record timestamp (API >= 1.19)
+    uint64_t record_index = 0;  // legacy index selector (API < 1.19)
+    std::optional<std::string> record_entry = std::nullopt;      // explicit record entry (API >= 1.19)
+    std::optional<Time> record_timestamp = std::nullopt;         // explicit record timestamp (API >= 1.19)
     std::optional<Time> expire_at = std::nullopt;
     std::optional<std::string> file_name = std::nullopt;
     std::optional<std::string> base_url = std::nullopt;

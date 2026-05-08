@@ -1,10 +1,10 @@
 // Copyright 2022-2024 ReductSoftware UG
 
 #include <catch2/catch.hpp>
-#include <nlohmann/json.hpp>
 
 #include <fstream>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -782,6 +782,7 @@ TEST_CASE("reduct::IBucket should remove entry attachments with numeric keys", "
   REQUIRE(stored_after.empty());
 }
 
+
 TEST_CASE("reduct::IBucket should remove entry attachments with reserved keys", "[entry_api][1_19]") {
   Fixture ctx;
   auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
@@ -803,40 +804,6 @@ TEST_CASE("reduct::IBucket should remove entry attachments with reserved keys", 
   REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
 }
 
-TEST_CASE("reduct::IBucket should write and read non-JSON attachments", "[entry_api][1_19]") {
-  Fixture ctx;
-  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
-  REQUIRE(bucket);
-
-  // "3q2+7w==" is base64 for bytes {0xDE, 0xAD, 0xBE, 0xEF}
-  IBucket::AttachmentMap attachments{
-      {"binary-data", "3q2+7w=="},
-  };
-
-  REQUIRE(bucket->WriteAttachments("entry-1", attachments, "application/octet-stream") == Error::kOk);
-
-  auto [stored, err] = bucket->ReadAttachments("entry-1");
-  REQUIRE(err == Error::kOk);
-  REQUIRE(stored.size() == 1);
-  REQUIRE(stored.at("binary-data") == "3q2+7w==");
-}
-
-TEST_CASE("reduct::IBucket should write and read JSON attachments with default content type", "[entry_api][1_19]") {
-  Fixture ctx;
-  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
-  REQUIRE(bucket);
-
-  IBucket::AttachmentMap attachments{
-      {"meta-1", R"({"enabled":true,"values":[1,2,3]})"},
-  };
-
-  REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
-
-  auto [stored, err] = bucket->ReadAttachments("entry-1");
-  REQUIRE(err == Error::kOk);
-  REQUIRE(stored.size() == 1);
-  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
-}
 
 TEST_CASE("Batch should slice data", "[batch]") {
   auto batch = IBucket::Batch();
