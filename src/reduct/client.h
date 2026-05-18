@@ -287,6 +287,91 @@ class IClient {
   [[nodiscard]] virtual Error RemoveReplication(std::string_view name) const noexcept = 0;
 
   /**
+   * Lifecycle information
+   */
+  enum class LifecycleType { kDelete };
+
+  enum class LifecycleMode { kEnabled, kDisabled, kDryRun };
+
+  struct LifecycleInfo {
+    std::string name;    // Lifecycle name
+    LifecycleMode mode = LifecycleMode::kEnabled;  // Lifecycle mode
+    bool is_provisioned; // Lifecycle is provisioned
+    bool is_running;     // Lifecycle worker is running
+
+    auto operator<=>(const LifecycleInfo&) const = default;
+  };
+
+  /**
+   * Lifecycle settings
+   */
+  struct LifecycleSettings {
+    LifecycleType type = LifecycleType::kDelete;  // Lifecycle action type
+    std::string bucket;         // Bucket to apply lifecycle policy
+    std::vector<std::string> entries;  // Entries to process. If empty, all matching entries are used.
+    std::string max_age;        // Maximum record age
+    std::optional<std::string> interval;  // Interval between lifecycle runs
+    std::optional<std::string> when;      // Lifecycle condition
+    LifecycleMode mode = LifecycleMode::kEnabled;  // Lifecycle mode
+
+    auto operator<=>(const LifecycleSettings&) const = default;
+  };
+
+  /**
+   * Lifecycle full info with settings
+   */
+  struct FullLifecycleInfo {
+    LifecycleInfo info;          // Lifecycle info
+    LifecycleSettings settings;  // Lifecycle settings
+
+    bool operator==(const FullLifecycleInfo&) const = default;
+  };
+
+  /**
+   * @brief Get list of lifecycles
+   * @return the list or an error
+   */
+  [[nodiscard]] virtual Result<std::vector<LifecycleInfo>> GetLifecycleList() const noexcept = 0;
+
+  /**
+   * @brief Get lifecycle info with settings
+   * @param name name of lifecycle
+   * @return the info or an error
+   */
+  [[nodiscard]] virtual Result<FullLifecycleInfo> GetLifecycle(std::string_view name) const noexcept = 0;
+
+  /**
+   * @brief Create a new lifecycle
+   * @param name name of lifecycle
+   * @param settings lifecycle settings
+   * @return error
+   */
+  [[nodiscard]] virtual Error CreateLifecycle(std::string_view name, LifecycleSettings settings) const noexcept = 0;
+
+  /**
+   * @brief Update lifecycle settings
+   * @param name name of lifecycle
+   * @param settings lifecycle settings
+   * @return error
+   */
+  [[nodiscard]] virtual Error UpdateLifecycle(std::string_view name, LifecycleSettings settings) const noexcept = 0;
+
+  /**
+   * @brief Update lifecycle mode without changing settings
+   * @param name name of lifecycle
+   * @param mode lifecycle mode
+   * @return error
+   */
+  [[nodiscard]] virtual Error SetLifecycleMode(std::string_view name, LifecycleMode mode) const noexcept = 0;
+
+  /**
+   * @brief Remove lifecycle
+   * @param name name of lifecycle
+   * @return error
+   */
+  [[nodiscard]] virtual Error RemoveLifecycle(std::string_view name) const noexcept = 0;
+
+  /**
    * @brief Build a client
    * @param url URL of React Storage
    * @return
