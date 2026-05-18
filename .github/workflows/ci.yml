@@ -76,7 +76,7 @@ jobs:
             exclude_api_version_tag: ""
             audit_enabled: "false"
           - reductstore_version: "latest"
-            exclude_api_version_tag: "~[1_19]"
+            exclude_api_version_tag: "~[1_20]"
             audit_enabled: "false"
 
     steps:
