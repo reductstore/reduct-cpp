@@ -296,7 +296,7 @@ class IClient {
   struct LifecycleInfo {
     std::string name;    // Lifecycle name
     LifecycleMode mode = LifecycleMode::kEnabled;  // Lifecycle mode
-    bool is_provisioned; // Lifecycle is provisioned
+    bool is_provisioned;  // Lifecycle is provisioned
     bool is_running;     // Lifecycle worker is running
 
     auto operator<=>(const LifecycleInfo&) const = default;
