@@ -52,6 +52,13 @@ struct Fixture {
       [[maybe_unused]] auto ret = client->RemoveReplication(r.name);
     }
 
+    for (auto&& lifecycle : client->GetLifecycleList().result) {
+      if (!lifecycle.name.starts_with("test_lifecycle")) {
+        continue;
+      }
+      [[maybe_unused]] auto ret = client->RemoveLifecycle(lifecycle.name);
+    }
+
     auto [bucket, err] = client->CreateBucket("test_bucket_1");
     if (err != reduct::Error::kOk) {
       throw std::runtime_error(fmt::format("Failed to create test_bucket_1: {}", err.ToString()));

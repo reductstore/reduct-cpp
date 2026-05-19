@@ -61,6 +61,41 @@ Result<nlohmann::json> ReplicationSettingsToJsonString(IClient::ReplicationSetti
  */
 Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::json& data);
 
+/**
+ * @brief Parse list of lifecycle info from JSON
+ * @param data
+ * @return
+ */
+Result<std::vector<IClient::LifecycleInfo>> ParseLifecycleList(const nlohmann::json& data);
+
+/**
+ * @brief Convert lifecycle mode to string representation
+ * @param mode lifecycle mode
+ * @return string value expected by API
+ */
+std::string LifecycleModeToString(IClient::LifecycleMode mode);
+
+/**
+ * @brief Convert lifecycle type to string representation
+ * @param type lifecycle type
+ * @return string value expected by API
+ */
+std::string LifecycleTypeToString(IClient::LifecycleType type);
+
+/**
+ * @brief Serialize lifecycle settings
+ * @param settings to serialize
+ * @return json
+ */
+Result<nlohmann::json> LifecycleSettingsToJsonString(IClient::LifecycleSettings settings);
+
+/**
+ * @brief Parse full lifecycle info from JSON
+ * @param data
+ * @return
+ */
+Result<IClient::FullLifecycleInfo> ParseFullLifecycleInfo(const nlohmann::json& data);
+
 Result<nlohmann::ordered_json> QueryOptionsToJsonString(std::string_view type, const std::vector<std::string>& entries,
                                                         std::optional<IBucket::Time> start,
                                                         std::optional<IBucket::Time> stop,

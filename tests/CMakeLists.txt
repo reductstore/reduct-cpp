@@ -13,6 +13,7 @@ set(SRC_FILES
     reduct/bucket_api_test.cc
     reduct/entry_api_test.cc
     reduct/replication_api_test.cc
+    reduct/lifecycle_api_test.cc
     reduct/server_api_test.cc
     reduct/token_api_test.cc
     test.cc

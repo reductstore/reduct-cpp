@@ -25,7 +25,6 @@ class IClient {
  public:
   using Time = std::chrono::time_point<std::chrono::system_clock>;
 
-
   /**
    * Reduct Storage Information
    */
@@ -105,14 +104,14 @@ class IClient {
    * API Token for authentication
    */
   struct Token {
-    std::string name;                  // name of token
-    Time created_at;                   // creation time
-    bool is_provisioned;               // true if token is provisioned, you can't remove it or change its permissions
-    std::optional<Time> expires_at;    // absolute expiry timestamp (UTC)
-    std::optional<uint64_t> ttl;       // inactivity TTL in seconds
-    std::optional<Time> last_access;   // last access timestamp
+    std::string name;                 // name of token
+    Time created_at;                  // creation time
+    bool is_provisioned;              // true if token is provisioned, you can't remove it or change its permissions
+    std::optional<Time> expires_at;   // absolute expiry timestamp (UTC)
+    std::optional<uint64_t> ttl;      // inactivity TTL in seconds
+    std::optional<Time> last_access;  // last access timestamp
     std::vector<std::string> ip_allowlist;  // allowed source IP addresses
-    bool is_expired = false;           // token cannot be used anymore
+    bool is_expired = false;                // token cannot be used anymore
 
     auto operator<=>(const IClient::Token&) const = default;
   };
@@ -132,14 +131,14 @@ class IClient {
    * Token with permissions
    */
   struct FullTokenInfo {
-    std::string name;     // name of token
-    Time created_at;      // creation time
-    bool is_provisioned;  // true if token is provisioned, you can't remove it or change its permissions
-    std::optional<Time> expires_at;    // absolute expiry timestamp (UTC)
-    std::optional<uint64_t> ttl;       // inactivity TTL in seconds
-    std::optional<Time> last_access;   // last access timestamp
+    std::string name;                 // name of token
+    Time created_at;                  // creation time
+    bool is_provisioned;              // true if token is provisioned, you can't remove it or change its permissions
+    std::optional<Time> expires_at;   // absolute expiry timestamp (UTC)
+    std::optional<uint64_t> ttl;      // inactivity TTL in seconds
+    std::optional<Time> last_access;  // last access timestamp
     std::vector<std::string> ip_allowlist;  // allowed source IP addresses
-    bool is_expired = false;           // token cannot be used anymore
+    bool is_expired = false;                // token cannot be used anymore
 
     Permissions permissions;
 
@@ -178,8 +177,8 @@ class IClient {
                                                         TokenCreateRequest request) const noexcept = 0;
 
   [[deprecated("Use CreateToken(name, TokenCreateRequest) to set ttl/expires_at/ip_allowlist")]]
-  [[nodiscard]] virtual Result<std::string> CreateToken(std::string_view name,
-                                                        Permissions permissions) const noexcept = 0;
+  [[nodiscard]] virtual Result<std::string>
+  CreateToken(std::string_view name, Permissions permissions) const noexcept = 0;
 
   /**
    * @brief Update token permissions
@@ -206,11 +205,11 @@ class IClient {
   enum class ReplicationMode { kEnabled, kPaused, kDisabled };
 
   struct ReplicationInfo {
-    std::string name;          // Replication name
-    ReplicationMode mode = ReplicationMode::kEnabled;      // Replication mode
-    bool is_active;            // Remote instance is available and replication is active
-    bool is_provisioned;       // Replication settings
-    uint64_t pending_records;  // Number of records pending replication
+    std::string name;                                  // Replication name
+    ReplicationMode mode = ReplicationMode::kEnabled;  // Replication mode
+    bool is_active;                                    // Remote instance is available and replication is active
+    bool is_provisioned;                               // Replication settings
+    uint64_t pending_records;                          // Number of records pending replication
 
     auto operator<=>(const ReplicationInfo&) const = default;
   };
@@ -219,13 +218,13 @@ class IClient {
    * Replication settings
    */
   struct ReplicationSettings {
-    std::string src_bucket;  // Source bucket
-    std::string dst_bucket;  // Destination bucket
-    std::string dst_host;    // Destination host URL (e.g. https://reductstore.com)
-    std::optional<std::string> dst_token;   // Destination access token
+    std::string src_bucket;                // Source bucket
+    std::string dst_bucket;                // Destination bucket
+    std::string dst_host;                  // Destination host URL (e.g. https://reductstore.com)
+    std::optional<std::string> dst_token;  // Destination access token
     std::vector<std::string>
-        entries;                // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
-    std::optional<std::string> when;  // Replication condition
+        entries;  // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
+    std::optional<std::string> when;                   // Replication condition
     ReplicationMode mode = ReplicationMode::kEnabled;  // Replication mode
 
     auto operator<=>(const ReplicationSettings&) const = default;
@@ -285,6 +284,91 @@ class IClient {
    * @return error
    */
   [[nodiscard]] virtual Error RemoveReplication(std::string_view name) const noexcept = 0;
+
+  /**
+   * Lifecycle information
+   */
+  enum class LifecycleType { kDelete };
+
+  enum class LifecycleMode { kEnabled, kDisabled, kDryRun };
+
+  struct LifecycleInfo {
+    std::string name;                              // Lifecycle name
+    LifecycleMode mode = LifecycleMode::kEnabled;  // Lifecycle mode
+    bool is_provisioned;                           // Lifecycle is provisioned
+    bool is_running;                               // Lifecycle worker is running
+
+    auto operator<=>(const LifecycleInfo&) const = default;
+  };
+
+  /**
+   * Lifecycle settings
+   */
+  struct LifecycleSettings {
+    LifecycleType type = LifecycleType::kDelete;   // Lifecycle action type
+    std::string bucket;                            // Bucket to apply lifecycle policy
+    std::vector<std::string> entries;              // Entries to process. If empty, all matching entries are used.
+    std::string max_age;                           // Maximum record age
+    std::optional<std::string> interval;           // Interval between lifecycle runs
+    std::optional<std::string> when;               // Lifecycle condition
+    LifecycleMode mode = LifecycleMode::kEnabled;  // Lifecycle mode
+
+    auto operator<=>(const LifecycleSettings&) const = default;
+  };
+
+  /**
+   * Lifecycle full info with settings
+   */
+  struct FullLifecycleInfo {
+    LifecycleInfo info;          // Lifecycle info
+    LifecycleSettings settings;  // Lifecycle settings
+
+    bool operator==(const FullLifecycleInfo&) const = default;
+  };
+
+  /**
+   * @brief Get list of lifecycles
+   * @return the list or an error
+   */
+  [[nodiscard]] virtual Result<std::vector<LifecycleInfo>> GetLifecycleList() const noexcept = 0;
+
+  /**
+   * @brief Get lifecycle info with settings
+   * @param name name of lifecycle
+   * @return the info or an error
+   */
+  [[nodiscard]] virtual Result<FullLifecycleInfo> GetLifecycle(std::string_view name) const noexcept = 0;
+
+  /**
+   * @brief Create a new lifecycle
+   * @param name name of lifecycle
+   * @param settings lifecycle settings
+   * @return error
+   */
+  [[nodiscard]] virtual Error CreateLifecycle(std::string_view name, LifecycleSettings settings) const noexcept = 0;
+
+  /**
+   * @brief Update lifecycle settings
+   * @param name name of lifecycle
+   * @param settings lifecycle settings
+   * @return error
+   */
+  [[nodiscard]] virtual Error UpdateLifecycle(std::string_view name, LifecycleSettings settings) const noexcept = 0;
+
+  /**
+   * @brief Update lifecycle mode without changing settings
+   * @param name name of lifecycle
+   * @param mode lifecycle mode
+   * @return error
+   */
+  [[nodiscard]] virtual Error SetLifecycleMode(std::string_view name, LifecycleMode mode) const noexcept = 0;
+
+  /**
+   * @brief Remove lifecycle
+   * @param name name of lifecycle
+   * @return error
+   */
+  [[nodiscard]] virtual Error RemoveLifecycle(std::string_view name) const noexcept = 0;
 
   /**
    * @brief Build a client

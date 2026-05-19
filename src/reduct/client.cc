@@ -365,6 +365,67 @@ class Client : public IClient {
     return client_->Delete(fmt::format("/replications/{}", name));
   }
 
+  Result<std::vector<LifecycleInfo>> GetLifecycleList() const noexcept override {
+    auto [body, err] = client_->Get("/lifecycles");
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      nlohmann::json data = nlohmann::json::parse(body);
+      return internal::ParseLifecycleList(data);
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+  }
+
+  Result<FullLifecycleInfo> GetLifecycle(std::string_view name) const noexcept override {
+    auto [body, err] = client_->Get(fmt::format("/lifecycles/{}", name));
+    if (err) {
+      return {{}, std::move(err)};
+    }
+
+    try {
+      nlohmann::json data = nlohmann::json::parse(body);
+      return internal::ParseFullLifecycleInfo(data);
+    } catch (const std::exception& e) {
+      return {{}, Error{.code = -1, .message = e.what()}};
+    }
+  }
+
+  Error CreateLifecycle(std::string_view name, LifecycleSettings settings) const noexcept override {
+    auto [json_data, json_err] = internal::LifecycleSettingsToJsonString(std::move(settings));
+    if (json_err) {
+      return json_err;
+    }
+
+    return client_->Post(fmt::format("/lifecycles/{}", name), json_data.dump());
+  }
+
+  Error UpdateLifecycle(std::string_view name, LifecycleSettings settings) const noexcept override {
+    auto [json_data, json_err] = internal::LifecycleSettingsToJsonString(std::move(settings));
+    if (json_err) {
+      return json_err;
+    }
+
+    return client_->Put(fmt::format("/lifecycles/{}", name), json_data.dump());
+  }
+
+  Error SetLifecycleMode(std::string_view name, LifecycleMode mode) const noexcept override {
+    try {
+      nlohmann::json payload = {{"mode", internal::LifecycleModeToString(mode)}};
+      auto patch_result = client_->Patch(fmt::format("/lifecycles/{}/mode", name), payload.dump(),
+                                         {{"Content-Type", "application/json"}});
+      return patch_result.error;
+    } catch (const std::exception& ex) {
+      return Error{.code = -1, .message = ex.what()};
+    }
+  }
+
+  Error RemoveLifecycle(std::string_view name) const noexcept override {
+    return client_->Delete(fmt::format("/lifecycles/{}", name));
+  }
+
  private:
   HttpOptions options_;
   std::unique_ptr<internal::IHttpClient> client_;

@@ -31,6 +31,40 @@ IClient::ReplicationMode ParseReplicationMode(const nlohmann::json& mode_json) {
   throw std::invalid_argument("Invalid replication mode: " + mode);
 }
 
+IClient::LifecycleMode ParseLifecycleMode(const nlohmann::json& mode_json) {
+  if (mode_json.is_null()) {
+    return IClient::LifecycleMode::kEnabled;
+  }
+
+  const auto mode = mode_json.get<std::string>();
+  if (mode == "enabled") {
+    return IClient::LifecycleMode::kEnabled;
+  }
+
+  if (mode == "disabled") {
+    return IClient::LifecycleMode::kDisabled;
+  }
+
+  if (mode == "dry_run") {
+    return IClient::LifecycleMode::kDryRun;
+  }
+
+  throw std::invalid_argument("Invalid lifecycle mode: " + mode);
+}
+
+IClient::LifecycleType ParseLifecycleType(const nlohmann::json& type_json) {
+  if (type_json.is_null()) {
+    return IClient::LifecycleType::kDelete;
+  }
+
+  const auto type = type_json.get<std::string>();
+  if (type == "delete") {
+    return IClient::LifecycleType::kDelete;
+  }
+
+  throw std::invalid_argument("Invalid lifecycle type: " + type);
+}
+
 }  // namespace
 
 std::string ReplicationModeToString(IClient::ReplicationMode mode) {
@@ -44,6 +78,28 @@ std::string ReplicationModeToString(IClient::ReplicationMode mode) {
   }
 
   throw std::invalid_argument("Invalid replication mode");
+}
+
+std::string LifecycleModeToString(IClient::LifecycleMode mode) {
+  switch (mode) {
+    case IClient::LifecycleMode::kEnabled:
+      return "enabled";
+    case IClient::LifecycleMode::kDisabled:
+      return "disabled";
+    case IClient::LifecycleMode::kDryRun:
+      return "dry_run";
+  }
+
+  throw std::invalid_argument("Invalid lifecycle mode");
+}
+
+std::string LifecycleTypeToString(IClient::LifecycleType type) {
+  switch (type) {
+    case IClient::LifecycleType::kDelete:
+      return "delete";
+  }
+
+  throw std::invalid_argument("Invalid lifecycle type");
 }
 
 nlohmann::json BucketSettingToJsonString(const IBucket::Settings& settings) {
@@ -235,6 +291,89 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
           .count = value.at("count"),
           .last_message = value.at("last_message"),
       };
+    }
+  } catch (const std::exception& ex) {
+    return {{}, Error{.code = -1, .message = ex.what()}};
+  }
+
+  return {info, Error::kOk};
+}
+
+Result<std::vector<IClient::LifecycleInfo>> ParseLifecycleList(const nlohmann::json& data) {
+  std::vector<IClient::LifecycleInfo> lifecycle_list;
+
+  try {
+    auto json_lifecycles = data.at("lifecycles");
+    lifecycle_list.reserve(json_lifecycles.size());
+    for (const auto& lifecycle : json_lifecycles) {
+      lifecycle_list.push_back(IClient::LifecycleInfo{
+          .name = lifecycle.at("name"),
+          .mode = lifecycle.contains("mode") ? ParseLifecycleMode(lifecycle.at("mode"))
+                                              : IClient::LifecycleMode::kEnabled,
+          .is_provisioned = lifecycle.at("is_provisioned"),
+          .is_running = lifecycle.at("is_running"),
+      });
+    }
+  } catch (const std::exception& ex) {
+    return {{}, Error{.code = -1, .message = ex.what()}};
+  }
+
+  return {lifecycle_list, Error::kOk};
+}
+
+Result<nlohmann::json> LifecycleSettingsToJsonString(IClient::LifecycleSettings settings) {
+  try {
+    nlohmann::json json_data;
+    json_data["type"] = LifecycleTypeToString(settings.type);
+    json_data["bucket"] = settings.bucket;
+    json_data["entries"] = settings.entries;
+    json_data["max_age"] = settings.max_age;
+    if (settings.interval) {
+      json_data["interval"] = *settings.interval;
+    }
+    json_data["mode"] = LifecycleModeToString(settings.mode);
+
+    if (settings.when) {
+      try {
+        json_data["when"] = nlohmann::json::parse(*settings.when);
+      } catch (const std::exception& ex) {
+        return {{}, Error{.code = -1, .message = ex.what()}};
+      }
+    }
+
+    return {json_data, Error::kOk};
+  } catch (const std::exception& ex) {
+    return {{}, Error{.code = -1, .message = ex.what()}};
+  }
+}
+
+Result<IClient::FullLifecycleInfo> ParseFullLifecycleInfo(const nlohmann::json& data) {
+  IClient::FullLifecycleInfo info;
+  try {
+    info.info = IClient::LifecycleInfo{
+        .name = data.at("info").at("name"),
+        .mode = data.at("info").contains("mode") ? ParseLifecycleMode(data.at("info").at("mode"))
+                                                   : IClient::LifecycleMode::kEnabled,
+        .is_provisioned = data.at("info").at("is_provisioned"),
+        .is_running = data.at("info").at("is_running"),
+    };
+
+    const auto& settings = data.at("settings");
+    info.settings = IClient::LifecycleSettings{
+        .type = settings.contains("type") ? ParseLifecycleType(settings.at("type")) : IClient::LifecycleType::kDelete,
+        .bucket = settings.at("bucket"),
+        .entries = settings.at("entries"),
+        .max_age = settings.at("max_age"),
+        .mode = settings.contains("mode") ? ParseLifecycleMode(settings.at("mode"))
+                                           : IClient::LifecycleMode::kEnabled,
+    };
+
+    if (settings.contains("interval") && !settings.at("interval").is_null()) {
+      info.settings.interval = settings.at("interval");
+    }
+
+    if (settings.contains("when") && !settings.at("when").is_null()) {
+      info.settings.when = settings.at("when").dump();
     }
   } catch (const std::exception& ex) {
     return {{}, Error{.code = -1, .message = ex.what()}};
