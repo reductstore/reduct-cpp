@@ -12,10 +12,10 @@ namespace {
 
 IClient::LifecycleSettings DefaultSettings() {
   return {
-      .type = IClient::LifecycleType::kDelete,
+      .type = IClient::LifecycleType::kCompress,
       .bucket = "test_bucket_1",
       .entries = {"entry-1"},
-      .max_age = "1h",
+      .older_than = "1h",
       .interval = "10m",
       .mode = IClient::LifecycleMode::kEnabled,
   };
@@ -63,7 +63,7 @@ TEST_CASE("reduct::Client should update a lifecycle", "[lifecycle_api][1_20]") {
   REQUIRE(err == Error::kOk);
 
   settings.entries = {"entry-2"};
-  settings.max_age = "2h";
+  settings.older_than = "2h";
   settings.interval = "20m";
   err = ctx.client->UpdateLifecycle("test_lifecycle", settings);
   REQUIRE(err == Error::kOk);
