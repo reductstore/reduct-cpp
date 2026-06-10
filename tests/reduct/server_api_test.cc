@@ -21,7 +21,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(err == Error::kOk);
   REQUIRE(info.version >= "1.10.0");
 
-  REQUIRE(info.bucket_count == 2);
+  REQUIRE(info.bucket_count >= 2);
   REQUIRE(info.usage == 234);
   REQUIRE(info.uptime.count() >= 1);
   REQUIRE(info.oldest_record.time_since_epoch() == s(1));
@@ -38,19 +38,28 @@ TEST_CASE("reduct::Client should list buckets", "[server_api]") {
   auto [list, err] = ctx.client->GetBucketList();
 
   REQUIRE_FALSE(list.empty());
-  REQUIRE(list[0].name == "test_bucket_1");
-  REQUIRE(list[0].size == 156);
-  REQUIRE(list[0].entry_count == 2);
-  REQUIRE(list[0].oldest_record.time_since_epoch() == s(1));
-  REQUIRE(list[0].latest_record.time_since_epoch() == s(4));
-  REQUIRE(list[0].status == IBucket::Status::kReady);
 
-  REQUIRE(list[1].name == "test_bucket_2");
-  REQUIRE(list[1].size == 78);
-  REQUIRE(list[1].entry_count == 1);
-  REQUIRE(list[1].oldest_record.time_since_epoch() == s(5));
-  REQUIRE(list[1].latest_record.time_since_epoch() == s(6));
-  REQUIRE(list[1].status == IBucket::Status::kReady);
+  std::vector<IBucket::Info> test_buckets;
+  for (const auto& bucket : list) {
+    if (bucket.name.starts_with("test_bucket_")) {
+      test_buckets.push_back(bucket);
+    }
+  }
+
+  REQUIRE(test_buckets.size() == 2);
+  REQUIRE(test_buckets[0].name == "test_bucket_1");
+  REQUIRE(test_buckets[0].size == 156);
+  REQUIRE(test_buckets[0].entry_count == 2);
+  REQUIRE(test_buckets[0].oldest_record.time_since_epoch() == s(1));
+  REQUIRE(test_buckets[0].latest_record.time_since_epoch() == s(4));
+  REQUIRE(test_buckets[0].status == IBucket::Status::kReady);
+
+  REQUIRE(test_buckets[1].name == "test_bucket_2");
+  REQUIRE(test_buckets[1].size == 78);
+  REQUIRE(test_buckets[1].entry_count == 1);
+  REQUIRE(test_buckets[1].oldest_record.time_since_epoch() == s(5));
+  REQUIRE(test_buckets[1].latest_record.time_since_epoch() == s(6));
+  REQUIRE(test_buckets[1].status == IBucket::Status::kReady);
 }
 
 TEST_CASE("reduct::Client should return error", "[server_api]") {
