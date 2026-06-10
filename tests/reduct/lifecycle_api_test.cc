@@ -12,7 +12,7 @@ namespace {
 
 IClient::LifecycleSettings DefaultSettings() {
   return {
-      .type = IClient::LifecycleType::kCompress,
+      .type = IClient::LifecycleType::kDelete,
       .bucket = "test_bucket_1",
       .entries = {"entry-1"},
       .older_than = "1h",
@@ -35,6 +35,7 @@ TEST_CASE("reduct::Client should get list of lifecycles", "[lifecycle_api][1_20]
 TEST_CASE("reduct::Client should create a lifecycle", "[lifecycle_api][1_20]") {
   Fixture ctx;
   auto settings = DefaultSettings();
+  settings.type = IClient::LifecycleType::kCompress;
 
   auto err = ctx.client->CreateLifecycle("test_lifecycle", settings);
   REQUIRE(err == Error::kOk);
