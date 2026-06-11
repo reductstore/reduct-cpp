@@ -17,6 +17,10 @@ inputs:
     description: "Enable audit in ReductStore during tests"
     required: false
     default: "true"
+  system-events-enabled:
+    description: "Enable $system event storage in ReductStore during tests"
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -25,6 +29,7 @@ runs:
       run: docker run -p 8383:8383 -v ${PWD}:/workdir
         --env RS_API_TOKEN=${{inputs.api-token}}
         --env RS_AUDIT_ENABLED=${{inputs.audit-enabled}}
+        --env RS_SYSTEM_EVENTS_ENABLED=${{inputs.system-events-enabled}}
         --env RS_EXT_PATH=/tmp
         --name reduct-store
         -d reduct/store:${{inputs.reductstore-version}}
