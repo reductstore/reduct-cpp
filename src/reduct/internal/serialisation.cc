@@ -61,6 +61,9 @@ IClient::LifecycleType ParseLifecycleType(const nlohmann::json& type_json) {
   if (type == "delete") {
     return IClient::LifecycleType::kDelete;
   }
+  if (type == "compress") {
+    return IClient::LifecycleType::kCompress;
+  }
 
   throw std::invalid_argument("Invalid lifecycle type: " + type);
 }
@@ -97,6 +100,8 @@ std::string LifecycleTypeToString(IClient::LifecycleType type) {
   switch (type) {
     case IClient::LifecycleType::kDelete:
       return "delete";
+    case IClient::LifecycleType::kCompress:
+      return "compress";
   }
 
   throw std::invalid_argument("Invalid lifecycle type");
@@ -327,7 +332,7 @@ Result<nlohmann::json> LifecycleSettingsToJsonString(IClient::LifecycleSettings 
     json_data["type"] = LifecycleTypeToString(settings.type);
     json_data["bucket"] = settings.bucket;
     json_data["entries"] = settings.entries;
-    json_data["max_age"] = settings.max_age;
+    json_data["older_than"] = settings.older_than;
     if (settings.interval) {
       json_data["interval"] = *settings.interval;
     }
@@ -363,7 +368,7 @@ Result<IClient::FullLifecycleInfo> ParseFullLifecycleInfo(const nlohmann::json& 
         .type = settings.contains("type") ? ParseLifecycleType(settings.at("type")) : IClient::LifecycleType::kDelete,
         .bucket = settings.at("bucket"),
         .entries = settings.at("entries"),
-        .max_age = settings.at("max_age"),
+        .older_than = settings.at("older_than"),
         .mode = settings.contains("mode") ? ParseLifecycleMode(settings.at("mode"))
                                            : IClient::LifecycleMode::kEnabled,
     };

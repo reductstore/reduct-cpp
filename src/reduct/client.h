@@ -288,7 +288,7 @@ class IClient {
   /**
    * Lifecycle information
    */
-  enum class LifecycleType { kDelete };
+  enum class LifecycleType { kDelete, kCompress };
 
   enum class LifecycleMode { kEnabled, kDisabled, kDryRun };
 
@@ -308,7 +308,7 @@ class IClient {
     LifecycleType type = LifecycleType::kDelete;   // Lifecycle action type
     std::string bucket;                            // Bucket to apply lifecycle policy
     std::vector<std::string> entries;              // Entries to process. If empty, all matching entries are used.
-    std::string max_age;                           // Maximum record age
+    std::string older_than;                        // Process records older than this duration
     std::optional<std::string> interval;           // Interval between lifecycle runs
     std::optional<std::string> when;               // Lifecycle condition
     LifecycleMode mode = LifecycleMode::kEnabled;  // Lifecycle mode

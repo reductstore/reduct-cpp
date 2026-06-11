@@ -24,19 +24,28 @@ struct Fixture {
     }
 
     client = IClient::Build(url, opts);
-    auto bucket_list = client->GetBucketList();
-    if (bucket_list.error) {
-      throw std::runtime_error(fmt::format("Failed to get bucket list: {}", bucket_list.error.ToString()));
-    }
-    for (auto&& info : client->GetBucketList().result) {
-      if (!info.name.starts_with("test_bucket")) {
-        continue;
+    auto cleanup_test_buckets = [&]() {
+      auto bucket_list = client->GetBucketList();
+      if (bucket_list.error) {
+        throw std::runtime_error(fmt::format("Failed to get bucket list: {}", bucket_list.error.ToString()));
       }
-      std::unique_ptr<IBucket> bucket = client->GetBucket(info.name);
-      [[maybe_unused]] auto ret = bucket->Remove();
-    }
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));  // wait for bucket removal
+      bool removed = false;
+      for (auto&& info : bucket_list.result) {
+        if (!info.name.starts_with("test_bucket")) {
+          continue;
+        }
+        std::unique_ptr<IBucket> bucket = client->GetBucket(info.name);
+        [[maybe_unused]] auto ret = bucket->Remove();
+        removed = true;
+      }
+
+      return removed;
+    };
+
+    while (cleanup_test_buckets()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 
     for (auto&& t : client->GetTokenList().result) {
       if (!t.name.starts_with("test_token")) {
