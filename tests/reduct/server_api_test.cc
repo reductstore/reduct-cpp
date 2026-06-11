@@ -39,7 +39,7 @@ TEST_CASE("reduct::Client should list buckets", "[server_api]") {
 
   REQUIRE_FALSE(list.empty());
 
-  std::vector<IBucket::Info> test_buckets;
+  std::vector<IBucket::BucketInfo> test_buckets;
   for (const auto& bucket : list) {
     if (bucket.name.starts_with("test_bucket_")) {
       test_buckets.push_back(bucket);
