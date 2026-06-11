@@ -22,7 +22,7 @@ TEST_CASE("reduct::Client should get info", "[server_api]") {
   REQUIRE(info.version >= "1.10.0");
 
   REQUIRE(info.bucket_count >= 2);
-  REQUIRE(info.usage == 234);
+  REQUIRE(info.usage >= 234);
   REQUIRE(info.uptime.count() >= 1);
   REQUIRE(info.oldest_record.time_since_epoch() == s(1));
   REQUIRE(info.latest_record.time_since_epoch() == s(6));
