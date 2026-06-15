@@ -150,8 +150,6 @@ TEST_CASE("reduct::Client should set lifecycle when condition", "[lifecycle_api]
 }
 
 TEST_CASE("reduct::Client should parse lifecycle type and RFC3339 last_run", "[lifecycle_api][unit]") {
-  using namespace std::chrono;
-
   auto lifecycle_list_json = nlohmann::json::parse(R"({
     "lifecycles": [
       {
@@ -170,7 +168,8 @@ TEST_CASE("reduct::Client should parse lifecycle type and RFC3339 last_run", "[l
   REQUIRE(lifecycles.size() == 1);
   REQUIRE(lifecycles[0].type == IClient::LifecycleType::kCompress);
   REQUIRE(lifecycles[0].last_run.has_value());
-  REQUIRE(duration_cast<microseconds>(lifecycles[0].last_run->time_since_epoch()).count() % 1000000 == 123456);
+  REQUIRE(std::chrono::duration_cast<std::chrono::microseconds>(lifecycles[0].last_run->time_since_epoch()).count() %
+              1000000 == 123456);
 
   auto full_lifecycle_json = nlohmann::json::parse(R"({
     "info": {
@@ -194,6 +193,8 @@ TEST_CASE("reduct::Client should parse lifecycle type and RFC3339 last_run", "[l
   REQUIRE(full_err == Error::kOk);
   REQUIRE(full_lifecycle.info.type == IClient::LifecycleType::kCompress);
   REQUIRE(full_lifecycle.info.last_run.has_value());
-  REQUIRE(duration_cast<microseconds>(full_lifecycle.info.last_run->time_since_epoch()).count() % 1000000 ==
-          654321);
+  REQUIRE(std::chrono::duration_cast<std::chrono::microseconds>(
+              full_lifecycle.info.last_run->time_since_epoch())
+              .count() %
+              1000000 == 654321);
 }

@@ -369,7 +369,8 @@ Result<IClient::FullLifecycleInfo> ParseFullLifecycleInfo(const nlohmann::json& 
         .is_provisioned = data.at("info").at("is_provisioned"),
         .is_running = data.at("info").at("is_running"),
         .last_run = data.at("info").contains("last_run") && !data.at("info").at("last_run").is_null()
-                        ? std::optional<IClient::Time>{parse_iso8601_utc(data.at("info").at("last_run").get<std::string>())}
+                        ? std::optional<IClient::Time>{
+                              parse_iso8601_utc(data.at("info").at("last_run").get<std::string>())}
                         : std::nullopt,
     };
 
