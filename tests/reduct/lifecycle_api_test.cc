@@ -22,7 +22,7 @@ IClient::LifecycleSettings DefaultSettings() {
       .bucket = "test_bucket_1",
       .entries = {"entry-1"},
       .older_than = "1h",
-      .interval = "1s",
+      .interval = "10m",
       .mode = IClient::LifecycleMode::kEnabled,
   };
 }
