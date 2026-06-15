@@ -313,10 +313,15 @@ Result<std::vector<IClient::LifecycleInfo>> ParseLifecycleList(const nlohmann::j
     for (const auto& lifecycle : json_lifecycles) {
       lifecycle_list.push_back(IClient::LifecycleInfo{
           .name = lifecycle.at("name"),
+          .type = lifecycle.contains("type") ? ParseLifecycleType(lifecycle.at("type"))
+                                              : IClient::LifecycleType::kDelete,
           .mode = lifecycle.contains("mode") ? ParseLifecycleMode(lifecycle.at("mode"))
                                               : IClient::LifecycleMode::kEnabled,
           .is_provisioned = lifecycle.at("is_provisioned"),
           .is_running = lifecycle.at("is_running"),
+          .last_run = lifecycle.contains("last_run") && !lifecycle.at("last_run").is_null()
+                          ? std::optional<IClient::Time>{parse_iso8601_utc(lifecycle.at("last_run").get<std::string>())}
+                          : std::nullopt,
       });
     }
   } catch (const std::exception& ex) {
@@ -357,10 +362,16 @@ Result<IClient::FullLifecycleInfo> ParseFullLifecycleInfo(const nlohmann::json& 
   try {
     info.info = IClient::LifecycleInfo{
         .name = data.at("info").at("name"),
+        .type = data.at("info").contains("type") ? ParseLifecycleType(data.at("info").at("type"))
+                                                   : IClient::LifecycleType::kDelete,
         .mode = data.at("info").contains("mode") ? ParseLifecycleMode(data.at("info").at("mode"))
                                                    : IClient::LifecycleMode::kEnabled,
         .is_provisioned = data.at("info").at("is_provisioned"),
         .is_running = data.at("info").at("is_running"),
+        .last_run = data.at("info").contains("last_run") && !data.at("info").at("last_run").is_null()
+                        ? std::optional<IClient::Time>{
+                              parse_iso8601_utc(data.at("info").at("last_run").get<std::string>())}
+                        : std::nullopt,
     };
 
     const auto& settings = data.at("settings");

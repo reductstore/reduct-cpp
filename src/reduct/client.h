@@ -293,10 +293,12 @@ class IClient {
   enum class LifecycleMode { kEnabled, kDisabled, kDryRun };
 
   struct LifecycleInfo {
-    std::string name;                              // Lifecycle name
-    LifecycleMode mode = LifecycleMode::kEnabled;  // Lifecycle mode
-    bool is_provisioned;                           // Lifecycle is provisioned
-    bool is_running;                               // Lifecycle worker is running
+    std::string name;                                  // Lifecycle name
+    LifecycleType type = LifecycleType::kDelete;       // Lifecycle action type
+    LifecycleMode mode = LifecycleMode::kEnabled;      // Lifecycle mode
+    bool is_provisioned;                               // Lifecycle is provisioned
+    bool is_running;                                   // Lifecycle worker is running
+    std::optional<Time> last_run = std::nullopt;       // Last lifecycle run timestamp (UTC)
 
     auto operator<=>(const LifecycleInfo&) const = default;
   };

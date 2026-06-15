@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add lifecycle `type` and RFC3339 `last_run` support to `LifecycleInfo`, [PR-131](https://github.com/reductstore/reduct-cpp/pull/131)
 - Add lifecycle `compress` action support and rename lifecycle age field from `max_age` to `older_than` to match the ReductStore API, [PR-130](https://github.com/reductstore/reduct-cpp/pull/130)
 - Add lifecycle policy API support, [PR-128](https://github.com/reductstore/reduct-cpp/pull/128)
 
