@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 1.20.0 - 2026-06-16
+
 ### Added
 
 - Add lifecycle `type` and RFC3339 `last_run` support to `LifecycleInfo`, [PR-131](https://github.com/reductstore/reduct-cpp/pull/131)
@@ -328,7 +330,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation of Reduct Storage API v0.1.0
 
-[Unreleased]: https://github.com/reduct-storage/reduct-cpp/compare/v1.17.0...HEAD
+[Unreleased]: https://github.com/reductstore/reduct-cpp/compare/v1.20.0...HEAD
+[1.20.0]: https://github.com/reductstore/reduct-cpp/compare/v1.19.1...v1.20.0
 [1.17.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.17.0...1.16.0
 [1.16.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.15.0...1.16.0
 [1.15.0]: https://github.com/reduct-storage/reduct-cpp/compare/v1.14.0...1.15.0
