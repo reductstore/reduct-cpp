@@ -207,6 +207,7 @@ The library is backward compatible with the previous versions. However, some met
 removed in the future releases. Please refer to the [Changelog](CHANGELOG.md) for more details.
 The SDK supports the following ReductStore API versions:
 
+* v1.20
 * v1.19
 * v1.18
 * v1.17
