@@ -35,7 +35,8 @@ TEST_CASE("reduct::Client should create token", "[token_api]") {
   REQUIRE(token.starts_with("test_token-"));
 
   SECTION("Conflict") {
-    REQUIRE(ctx.client->CreateToken(kTestTokenName, IClient::Permissions{}).error == Error{409, "Token 'test_token' already exists"});
+    REQUIRE(ctx.client->CreateToken(kTestTokenName, IClient::Permissions{}).error ==
+            Error{409, "Token 'test_token' already exists"});
   }
 }
 

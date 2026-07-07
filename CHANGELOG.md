@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Add replication destination prefix support, [PR-NNN](https://github.com/reductstore/reduct-cpp/pull/NNN)
+
 ## 1.20.0 - 2026-06-16
 
 ### Added
