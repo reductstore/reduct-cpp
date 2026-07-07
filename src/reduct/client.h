@@ -222,6 +222,7 @@ class IClient {
     std::string dst_bucket;                // Destination bucket
     std::string dst_host;                  // Destination host URL (e.g. https://reductstore.com)
     std::optional<std::string> dst_token;  // Destination access token
+    std::string dst_prefix;                // Prefix to add to destination entry names
     std::vector<std::string>
         entries;  // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
     std::optional<std::string> when;                   // Replication condition

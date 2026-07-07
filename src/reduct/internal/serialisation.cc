@@ -237,6 +237,9 @@ Result<nlohmann::json> ReplicationSettingsToJsonString(IClient::ReplicationSetti
     if (settings.dst_token) {
       json_data["dst_token"] = *settings.dst_token;
     }
+    if (!settings.dst_prefix.empty()) {
+      json_data["dst_prefix"] = settings.dst_prefix;
+    }
     json_data["entries"] = settings.entries;
     json_data["mode"] = ReplicationModeToString(settings.mode);
 
@@ -278,6 +281,10 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
 
     if (settings.contains("dst_token") && !settings.at("dst_token").is_null()) {
       info.settings.dst_token = settings.at("dst_token");
+    }
+
+    if (settings.contains("dst_prefix") && !settings.at("dst_prefix").is_null()) {
+      info.settings.dst_prefix = settings.at("dst_prefix");
     }
 
     if (settings.contains("when") && !settings.at("when").is_null()) {
