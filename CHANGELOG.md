@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add replication compression setting support, [PR-137](https://github.com/reductstore/reduct-cpp/pull/137)
 - Add replication destination prefix support, [PR-135](https://github.com/reductstore/reduct-cpp/pull/135)
 
 ## 1.20.0 - 2026-06-16
