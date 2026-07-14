@@ -203,6 +203,7 @@ class IClient {
    * Replication information
    */
   enum class ReplicationMode { kEnabled, kPaused, kDisabled };
+  enum class ReplicationCompression { kNone, kZstd, kGzip };
 
   struct ReplicationInfo {
     std::string name;                                  // Replication name
@@ -227,6 +228,8 @@ class IClient {
         entries;  // Entries to replicate. If empty, all entries are replicated. Wildcards are supported.
     std::optional<std::string> when;                   // Replication condition
     ReplicationMode mode = ReplicationMode::kEnabled;  // Replication mode
+    ReplicationCompression compression =
+        ReplicationCompression::kNone;  // Replication transfer compression
 
     auto operator<=>(const ReplicationSettings&) const = default;
   };

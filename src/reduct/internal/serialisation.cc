@@ -31,6 +31,27 @@ IClient::ReplicationMode ParseReplicationMode(const nlohmann::json& mode_json) {
   throw std::invalid_argument("Invalid replication mode: " + mode);
 }
 
+IClient::ReplicationCompression ParseReplicationCompression(const nlohmann::json& compression_json) {
+  if (compression_json.is_null()) {
+    return IClient::ReplicationCompression::kNone;
+  }
+
+  const auto compression = compression_json.get<std::string>();
+  if (compression == "none") {
+    return IClient::ReplicationCompression::kNone;
+  }
+
+  if (compression == "zstd") {
+    return IClient::ReplicationCompression::kZstd;
+  }
+
+  if (compression == "gzip") {
+    return IClient::ReplicationCompression::kGzip;
+  }
+
+  throw std::invalid_argument("Invalid replication compression: " + compression);
+}
+
 IClient::LifecycleMode ParseLifecycleMode(const nlohmann::json& mode_json) {
   if (mode_json.is_null()) {
     return IClient::LifecycleMode::kEnabled;
@@ -81,6 +102,19 @@ std::string ReplicationModeToString(IClient::ReplicationMode mode) {
   }
 
   throw std::invalid_argument("Invalid replication mode");
+}
+
+std::string ReplicationCompressionToString(IClient::ReplicationCompression compression) {
+  switch (compression) {
+    case IClient::ReplicationCompression::kNone:
+      return "none";
+    case IClient::ReplicationCompression::kZstd:
+      return "zstd";
+    case IClient::ReplicationCompression::kGzip:
+      return "gzip";
+  }
+
+  throw std::invalid_argument("Invalid replication compression");
 }
 
 std::string LifecycleModeToString(IClient::LifecycleMode mode) {
@@ -242,6 +276,9 @@ Result<nlohmann::json> ReplicationSettingsToJsonString(IClient::ReplicationSetti
     }
     json_data["entries"] = settings.entries;
     json_data["mode"] = ReplicationModeToString(settings.mode);
+    if (settings.compression != IClient::ReplicationCompression::kNone) {
+      json_data["compression"] = ReplicationCompressionToString(settings.compression);
+    }
 
     if (settings.when) {
       try {
@@ -277,6 +314,8 @@ Result<IClient::FullReplicationInfo> ParseFullReplicationInfo(const nlohmann::js
         .entries = settings.at("entries"),
         .mode =
             settings.contains("mode") ? ParseReplicationMode(settings.at("mode")) : IClient::ReplicationMode::kEnabled,
+        .compression = settings.contains("compression") ? ParseReplicationCompression(settings.at("compression"))
+                                                        : IClient::ReplicationCompression::kNone,
     };
 
     if (settings.contains("dst_token") && !settings.at("dst_token").is_null()) {

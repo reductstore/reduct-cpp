@@ -23,6 +23,24 @@ IClient::ReplicationSettings DefaultSettings() {
   };
 }
 
+nlohmann::json DefaultReplicationResponse() {
+  return nlohmann::json{
+      {"info",
+       {{"name", "test_replication"},
+        {"mode", "enabled"},
+        {"is_active", true},
+        {"is_provisioned", false},
+        {"pending_records", 0}}},
+      {"settings",
+       {{"src_bucket", "test_bucket_1"},
+        {"dst_bucket", "test_bucket_2"},
+        {"dst_host", "http://127.0.0.1:8383"},
+        {"entries", {"entry-1"}},
+        {"mode", "enabled"}}},
+      {"diagnostics", {{"hourly", {{"ok", 0}, {"errored", 0}, {"errors", nlohmann::json::object()}}}}},
+  };
+}
+
 }  // namespace
 
 TEST_CASE("reduct::Client should get list of replications", "[replication_api][1_8]") {
@@ -100,21 +118,7 @@ TEST_CASE("reduct::Client should serialize replication destination prefix", "[re
 }
 
 TEST_CASE("reduct::Client should parse replication destination prefix", "[replication_api]") {
-  auto response = nlohmann::json{
-      {"info",
-       {{"name", "test_replication"},
-        {"mode", "enabled"},
-        {"is_active", true},
-        {"is_provisioned", false},
-        {"pending_records", 0}}},
-      {"settings",
-       {{"src_bucket", "test_bucket_1"},
-        {"dst_bucket", "test_bucket_2"},
-        {"dst_host", "http://127.0.0.1:8383"},
-        {"entries", {"entry-1"}},
-        {"mode", "enabled"}}},
-      {"diagnostics", {{"hourly", {{"ok", 0}, {"errored", 0}, {"errors", nlohmann::json::object()}}}}},
-  };
+  auto response = DefaultReplicationResponse();
 
   SECTION("keeps destination prefix empty when absent") {
     auto [replication, err] = reduct::internal::ParseFullReplicationInfo(response);
@@ -133,7 +137,85 @@ TEST_CASE("reduct::Client should parse replication destination prefix", "[replic
   }
 }
 
-TEST_CASE("reduct::Client should set replication destination prefix", "[replication_api][1_20]") {
+TEST_CASE("reduct::Client should serialize replication compression", "[replication_api]") {
+  auto settings = DefaultSettings();
+
+  SECTION("omits default compression") {
+    auto [json, err] = reduct::internal::ReplicationSettingsToJsonString(settings);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE_FALSE(json.contains("compression"));
+    REQUIRE(reduct::internal::ReplicationCompressionToString(settings.compression) == "none");
+  }
+
+  SECTION("serializes zstd compression") {
+    settings.compression = IClient::ReplicationCompression::kZstd;
+
+    auto [json, err] = reduct::internal::ReplicationSettingsToJsonString(settings);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(json.at("compression") == "zstd");
+    REQUIRE(reduct::internal::ReplicationCompressionToString(settings.compression) == "zstd");
+  }
+
+  SECTION("serializes gzip compression") {
+    settings.compression = IClient::ReplicationCompression::kGzip;
+
+    auto [json, err] = reduct::internal::ReplicationSettingsToJsonString(settings);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(json.at("compression") == "gzip");
+    REQUIRE(reduct::internal::ReplicationCompressionToString(settings.compression) == "gzip");
+  }
+}
+
+TEST_CASE("reduct::Client should parse replication compression", "[replication_api]") {
+  auto response = DefaultReplicationResponse();
+
+  SECTION("defaults missing compression to none") {
+    auto [replication, err] = reduct::internal::ParseFullReplicationInfo(response);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(replication.settings.compression == IClient::ReplicationCompression::kNone);
+  }
+
+  SECTION("defaults null compression to none") {
+    response["settings"]["compression"] = nullptr;
+
+    auto [replication, err] = reduct::internal::ParseFullReplicationInfo(response);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(replication.settings.compression == IClient::ReplicationCompression::kNone);
+  }
+
+  SECTION("parses zstd compression") {
+    response["settings"]["compression"] = "zstd";
+
+    auto [replication, err] = reduct::internal::ParseFullReplicationInfo(response);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(replication.settings.compression == IClient::ReplicationCompression::kZstd);
+  }
+
+  SECTION("parses gzip compression") {
+    response["settings"]["compression"] = "gzip";
+
+    auto [replication, err] = reduct::internal::ParseFullReplicationInfo(response);
+
+    REQUIRE(err == Error::kOk);
+    REQUIRE(replication.settings.compression == IClient::ReplicationCompression::kGzip);
+  }
+
+  SECTION("rejects invalid compression") {
+    response["settings"]["compression"] = "snappy";
+
+    auto [replication, err] = reduct::internal::ParseFullReplicationInfo(response);
+
+    REQUIRE(err == Error{.code = -1, .message = "Invalid replication compression: snappy"});
+  }
+}
+
+TEST_CASE("reduct::Client should set replication destination prefix", "[replication_api][1_21]") {
   Fixture ctx;
   auto settings = DefaultSettings();
   settings.dst_prefix = "robot-1";
@@ -152,6 +234,27 @@ TEST_CASE("reduct::Client should set replication destination prefix", "[replicat
   auto [updated_replication, err_3] = ctx.client->GetReplication("test_replication");
   REQUIRE(err_3 == Error::kOk);
   REQUIRE(updated_replication.settings.dst_prefix == "line-a");
+}
+
+TEST_CASE("reduct::Client should set replication compression", "[replication_api][1_21]") {
+  Fixture ctx;
+  auto settings = DefaultSettings();
+  settings.compression = IClient::ReplicationCompression::kZstd;
+
+  auto err = ctx.client->CreateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [replication, err_2] = ctx.client->GetReplication("test_replication");
+  REQUIRE(err_2 == Error::kOk);
+  REQUIRE(replication.settings.compression == IClient::ReplicationCompression::kZstd);
+
+  settings.compression = IClient::ReplicationCompression::kGzip;
+  err = ctx.client->UpdateReplication("test_replication", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [updated_replication, err_3] = ctx.client->GetReplication("test_replication");
+  REQUIRE(err_3 == Error::kOk);
+  REQUIRE(updated_replication.settings.compression == IClient::ReplicationCompression::kGzip);
 }
 
 TEST_CASE("reduct::Client should set replication mode", "[replication_api][1_18]") {

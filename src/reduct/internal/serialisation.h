@@ -48,6 +48,13 @@ Result<std::vector<IClient::ReplicationInfo>> ParseReplicationList(const nlohman
 std::string ReplicationModeToString(IClient::ReplicationMode mode);
 
 /**
+ * @brief Convert replication compression to string representation
+ * @param compression replication compression
+ * @return string value expected by API
+ */
+std::string ReplicationCompressionToString(IClient::ReplicationCompression compression);
+
+/**
  * @brief Serialize replication settings
  * @param settings to serialize
  * @return json
