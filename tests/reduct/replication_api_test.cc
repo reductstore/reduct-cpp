@@ -215,7 +215,7 @@ TEST_CASE("reduct::Client should parse replication compression", "[replication_a
   }
 }
 
-TEST_CASE("reduct::Client should set replication destination prefix", "[replication_api][1_20]") {
+TEST_CASE("reduct::Client should set replication destination prefix", "[replication_api][1_21]") {
   Fixture ctx;
   auto settings = DefaultSettings();
   settings.dst_prefix = "robot-1";
