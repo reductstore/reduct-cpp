@@ -318,6 +318,7 @@ class IClient {
     std::optional<std::string> interval;           // Interval between lifecycle runs
     std::optional<std::string> when;               // Lifecycle condition
     LifecycleMode mode = LifecycleMode::kEnabled;  // Lifecycle mode
+    std::optional<std::string> processing_interval;  // Data time window to process in one lifecycle run
 
     auto operator<=>(const LifecycleSettings&) const = default;
   };

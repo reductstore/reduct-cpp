@@ -149,6 +149,50 @@ TEST_CASE("reduct::Client should set lifecycle when condition", "[lifecycle_api]
   REQUIRE(lifecycle.settings.when == settings.when);
 }
 
+TEST_CASE("reduct::Client should set lifecycle processing interval", "[lifecycle_api][1_21]") {
+  Fixture ctx;
+  auto settings = DefaultSettings();
+  settings.processing_interval = "6h";
+
+  auto err = ctx.client->CreateLifecycle("test_lifecycle", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [lifecycle, err_2] = ctx.client->GetLifecycle("test_lifecycle");
+  REQUIRE(err_2 == Error::kOk);
+  REQUIRE(lifecycle.settings == settings);
+
+  settings.processing_interval = "12h";
+  err = ctx.client->UpdateLifecycle("test_lifecycle", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [updated_lifecycle, err_3] = ctx.client->GetLifecycle("test_lifecycle");
+  REQUIRE(err_3 == Error::kOk);
+  REQUIRE(updated_lifecycle.settings == settings);
+
+  settings.type = IClient::LifecycleType::kCompress;
+  settings.processing_interval = "1d";
+  err = ctx.client->CreateLifecycle("test_lifecycle_compress", settings);
+  REQUIRE(err == Error::kOk);
+
+  auto [compress_lifecycle, err_4] = ctx.client->GetLifecycle("test_lifecycle_compress");
+  REQUIRE(err_4 == Error::kOk);
+  REQUIRE(compress_lifecycle.settings == settings);
+}
+
+TEST_CASE("reduct::internal::LifecycleSettingsToJsonString should support processing interval",
+          "[lifecycle_api][unit]") {
+  auto settings = DefaultSettings();
+
+  auto [json_data, err] = reduct::internal::LifecycleSettingsToJsonString(settings);
+  REQUIRE(err == Error::kOk);
+  REQUIRE_FALSE(json_data.contains("processing_interval"));
+
+  settings.processing_interval = "6h";
+  auto [json_data_with_processing_interval, err_2] = reduct::internal::LifecycleSettingsToJsonString(settings);
+  REQUIRE(err_2 == Error::kOk);
+  REQUIRE(json_data_with_processing_interval.at("processing_interval") == "6h");
+}
+
 TEST_CASE("reduct::Client should parse lifecycle type and RFC3339 last_run", "[lifecycle_api][unit]") {
   auto lifecycle_list_json = nlohmann::json::parse(R"({
     "lifecycles": [
@@ -197,4 +241,17 @@ TEST_CASE("reduct::Client should parse lifecycle type and RFC3339 last_run", "[l
               full_lifecycle.info.last_run->time_since_epoch())
               .count() %
               1000000 == 654321);
+  REQUIRE_FALSE(full_lifecycle.settings.processing_interval.has_value());
+
+  full_lifecycle_json["settings"]["processing_interval"] = "12h";
+  auto [full_lifecycle_with_processing_interval, full_err_2] =
+      reduct::internal::ParseFullLifecycleInfo(full_lifecycle_json);
+  REQUIRE(full_err_2 == Error::kOk);
+  REQUIRE(full_lifecycle_with_processing_interval.settings.processing_interval == "12h");
+
+  full_lifecycle_json["settings"]["processing_interval"] = nullptr;
+  auto [full_lifecycle_with_null_processing_interval, full_err_3] =
+      reduct::internal::ParseFullLifecycleInfo(full_lifecycle_json);
+  REQUIRE(full_err_3 == Error::kOk);
+  REQUIRE_FALSE(full_lifecycle_with_null_processing_interval.settings.processing_interval.has_value());
 }

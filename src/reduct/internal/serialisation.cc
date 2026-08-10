@@ -388,6 +388,9 @@ Result<nlohmann::json> LifecycleSettingsToJsonString(IClient::LifecycleSettings 
       json_data["interval"] = *settings.interval;
     }
     json_data["mode"] = LifecycleModeToString(settings.mode);
+    if (settings.processing_interval) {
+      json_data["processing_interval"] = *settings.processing_interval;
+    }
 
     if (settings.when) {
       try {
@@ -436,6 +439,10 @@ Result<IClient::FullLifecycleInfo> ParseFullLifecycleInfo(const nlohmann::json& 
 
     if (settings.contains("when") && !settings.at("when").is_null()) {
       info.settings.when = settings.at("when").dump();
+    }
+
+    if (settings.contains("processing_interval") && !settings.at("processing_interval").is_null()) {
+      info.settings.processing_interval = settings.at("processing_interval");
     }
   } catch (const std::exception& ex) {
     return {{}, Error{.code = -1, .message = ex.what()}};
