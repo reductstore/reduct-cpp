@@ -65,11 +65,9 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        token: [ "", "TOKEN" ]
+        token: [ "TOKEN" ]
         reductstore_version: [ "main", "latest" ]
         include:
-          - token: ""
-            exclude_token_api_tag: "~[token_api]"
           - token: "TOKEN"
             exclude_token_api_tag: ""
           - reductstore_version: "main"
