@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Correct Conan package metadata for ReductStore and move the create-PR skill to `.kilo`, [PR-142](https://github.com/reductstore/reduct-cpp/pull/142)
+
 ## 1.21.0 - 2026-09-17
 
 ### Added
