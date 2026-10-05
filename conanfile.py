@@ -11,8 +11,8 @@ class DriftFrameworkConan(ConanFile):
     license = "MIT"
     author = "ReductSoftware UG"
     url = "https://github.com/reduct-storage/reduct-cpp"
-    description = "Reduct Storage Client SDK for C++"
-    topics = ("reduct-storage", "http-client", "http-api")
+    description = "ReductStore Client SDK for C++"
+    topics = ("reductstore", "http-client", "http-api")
     settings = "os", "compiler", "build_type", "arch"
     options = {
         "shared": [True, False],

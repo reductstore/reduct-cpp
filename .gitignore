@@ -1,2 +1,5 @@
 .cmake
 build/
+!.kilo/
+!.kilo/skills/
+!.kilo/skills/**
