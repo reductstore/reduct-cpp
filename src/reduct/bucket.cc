@@ -8,6 +8,11 @@
 #else
 #include <moodycamel/concurrentqueue.h>
 #endif
+#ifdef BLOCKINGCONCURRENTQUEUE_H_FILEPATH
+#include BLOCKINGCONCURRENTQUEUE_H_FILEPATH
+#else
+#include <moodycamel/blockingconcurrentqueue.h>
+#endif
 
 #include <nlohmann/json.hpp>
 
@@ -50,10 +55,9 @@ class Bucket : public IBucket {
     worker_ = std::thread([this] {
       while (!stop_) {
         Task task;
-        if (task_queue_.try_dequeue(task)) {
+        task_queue_.wait_dequeue(task);
+        if (task.valid()) {
           task();
-        } else {
-          std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
       }
     });
@@ -61,6 +65,7 @@ class Bucket : public IBucket {
 
   ~Bucket() override {
     stop_ = true;
+    task_queue_.enqueue(Task{});  // wake up the worker so that it sees stop_
     if (worker_.joinable()) {
       worker_.join();
     }
@@ -917,7 +922,7 @@ class Bucket : public IBucket {
   std::thread worker_;
 
   using Task = std::packaged_task<void()>;
-  mutable moodycamel::ConcurrentQueue<Task> task_queue_;
+  mutable moodycamel::BlockingConcurrentQueue<Task> task_queue_;
   std::atomic<bool> stop_;
 };
 

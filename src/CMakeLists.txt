@@ -63,11 +63,13 @@ if(REDUCT_CPP_USE_FETCHCONTENT)
     target_compile_definitions(
         ${RCPP_TARGET_NAME}
         PRIVATE CONCURRENTQUEUE_H_FILEPATH=\"concurrentqueue.h\"
+                BLOCKINGCONCURRENTQUEUE_H_FILEPATH=\"blockingconcurrentqueue.h\"
     )
 elseif(VCPKG_ENABLED)
     target_compile_definitions(
         ${RCPP_TARGET_NAME}
         PRIVATE CONCURRENTQUEUE_H_FILEPATH=\"concurrentqueue/concurrentqueue.h\"
+                BLOCKINGCONCURRENTQUEUE_H_FILEPATH=\"concurrentqueue/blockingconcurrentqueue.h\"
     )
 endif()
 

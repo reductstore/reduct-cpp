@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Correct Conan package metadata for ReductStore and move the create-PR skill to `.kilo`, [PR-142](https://github.com/reductstore/reduct-cpp/pull/142)
 
+### Fixed
+
+- Block the bucket worker thread on its task queue instead of polling every 100 µs, which removes idle CPU usage, [PR-143](https://github.com/reductstore/reduct-cpp/pull/143)
+
 ## 1.21.0 - 2026-09-17
 
 ### Added
