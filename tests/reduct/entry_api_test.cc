@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <map>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <set>
 #include <sstream>
@@ -426,6 +427,42 @@ TEST_CASE("reduct::IBucket should remove a batch across entries", "[entry_api][1
   REQUIRE(read_err_a.code == 404);
   auto read_err_b = bucket->Read("entry-b", ts + us(1), [](auto) { return true; });
   REQUIRE(read_err_b.code == 404);
+}
+
+TEST_CASE("reduct::IBucket should write shared data in a batch across entries", "[entry_api][1_18]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  // Larger than one 512 KB send chunk, so records span chunk boundaries.
+  auto big = std::make_shared<const std::string>(1'200'000, 'x');
+  auto small = std::make_shared<const std::string>("small");
+
+  IBucket::Time ts{};
+  auto [errors, err] = bucket->WriteBatch([&](IBucket::Batch* batch) {
+    batch->AddRecord("entry-a", ts, big, "application/mcap", {{"k", "v"}});
+    batch->AddRecord("entry-b", ts, small);
+    batch->AddRecord("entry-a", ts + us(1), small);
+  });
+
+  REQUIRE(err == Error::kOk);
+  REQUIRE(errors.empty());
+  REQUIRE(big->size() == 1'200'000);  // the batch must not take the data from the caller
+
+  const auto read_all = [&](const std::string& entry, IBucket::Time time) {
+    std::string data;
+    REQUIRE(bucket->Read(entry, time, [&](auto record) {
+      auto [content, read_err] = record.ReadAll();
+      REQUIRE(read_err == Error::kOk);
+      data = content;
+      return true;
+    }) == Error::kOk);
+    return data;
+  };
+
+  REQUIRE(read_all("entry-a", ts) == *big);
+  REQUIRE(read_all("entry-b", ts) == "small");
+  REQUIRE(read_all("entry-a", ts + us(1)) == "small");
 }
 
 TEST_CASE("reduct::IBucket should query data with ext parameter", "[bucket_api][1_15]") {
