@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 1.21.2 - 2026-10-24
+
 ### Fixed
 
 - Reuse HTTP connections, stop copying batch payloads and keep sub-second timeouts, [PR-144](https://github.com/reductstore/reduct-cpp/pull/144)
