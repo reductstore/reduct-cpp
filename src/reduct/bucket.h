@@ -5,6 +5,7 @@
 #include <chrono>
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <set>
@@ -192,11 +193,29 @@ class IBucket {
 
     void AddRecord(std::string entry, Time timestamp, std::string data, std::string content_type = "",
                    LabelMap labels = {}) {
+      AddRecord(std::move(entry), timestamp, std::make_shared<const std::string>(std::move(data)),
+                std::move(content_type), std::move(labels));
+    }
+
+    /**
+     * Add a record to batch without copying its data
+     * @param entry
+     * @param timestamp
+     * @param data shared with the caller; must not change until the batch is sent
+     * @param content_type
+     * @param labels
+     */
+    void AddRecord(std::string entry, Time timestamp, std::shared_ptr<const std::string> data,
+                   std::string content_type = "", LabelMap labels = {}) {
+      if (!data) {
+        data = std::make_shared<const std::string>();
+      }
       const auto index = body_.size();
+      const auto data_size = data->size();
       body_.push_back(std::move(data));
-      size_ += body_.back().size();
+      size_ += data_size;
       records_.push_back(
-          Record{std::move(entry), timestamp, body_.back().size(), std::move(content_type), std::move(labels), index});
+          Record{std::move(entry), timestamp, data_size, std::move(content_type), std::move(labels), index});
     }
 
     /**
@@ -225,10 +244,11 @@ class IBucket {
       }
 
       std::string result;
+      result.reserve(std::min<uint64_t>(size, size_ - offset));
       const auto process_data = [&](const std::string& data) {
         if (offset < data.size()) {
           auto n = std::min(size, data.size() - offset);
-          result.append(data.substr(offset, n));
+          result.append(data, offset, n);
           size -= n;
           offset = 0;
         } else {
@@ -242,14 +262,14 @@ class IBucket {
           if (!record.data_index) {
             continue;
           }
-          process_data(body_.at(*record.data_index));
+          process_data(*body_.at(*record.data_index));
           if (size == 0) {
             break;
           }
         }
       } else {
         for (const auto& data : body_) {
-          process_data(data);
+          process_data(*data);
           if (size == 0) {
             break;
           }
@@ -263,7 +283,8 @@ class IBucket {
 
    private:
     std::vector<Record> records_;
-    std::vector<std::string> body_;
+    // Shared, so neither adding a record nor copying the batch copies its data.
+    std::vector<std::shared_ptr<const std::string>> body_;
     uint64_t size_ = 0;
   };
 

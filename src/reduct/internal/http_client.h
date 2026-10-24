@@ -18,6 +18,9 @@ namespace reduct::internal {
  */
 class IHttpClient {
  public:
+  // Clients are owned and deleted through this interface (unique_ptr<IHttpClient>).
+  virtual ~IHttpClient() = default;
+
   virtual Result<std::string> Get(std::string_view path) const noexcept = 0;
   using WriteCallback = std::function<std::pair<bool, std::string>(size_t offset, size_t size)>;
 

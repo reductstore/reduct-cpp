@@ -46,21 +46,28 @@ class HttpClient : public IHttpClient {
 
     client_ = std::make_unique<httplib::Client>(std::string(base_url));
     client_->enable_server_certificate_verification(options.ssl_verification);
+    // Reuse the connection across requests. Without this httplib sends
+    // "Connection: close", and every record costs a TCP connect, accept and
+    // close on both sides. A connection the server has closed is detected
+    // before reuse and replaced.
+    client_->set_keep_alive(true);
+    // Headers and body go out in separate writes; don't let Nagle hold back
+    // the tail of a request.
+    client_->set_tcp_nodelay(true);
 
     if (!options.api_token.empty()) {
       client_->set_bearer_token_auth(options.api_token);
     }
 
+    // The duration overloads keep sub-second timeouts, which a cast to whole
+    // seconds would turn into 0.
     if (options.connection_timeout.has_value()) {
-      client_->set_connection_timeout(
-          std::chrono::duration_cast<std::chrono::seconds>(options.connection_timeout.value()).count());
+      client_->set_connection_timeout(options.connection_timeout.value());
     }
 
     if (options.request_timeout.has_value()) {
-      client_->set_read_timeout(
-          std::chrono::duration_cast<std::chrono::seconds>(options.request_timeout.value()).count());
-      client_->set_write_timeout(
-          std::chrono::duration_cast<std::chrono::seconds>(options.request_timeout.value()).count());
+      client_->set_read_timeout(options.request_timeout.value());
+      client_->set_write_timeout(options.request_timeout.value());
     }
 
     if (path_prefix.ends_with("/")) {
