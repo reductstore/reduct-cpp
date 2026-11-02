@@ -3,6 +3,7 @@
 #include <catch2/catch.hpp>
 
 #include <chrono>
+#include <cstdlib>
 #include <fstream>
 #include <future>
 #include <map>
@@ -830,6 +831,109 @@ TEST_CASE("reduct::IBucket should read attachments from a query callback", "[ent
     query_thread.detach();
     shared_bucket.reset();
     FAIL("ReadAttachments deadlocked inside a query callback");
+  }
+
+  query_thread.join();
+  REQUIRE(query_future.get());
+}
+
+TEST_CASE("reduct::IBucket should run nested reads and queries from a query callback", "[entry_api]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  const IBucket::Time timestamp{};
+  REQUIRE(bucket->Write("outer", timestamp, [](auto record) { record->WriteAll("outer"); }) == Error::kOk);
+  REQUIRE(bucket->Write("nested", timestamp, [](auto record) { record->WriteAll("nested"); }) == Error::kOk);
+
+  auto query_result = std::make_shared<std::promise<bool>>();
+  auto query_future = query_result->get_future();
+  auto shared_bucket = std::shared_ptr<IBucket>(bucket.release());
+  std::thread query_thread([bucket = shared_bucket, query_result, timestamp] {
+    bool nested_query_succeeded = false;
+    bool nested_read_succeeded = false;
+    const auto outer_query_err = bucket->Query(
+        "outer", timestamp, timestamp + us(1), {},
+        [&bucket, &nested_query_succeeded, &nested_read_succeeded, timestamp](auto) {
+          std::string query_data;
+          const auto nested_query_err = bucket->Query(
+              "nested", timestamp, timestamp + us(1), {}, [&query_data](auto record) {
+                auto [data, read_err] = record.ReadAll();
+                if (read_err) {
+                  return false;
+                }
+                query_data += data;
+                return true;
+              });
+          nested_query_succeeded = nested_query_err == Error::kOk && query_data == "nested";
+
+          std::string read_data;
+          const auto nested_read_err = bucket->Read("nested", timestamp, [&read_data](auto record) {
+            auto [data, read_err] = record.ReadAll();
+            if (read_err) {
+              return false;
+            }
+            read_data = std::move(data);
+            return true;
+          });
+          nested_read_succeeded = nested_read_err == Error::kOk && read_data == "nested";
+          return true;
+        });
+    query_result->set_value(outer_query_err == Error::kOk && nested_query_succeeded && nested_read_succeeded);
+  });
+
+  if (query_future.wait_for(s{5}) != std::future_status::ready) {
+    // A nested callback queued to the same worker blocks until the outer callback returns.
+    query_thread.detach();
+    shared_bucket.reset();
+    FAIL("nested read or query deadlocked inside a query callback");
+  }
+
+  query_thread.join();
+  REQUIRE(query_future.get());
+}
+
+TEST_CASE("reduct::IBucket should run a nested read from a V1 query callback", "[entry_api][1_13]") {
+  Fixture ctx;
+  auto [created_bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(created_bucket);
+
+  const IBucket::Time timestamp{};
+  REQUIRE(created_bucket->Write("outer", timestamp, [](auto record) { record->WriteAll("outer"); }) == Error::kOk);
+  REQUIRE(created_bucket->Write("nested", timestamp, [](auto record) { record->WriteAll("nested"); }) == Error::kOk);
+
+  reduct::HttpOptions options;
+  if (const auto* token = std::getenv("REDUCT_CPP_TOKEN_API")) {
+    options.api_token = token;
+  }
+  auto bucket = IBucket::Build("http://127.0.0.1:8383", kBucketName, options, "1.17");
+
+  auto query_result = std::make_shared<std::promise<bool>>();
+  auto query_future = query_result->get_future();
+  auto shared_bucket = std::shared_ptr<IBucket>(bucket.release());
+  std::thread query_thread([bucket = shared_bucket, query_result, timestamp] {
+    bool nested_read_succeeded = false;
+    const auto outer_query_err = bucket->Query(
+        "outer", timestamp, timestamp + us(1), {}, [&bucket, &nested_read_succeeded, timestamp](auto) {
+          std::string read_data;
+          const auto nested_read_err = bucket->Read("nested", timestamp, [&read_data](auto record) {
+            auto [data, read_err] = record.ReadAll();
+            if (read_err) {
+              return false;
+            }
+            read_data = std::move(data);
+            return true;
+          });
+          nested_read_succeeded = nested_read_err == Error::kOk && read_data == "nested";
+          return true;
+        });
+    query_result->set_value(outer_query_err == Error::kOk && nested_read_succeeded);
+  });
+
+  if (query_future.wait_for(s{5}) != std::future_status::ready) {
+    query_thread.detach();
+    shared_bucket.reset();
+    FAIL("nested read deadlocked inside a V1 query callback");
   }
 
   query_thread.join();

@@ -42,11 +42,6 @@ using internal::QueryOptionsToJsonString;
 class Bucket : public IBucket {
   using BatchType = internal::BatchType;
 
-  enum class CallbackDispatch {
-    kWorker,
-    kBuffered,
-  };
-
  public:
   Bucket(std::string_view url, std::string_view name, const HttpOptions& options,
          std::optional<std::string> api_version = std::nullopt)
@@ -246,8 +241,7 @@ class Bucket : public IBucket {
 
           attachments[key->second] = std::move(payload);
           return true;
-        },
-        CallbackDispatch::kBuffered);
+        });
 
     if (err) {
       return {{}, std::move(err)};
@@ -417,8 +411,7 @@ class Bucket : public IBucket {
   }
 
   Error QueryV2(const std::vector<std::string>& entries, std::optional<Time> start, std::optional<Time> stop,
-                QueryOptions options, const ReadRecordCallback& callback,
-                CallbackDispatch callback_dispatch = CallbackDispatch::kWorker) const {
+                QueryOptions options, const ReadRecordCallback& callback) const {
     auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", entries, start, stop, options);
     if (json_err) {
       return json_err;
@@ -438,7 +431,7 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      auto [stopped, record_err] = ReadRecordV2(id, options.head_only, callback, callback_dispatch);
+      auto [stopped, record_err] = ReadRecordV2(id, options.head_only, callback);
 
       if (stopped) {
         break;
@@ -633,9 +626,17 @@ class Bucket : public IBucket {
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
+    const bool run_callbacks_inline = IsCallbackWorkerThread();
+    std::optional<IHttpClient::Headers> response_headers;
 
-    auto parse_headers_and_receive_data = [&type, &stopped, &data, &data_mutex, &callback, &future, head,
-                                           this](IHttpClient::Headers&& headers) {
+    auto parse_headers_and_receive_data =
+        [&type, &stopped, &data, &data_mutex, &callback, &future, head, run_callbacks_inline, &response_headers,
+         this](IHttpClient::Headers&& headers) {
+      if (run_callbacks_inline) {
+        response_headers = std::move(headers);
+        return;
+      }
+
       std::vector<ReadableRecord> records;
       if (type == ReadType::kBatched) {
         records = internal::ParseAndBuildBatchedRecordsV1(&data, &data_mutex, head, std::move(headers));
@@ -683,7 +684,24 @@ class Bucket : public IBucket {
         data.emplace_back(std::nullopt);
       }
 
-      if (future.valid()) {
+      if (response_headers) {
+        std::vector<ReadableRecord> records;
+        if (type == ReadType::kBatched) {
+          records = internal::ParseAndBuildBatchedRecordsV1(&data, &data_mutex, head, std::move(*response_headers));
+        } else {
+          records.emplace_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(*response_headers)));
+        }
+
+        for (const auto& record : records) {
+          if (stopped) {
+            break;
+          }
+          stopped = !callback(record);
+          if (!stopped) {
+            stopped = record.last;
+          }
+        }
+      } else if (future.valid()) {
         future.wait();
       }
     }
@@ -691,20 +709,20 @@ class Bucket : public IBucket {
     return {stopped, err};
   }
 
-  Result<bool> ReadRecordV2(uint64_t query_id, bool head, const ReadRecordCallback& callback,
-                            CallbackDispatch callback_dispatch) const noexcept {
+  Result<bool> ReadRecordV2(uint64_t query_id, bool head, const ReadRecordCallback& callback) const noexcept {
     std::deque<std::optional<std::string>> data;
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
     std::optional<IHttpClient::Headers> response_headers;
+    const bool run_callbacks_inline = IsCallbackWorkerThread();
 
     IHttpClient::Headers request_headers;
     request_headers.emplace(std::string(internal::kHeaderQueryId), std::to_string(query_id));
 
     auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, &response_headers, head,
-                                           callback_dispatch, this](IHttpClient::Headers&& headers) {
-      if (callback_dispatch == CallbackDispatch::kBuffered) {
+                                           run_callbacks_inline, this](IHttpClient::Headers&& headers) {
+      if (run_callbacks_inline) {
         response_headers = std::move(headers);
         return;
       }
@@ -819,6 +837,8 @@ class Bucket : public IBucket {
     };
     return record;
   }
+
+  bool IsCallbackWorkerThread() const noexcept { return std::this_thread::get_id() == worker_.get_id(); }
 
   IHttpClient::Headers MakeHeadersFromLabels(const WriteOptions& options) const {
     IHttpClient::Headers headers;
