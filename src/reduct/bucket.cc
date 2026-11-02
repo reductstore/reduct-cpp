@@ -42,6 +42,11 @@ using internal::QueryOptionsToJsonString;
 class Bucket : public IBucket {
   using BatchType = internal::BatchType;
 
+  enum class CallbackDispatch {
+    kWorker,
+    kBuffered,
+  };
+
  public:
   Bucket(std::string_view url, std::string_view name, const HttpOptions& options,
          std::optional<std::string> api_version = std::nullopt)
@@ -219,28 +224,30 @@ class Bucket : public IBucket {
     Error callback_err = Error::kOk;
     const auto meta_entry = fmt::format("{}/$meta", entry_name);
 
-    auto err = QueryV2({meta_entry}, std::nullopt, std::nullopt, {}, [&attachments, &callback_err](const auto& record) {
-      auto key = record.labels.find("key");
-      if (key == record.labels.end()) {
-        return true;
-      }
+    auto err = QueryV2(
+        {meta_entry}, std::nullopt, std::nullopt, {}, [&attachments, &callback_err](const auto& record) {
+          auto key = record.labels.find("key");
+          if (key == record.labels.end()) {
+            return true;
+          }
 
-      auto [payload, read_err] = record.ReadAll();
-      if (read_err) {
-        callback_err = std::move(read_err);
-        return false;
-      }
+          auto [payload, read_err] = record.ReadAll();
+          if (read_err) {
+            callback_err = std::move(read_err);
+            return false;
+          }
 
-      try {
-        [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
-      } catch (const std::exception& ex) {
-        callback_err = Error{.code = -1, .message = ex.what()};
-        return false;
-      }
+          try {
+            [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
+          } catch (const std::exception& ex) {
+            callback_err = Error{.code = -1, .message = ex.what()};
+            return false;
+          }
 
-      attachments[key->second] = std::move(payload);
-      return true;
-    });
+          attachments[key->second] = std::move(payload);
+          return true;
+        },
+        CallbackDispatch::kBuffered);
 
     if (err) {
       return {{}, std::move(err)};
@@ -410,7 +417,8 @@ class Bucket : public IBucket {
   }
 
   Error QueryV2(const std::vector<std::string>& entries, std::optional<Time> start, std::optional<Time> stop,
-                QueryOptions options, const ReadRecordCallback& callback) const {
+                QueryOptions options, const ReadRecordCallback& callback,
+                CallbackDispatch callback_dispatch = CallbackDispatch::kWorker) const {
     auto [json_payload, json_err] = QueryOptionsToJsonString("QUERY", entries, start, stop, options);
     if (json_err) {
       return json_err;
@@ -430,7 +438,7 @@ class Bucket : public IBucket {
     }
 
     while (true) {
-      auto [stopped, record_err] = ReadRecordV2(id, options.head_only, callback);
+      auto [stopped, record_err] = ReadRecordV2(id, options.head_only, callback, callback_dispatch);
 
       if (stopped) {
         break;
@@ -683,17 +691,24 @@ class Bucket : public IBucket {
     return {stopped, err};
   }
 
-  Result<bool> ReadRecordV2(uint64_t query_id, bool head, const ReadRecordCallback& callback) const noexcept {
+  Result<bool> ReadRecordV2(uint64_t query_id, bool head, const ReadRecordCallback& callback,
+                            CallbackDispatch callback_dispatch) const noexcept {
     std::deque<std::optional<std::string>> data;
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
+    std::optional<IHttpClient::Headers> response_headers;
 
     IHttpClient::Headers request_headers;
     request_headers.emplace(std::string(internal::kHeaderQueryId), std::to_string(query_id));
 
-    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, head,
-                                           this](IHttpClient::Headers&& headers) {
+    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, &response_headers, head,
+                                           callback_dispatch, this](IHttpClient::Headers&& headers) {
+      if (callback_dispatch == CallbackDispatch::kBuffered) {
+        response_headers = std::move(headers);
+        return;
+      }
+
       auto records = internal::ParseAndBuildBatchedRecordsV2(&data, &data_mutex, head, std::move(headers));
       for (auto& record : records) {
         Task task([record = std::move(record), &callback, &stopped] {
@@ -736,7 +751,19 @@ class Bucket : public IBucket {
         data.emplace_back(std::nullopt);
       }
 
-      if (future.valid()) {
+      if (response_headers) {
+        auto records =
+            internal::ParseAndBuildBatchedRecordsV2(&data, &data_mutex, head, std::move(*response_headers));
+        for (const auto& record : records) {
+          if (stopped) {
+            break;
+          }
+          stopped = !callback(record);
+          if (!stopped) {
+            stopped = record.last;
+          }
+        }
+      } else if (future.valid()) {
         future.wait();
       }
     }

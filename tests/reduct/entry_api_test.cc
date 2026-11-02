@@ -2,12 +2,15 @@
 
 #include <catch2/catch.hpp>
 
+#include <chrono>
 #include <fstream>
+#include <future>
 #include <map>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <set>
 #include <sstream>
+#include <thread>
 #include <vector>
 
 #include "fixture.h"
@@ -795,6 +798,42 @@ TEST_CASE("reduct::IBucket should write and read entry attachments", "[entry_api
   REQUIRE(stored.size() == 2);
   REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
   REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(attachments.at("meta-2")));
+}
+
+TEST_CASE("reduct::IBucket should read attachments from a query callback", "[entry_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  const IBucket::AttachmentMap attachments{{"meta", R"({"enabled":true})"}};
+  const IBucket::Time timestamp{};
+  REQUIRE(bucket->WriteAttachments("entry", attachments) == Error::kOk);
+  REQUIRE(bucket->Write("entry", timestamp, [](auto record) { record->WriteAll("record"); }) == Error::kOk);
+
+  auto query_result = std::make_shared<std::promise<bool>>();
+  auto query_future = query_result->get_future();
+  auto shared_bucket = std::shared_ptr<IBucket>(bucket.release());
+  std::thread query_thread([bucket = shared_bucket, query_result, attachments, timestamp] {
+    bool read_attachments = false;
+    const auto query_err = bucket->Query(
+        "entry", timestamp, timestamp + us(1), {}, [&bucket, &attachments, &read_attachments](auto) {
+          auto [stored, err] = bucket->ReadAttachments("entry");
+          read_attachments = err == Error::kOk && stored == attachments;
+          return true;
+        });
+    query_result->set_value(query_err == Error::kOk && read_attachments);
+  });
+
+  if (query_future.wait_for(s{5}) != std::future_status::ready) {
+    // Before #145 this leaves the query worker waiting for its own queued callback. Keep the bucket and promise alive
+    // until process exit so this regression test fails without blocking the rest of the suite.
+    query_thread.detach();
+    shared_bucket.reset();
+    FAIL("ReadAttachments deadlocked inside a query callback");
+  }
+
+  query_thread.join();
+  REQUIRE(query_future.get());
 }
 
 TEST_CASE("reduct::IBucket should remove selected entry attachments", "[entry_api][1_19]") {
