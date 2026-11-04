@@ -3,6 +3,7 @@
 #include <catch2/catch.hpp>
 
 #include <thread>
+#include <type_traits>
 
 #include "fixture.h"
 #include "reduct/client.h"
@@ -11,6 +12,13 @@ using reduct::Error;
 using reduct::IBucket;
 using reduct::IClient;
 using s = std::chrono::seconds;
+
+TEST_CASE("reduct::IClient should be deleted through its interface", "[server_api]") {
+  // IClient::Build returns a unique_ptr<IClient>; without a virtual destructor, deleting it never
+  // destroys the client's HTTP client, so its kept-alive connection stays open.
+  STATIC_REQUIRE(std::has_virtual_destructor_v<IClient>);
+  STATIC_REQUIRE(std::has_virtual_destructor_v<IBucket>);
+}
 
 TEST_CASE("reduct::Client should get info", "[server_api]") {
   Fixture ctx;
