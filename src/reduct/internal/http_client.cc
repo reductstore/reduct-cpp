@@ -179,8 +179,12 @@ class HttpClient : public IHttpClient {
         [&](size_t offset, size_t size, DataSink& sink) {
           size = std::min<size_t>(size, kMaxChunkSize);
           auto [ok, data] = callback(offset, size);
-          sink.write(data.data(), size);
-          return ok;
+          // Stop on request, and on an empty chunk, which would never advance the offset.
+          if (!ok || data.empty()) {
+            return false;
+          }
+          // Send only what the callback returned; for a shorter chunk httplib asks again from where it ended.
+          return sink.write(data.data(), std::min(data.size(), size));
         },
         mime.data());
 

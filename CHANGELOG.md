@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Send only the bytes a write callback returns, so a shorter chunk no longer makes the client read past its end, [PR-148](https://github.com/reductstore/reduct-cpp/pull/148)
+
 ## 1.21.2 - 2026-10-24
 
 ### Fixed
