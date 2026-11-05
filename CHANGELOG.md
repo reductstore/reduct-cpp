@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Give `IClient` a virtual destructor so a destroyed client closes its connection, [PR-XXX](https://github.com/reductstore/reduct-cpp/pull/XXX)
+- Give `IClient` a virtual destructor so a destroyed client closes its connection, [PR-147](https://github.com/reductstore/reduct-cpp/pull/147)
 
 ## 1.21.2 - 2026-10-24
 
@@ -100,7 +100,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - REDUCT_CPP_USE_STD_CHRONO flag and dependency on `date` library, [PR-95](https://github.com/reductstore/reduct-cpp/pull/95)
 
-
 ## [1.16.0] - 2025-08-12
 
 ### Added
@@ -109,7 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Refactor CMake and CI to support FetchContent, vcpkg, and system dependencies with modern packaging,  [PR-90](https://github.com/reductstore/reduct-cpp/pull/90)
+- Refactor CMake and CI to support FetchContent, vcpkg, and system dependencies with modern packaging, [PR-90](https://github.com/reductstore/reduct-cpp/pull/90)
 
 ### Deprecated
 
