@@ -23,6 +23,9 @@ namespace reduct {
  */
 class IClient {
  public:
+  // Clients are owned and deleted through this interface (unique_ptr<IClient> from Build).
+  virtual ~IClient() = default;
+
   using Time = std::chrono::time_point<std::chrono::system_clock>;
 
   /**
