@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Prevent deadlocks when reads or queries are invoked from a callback on the same bucket, [PR-146](https://github.com/reductstore/reduct-cpp/pull/146)
 - Give `IClient` a virtual destructor so a destroyed client closes its connection, [PR-147](https://github.com/reductstore/reduct-cpp/pull/147)
 - Send only the bytes a write callback returns, so a shorter chunk no longer makes the client read past its end, [PR-148](https://github.com/reductstore/reduct-cpp/pull/148)
 

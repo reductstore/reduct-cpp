@@ -2,12 +2,16 @@
 
 #include <catch2/catch.hpp>
 
+#include <chrono>
+#include <cstdlib>
 #include <fstream>
+#include <future>
 #include <map>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <set>
 #include <sstream>
+#include <thread>
 #include <vector>
 
 #include "fixture.h"
@@ -787,14 +791,158 @@ TEST_CASE("reduct::IBucket should write and read entry attachments", "[entry_api
       {"meta-1", R"({"enabled":true,"values":[1,2,3]})"},
       {"meta-2", R"({"name":"test"})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"meta-1", R"({"enabled":false,"values":[4,5,6]})"},
+      {"meta-2", R"({"name":"updated"})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
 
   auto [stored, err] = bucket->ReadAttachments("entry-1");
   REQUIRE(err == Error::kOk);
   REQUIRE(stored.size() == 2);
-  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
-  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(attachments.at("meta-2")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(updated_attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(updated_attachments.at("meta-2")));
+}
+
+TEST_CASE("reduct::IBucket should read attachments from a query callback", "[entry_api][1_19]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  const IBucket::AttachmentMap attachments{{"meta", R"({"enabled":true})"}};
+  const IBucket::Time timestamp{};
+  REQUIRE(bucket->WriteAttachments("entry", attachments) == Error::kOk);
+  REQUIRE(bucket->Write("entry", timestamp, [](auto record) { record->WriteAll("record"); }) == Error::kOk);
+
+  auto query_result = std::make_shared<std::promise<bool>>();
+  auto query_future = query_result->get_future();
+  auto shared_bucket = std::shared_ptr<IBucket>(bucket.release());
+  std::thread query_thread([bucket = shared_bucket, query_result, attachments, timestamp] {
+    bool read_attachments = false;
+    const auto query_err = bucket->Query(
+        "entry", timestamp, timestamp + us(1), {}, [&bucket, &attachments, &read_attachments](auto) {
+          auto [stored, err] = bucket->ReadAttachments("entry");
+          read_attachments = err == Error::kOk && stored == attachments;
+          return true;
+        });
+    query_result->set_value(query_err == Error::kOk && read_attachments);
+  });
+
+  if (query_future.wait_for(s{5}) != std::future_status::ready) {
+    // Before #145 this leaves the query worker waiting for its own queued callback. Keep the bucket and promise alive
+    // until process exit so this regression test fails without blocking the rest of the suite.
+    query_thread.detach();
+    shared_bucket.reset();
+    FAIL("ReadAttachments deadlocked inside a query callback");
+  }
+
+  query_thread.join();
+  REQUIRE(query_future.get());
+}
+
+TEST_CASE("reduct::IBucket should run nested reads and queries from a query callback", "[entry_api]") {
+  Fixture ctx;
+  auto [bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(bucket);
+
+  const IBucket::Time timestamp{};
+  REQUIRE(bucket->Write("outer", timestamp, [](auto record) { record->WriteAll("outer"); }) == Error::kOk);
+  REQUIRE(bucket->Write("nested", timestamp, [](auto record) { record->WriteAll("nested"); }) == Error::kOk);
+
+  auto query_result = std::make_shared<std::promise<bool>>();
+  auto query_future = query_result->get_future();
+  auto shared_bucket = std::shared_ptr<IBucket>(bucket.release());
+  std::thread query_thread([bucket = shared_bucket, query_result, timestamp] {
+    bool nested_query_succeeded = false;
+    bool nested_read_succeeded = false;
+    const auto outer_query_err = bucket->Query(
+        "outer", timestamp, timestamp + us(1), {},
+        [&bucket, &nested_query_succeeded, &nested_read_succeeded, timestamp](auto) {
+          std::string query_data;
+          const auto nested_query_err = bucket->Query(
+              "nested", timestamp, timestamp + us(1), {}, [&query_data](auto record) {
+                auto [data, read_err] = record.ReadAll();
+                if (read_err) {
+                  return false;
+                }
+                query_data += data;
+                return true;
+              });
+          nested_query_succeeded = nested_query_err == Error::kOk && query_data == "nested";
+
+          std::string read_data;
+          const auto nested_read_err = bucket->Read("nested", timestamp, [&read_data](auto record) {
+            auto [data, read_err] = record.ReadAll();
+            if (read_err) {
+              return false;
+            }
+            read_data = std::move(data);
+            return true;
+          });
+          nested_read_succeeded = nested_read_err == Error::kOk && read_data == "nested";
+          return true;
+        });
+    query_result->set_value(outer_query_err == Error::kOk && nested_query_succeeded && nested_read_succeeded);
+  });
+
+  if (query_future.wait_for(s{5}) != std::future_status::ready) {
+    // A nested callback queued to the same worker blocks until the outer callback returns.
+    query_thread.detach();
+    shared_bucket.reset();
+    FAIL("nested read or query deadlocked inside a query callback");
+  }
+
+  query_thread.join();
+  REQUIRE(query_future.get());
+}
+
+TEST_CASE("reduct::IBucket should run a nested read from a V1 query callback", "[entry_api][1_13]") {
+  Fixture ctx;
+  auto [created_bucket, _] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(created_bucket);
+
+  const IBucket::Time timestamp{};
+  REQUIRE(created_bucket->Write("outer", timestamp, [](auto record) { record->WriteAll("outer"); }) == Error::kOk);
+  REQUIRE(created_bucket->Write("nested", timestamp, [](auto record) { record->WriteAll("nested"); }) == Error::kOk);
+
+  reduct::HttpOptions options;
+  if (const auto* token = std::getenv("REDUCT_CPP_TOKEN_API")) {
+    options.api_token = token;
+  }
+  auto bucket = IBucket::Build("http://127.0.0.1:8383", kBucketName, options, "1.17");
+
+  auto query_result = std::make_shared<std::promise<bool>>();
+  auto query_future = query_result->get_future();
+  auto shared_bucket = std::shared_ptr<IBucket>(bucket.release());
+  std::thread query_thread([bucket = shared_bucket, query_result, timestamp] {
+    bool nested_read_succeeded = false;
+    const auto outer_query_err = bucket->Query(
+        "outer", timestamp, timestamp + us(1), {}, [&bucket, &nested_read_succeeded, timestamp](auto) {
+          std::string read_data;
+          const auto nested_read_err = bucket->Read("nested", timestamp, [&read_data](auto record) {
+            auto [data, read_err] = record.ReadAll();
+            if (read_err) {
+              return false;
+            }
+            read_data = std::move(data);
+            return true;
+          });
+          nested_read_succeeded = nested_read_err == Error::kOk && read_data == "nested";
+          return true;
+        });
+    query_result->set_value(outer_query_err == Error::kOk && nested_read_succeeded);
+  });
+
+  if (query_future.wait_for(s{5}) != std::future_status::ready) {
+    query_thread.detach();
+    shared_bucket.reset();
+    FAIL("nested read deadlocked inside a V1 query callback");
+  }
+
+  query_thread.join();
+  REQUIRE(query_future.get());
 }
 
 TEST_CASE("reduct::IBucket should remove selected entry attachments", "[entry_api][1_19]") {
@@ -806,15 +954,29 @@ TEST_CASE("reduct::IBucket should remove selected entry attachments", "[entry_ap
       {"meta-1", R"({"value":1})"},
       {"meta-2", R"({"value":2})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"meta-1", R"({"value":10})"},
+      {"meta-2", R"({"value":20})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
+
+  auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err_before == Error::kOk);
+  REQUIRE(stored_before.size() == 2);
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-1")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-2")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-2")));
+
   REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"meta-1"}) == Error::kOk);
 
   auto [stored, err] = bucket->ReadAttachments("entry-1");
   REQUIRE(err == Error::kOk);
   REQUIRE(stored.size() == 1);
   REQUIRE(stored.contains("meta-2"));
-  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(attachments.at("meta-2")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(updated_attachments.at("meta-2")));
 }
 
 TEST_CASE("reduct::IBucket should remove all entry attachments", "[entry_api][1_19]") {
@@ -826,8 +988,22 @@ TEST_CASE("reduct::IBucket should remove all entry attachments", "[entry_api][1_
       {"meta-1", R"({"value":1})"},
       {"meta-2", R"({"value":2})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"meta-1", R"({"value":10})"},
+      {"meta-2", R"({"value":20})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
+
+  auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err_before == Error::kOk);
+  REQUIRE(stored_before.size() == 2);
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-1")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-2")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-2")));
+
   REQUIRE(bucket->RemoveAttachments("entry-1", {}) == Error::kOk);
 
   auto [stored, err] = bucket->ReadAttachments("entry-1");
@@ -844,16 +1020,22 @@ TEST_CASE("reduct::IBucket should remove entry attachments with numeric keys", "
       {"1", R"({"enabled":true,"values":[1,2,3]})"},
       {"2.5", R"({"name":"test"})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"1", R"({"enabled":false,"values":[4,5,6]})"},
+      {"2.5", R"({"name":"updated"})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
 
   auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
   REQUIRE(err_before == Error::kOk);
   REQUIRE(stored_before.size() == 2);
   REQUIRE(stored_before.contains("1"));
   REQUIRE(stored_before.contains("2.5"));
-  REQUIRE(nlohmann::json::parse(stored_before.at("1")) == nlohmann::json::parse(attachments.at("1")));
-  REQUIRE(nlohmann::json::parse(stored_before.at("2.5")) == nlohmann::json::parse(attachments.at("2.5")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("1")) == nlohmann::json::parse(updated_attachments.at("1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("2.5")) ==
+          nlohmann::json::parse(updated_attachments.at("2.5")));
 
   REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"1", "2.5"}) == Error::kOk);
 
@@ -873,15 +1055,32 @@ TEST_CASE("reduct::IBucket should remove entry attachments with reserved keys", 
       {"$system", R"({"value":"test"})"},
       {"$internal", R"({"value":"hidden"})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"meta-1", R"({"value":10})"},
+      {"$system", R"({"value":"updated"})"},
+      {"$internal", R"({"value":"visible"})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
+
+  auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err_before == Error::kOk);
+  REQUIRE(stored_before.size() == 3);
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-1")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("$system")) ==
+          nlohmann::json::parse(updated_attachments.at("$system")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("$internal")) ==
+          nlohmann::json::parse(updated_attachments.at("$internal")));
+
   REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"$system", "$internal"}) == Error::kOk);
 
   auto [stored, err] = bucket->ReadAttachments("entry-1");
   REQUIRE(err == Error::kOk);
   REQUIRE(stored.size() == 1);
   REQUIRE(stored.contains("meta-1"));
-  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(updated_attachments.at("meta-1")));
 }
 
 

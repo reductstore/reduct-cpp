@@ -219,28 +219,35 @@ class Bucket : public IBucket {
     Error callback_err = Error::kOk;
     const auto meta_entry = fmt::format("{}/$meta", entry_name);
 
-    auto err = QueryV2({meta_entry}, std::nullopt, std::nullopt, {}, [&attachments, &callback_err](const auto& record) {
-      auto key = record.labels.find("key");
-      if (key == record.labels.end()) {
-        return true;
-      }
+    auto err = QueryV2(
+        {meta_entry}, std::nullopt, std::nullopt, {}, [&attachments, &callback_err](const auto& record) {
+          auto key = record.labels.find("key");
+          if (key == record.labels.end()) {
+            return true;
+          }
 
-      auto [payload, read_err] = record.ReadAll();
-      if (read_err) {
-        callback_err = std::move(read_err);
-        return false;
-      }
+          auto [payload, read_err] = record.ReadAll();
+          if (read_err) {
+            callback_err = std::move(read_err);
+            return false;
+          }
 
-      try {
-        [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
-      } catch (const std::exception& ex) {
-        callback_err = Error{.code = -1, .message = ex.what()};
-        return false;
-      }
+          if (const auto remove = record.labels.find("remove");
+              remove != record.labels.end() && remove->second == "true") {
+            attachments.erase(key->second);
+            return true;
+          }
 
-      attachments[key->second] = std::move(payload);
-      return true;
-    });
+          try {
+            [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
+          } catch (const std::exception& ex) {
+            callback_err = Error{.code = -1, .message = ex.what()};
+            return false;
+          }
+
+          attachments[key->second] = std::move(payload);
+          return true;
+        });
 
     if (err) {
       return {{}, std::move(err)};
@@ -625,15 +632,28 @@ class Bucket : public IBucket {
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
+    const bool run_callbacks_inline = IsCallbackWorkerThread();
+    std::optional<IHttpClient::Headers> response_headers;
 
-    auto parse_headers_and_receive_data = [&type, &stopped, &data, &data_mutex, &callback, &future, head,
-                                           this](IHttpClient::Headers&& headers) {
+    auto build_records = [&type, &data, &data_mutex, head, this](IHttpClient::Headers&& headers) {
       std::vector<ReadableRecord> records;
       if (type == ReadType::kBatched) {
         records = internal::ParseAndBuildBatchedRecordsV1(&data, &data_mutex, head, std::move(headers));
       } else {
         records.emplace_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(headers)));
       }
+      return records;
+    };
+
+    auto parse_headers_and_receive_data =
+        [&stopped, &callback, &future, run_callbacks_inline, &response_headers,
+         &build_records, this](IHttpClient::Headers&& headers) {
+      if (run_callbacks_inline) {
+        response_headers = std::move(headers);
+        return;
+      }
+
+      auto records = build_records(std::move(headers));
       for (auto& record : records) {
         Task task([record = std::move(record), &callback, &stopped] {
           if (stopped) {
@@ -675,7 +695,9 @@ class Bucket : public IBucket {
         data.emplace_back(std::nullopt);
       }
 
-      if (future.valid()) {
+      if (run_callbacks_inline) {
+        RunCallbacksInline(build_records(std::move(*response_headers)), callback, &stopped);
+      } else if (future.valid()) {
         future.wait();
       }
     }
@@ -688,13 +710,24 @@ class Bucket : public IBucket {
     std::mutex data_mutex;
     std::future<void> future;
     bool stopped = false;
+    std::optional<IHttpClient::Headers> response_headers;
+    const bool run_callbacks_inline = IsCallbackWorkerThread();
 
     IHttpClient::Headers request_headers;
     request_headers.emplace(std::string(internal::kHeaderQueryId), std::to_string(query_id));
 
-    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, head,
-                                           this](IHttpClient::Headers&& headers) {
-      auto records = internal::ParseAndBuildBatchedRecordsV2(&data, &data_mutex, head, std::move(headers));
+    auto build_records = [&data, &data_mutex, head](IHttpClient::Headers&& headers) {
+      return internal::ParseAndBuildBatchedRecordsV2(&data, &data_mutex, head, std::move(headers));
+    };
+
+    auto parse_headers_and_receive_data = [&stopped, &callback, &future, &response_headers, run_callbacks_inline,
+                                           &build_records, this](IHttpClient::Headers&& headers) {
+      if (run_callbacks_inline) {
+        response_headers = std::move(headers);
+        return;
+      }
+
+      auto records = build_records(std::move(headers));
       for (auto& record : records) {
         Task task([record = std::move(record), &callback, &stopped] {
           if (stopped) {
@@ -736,7 +769,9 @@ class Bucket : public IBucket {
         data.emplace_back(std::nullopt);
       }
 
-      if (future.valid()) {
+      if (run_callbacks_inline) {
+        RunCallbacksInline(build_records(std::move(*response_headers)), callback, &stopped);
+      } else if (future.valid()) {
         future.wait();
       }
     }
@@ -792,6 +827,21 @@ class Bucket : public IBucket {
     };
     return record;
   }
+
+  static void RunCallbacksInline(const std::vector<ReadableRecord>& records, const ReadRecordCallback& callback,
+                                 bool* stopped) {
+    for (const auto& record : records) {
+      if (*stopped) {
+        break;
+      }
+      *stopped = !callback(record);
+      if (!*stopped) {
+        *stopped = record.last;
+      }
+    }
+  }
+
+  bool IsCallbackWorkerThread() const noexcept { return std::this_thread::get_id() == worker_.get_id(); }
 
   IHttpClient::Headers MakeHeadersFromLabels(const WriteOptions& options) const {
     IHttpClient::Headers headers;
