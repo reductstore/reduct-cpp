@@ -135,6 +135,49 @@ TEST_CASE("reduct::IBucket should write a record in chunks", "[entry_api]") {
   REQUIRE(err == Error::kOk);
 }
 
+TEST_CASE("reduct::IBucket should write a record from chunks shorter than asked for", "[entry_api]") {
+  Fixture ctx;
+  auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket);
+
+  IBucket::Time ts = IBucket::Time::clock::now();
+  std::string blob(1'200'000, 'x');
+  for (size_t i = 0; i < blob.size(); ++i) {
+    blob[i] = static_cast<char>('a' + i % 26);
+  }
+
+  // Each call returns at most 1,000 bytes, far less than the client asks for.
+  REQUIRE(bucket->Write("entry", ts, [&blob](auto rec) {
+    rec->Write(blob.size(), [&](auto offset, auto size) {
+      return std::pair{true, blob.substr(offset, std::min<size_t>(size, 1'000))};
+    });
+  }) == Error::kOk);
+
+  err = bucket->Read("entry", ts, [&blob](auto record) {
+    auto [data, read_err] = record.ReadAll();
+    REQUIRE(read_err == Error::kOk);
+    REQUIRE(data == blob);
+    return true;
+  });
+  REQUIRE(err == Error::kOk);
+}
+
+TEST_CASE("reduct::IBucket should fail a write when the callback returns no data", "[entry_api]") {
+  Fixture ctx;
+  auto [bucket, err] = ctx.client->CreateBucket(kBucketName);
+  REQUIRE(err == Error::kOk);
+  REQUIRE(bucket);
+
+  const std::string blob(1'200'000, 'x');
+  err = bucket->Write("entry", IBucket::Time::clock::now(), [&blob](auto rec) {
+    rec->Write(blob.size(), [&](auto offset, auto size) {
+      return std::pair{true, offset == 0 ? blob.substr(0, size) : std::string{}};
+    });
+  });
+  REQUIRE(err != Error::kOk);
+}
+
 TEST_CASE("reduct::IBucket should query records", "[entry_api][1_13]") {
   auto [head, content] = GENERATE(std::make_tuple(false, "some_data1some_data2some_data3"), std::make_tuple(true, ""));
   CAPTURE(head);
