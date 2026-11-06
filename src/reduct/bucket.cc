@@ -232,6 +232,12 @@ class Bucket : public IBucket {
             return false;
           }
 
+          if (const auto remove = record.labels.find("remove");
+              remove != record.labels.end() && remove->second == "true") {
+            attachments.erase(key->second);
+            return true;
+          }
+
           try {
             [[maybe_unused]] auto parsed = nlohmann::json::parse(payload);
           } catch (const std::exception& ex) {

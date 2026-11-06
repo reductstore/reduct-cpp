@@ -791,14 +791,19 @@ TEST_CASE("reduct::IBucket should write and read entry attachments", "[entry_api
       {"meta-1", R"({"enabled":true,"values":[1,2,3]})"},
       {"meta-2", R"({"name":"test"})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"meta-1", R"({"enabled":false,"values":[4,5,6]})"},
+      {"meta-2", R"({"name":"updated"})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
 
   auto [stored, err] = bucket->ReadAttachments("entry-1");
   REQUIRE(err == Error::kOk);
   REQUIRE(stored.size() == 2);
-  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
-  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(attachments.at("meta-2")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(updated_attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(updated_attachments.at("meta-2")));
 }
 
 TEST_CASE("reduct::IBucket should read attachments from a query callback", "[entry_api][1_19]") {
@@ -949,15 +954,29 @@ TEST_CASE("reduct::IBucket should remove selected entry attachments", "[entry_ap
       {"meta-1", R"({"value":1})"},
       {"meta-2", R"({"value":2})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"meta-1", R"({"value":10})"},
+      {"meta-2", R"({"value":20})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
+
+  auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err_before == Error::kOk);
+  REQUIRE(stored_before.size() == 2);
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-1")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-2")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-2")));
+
   REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"meta-1"}) == Error::kOk);
 
   auto [stored, err] = bucket->ReadAttachments("entry-1");
   REQUIRE(err == Error::kOk);
   REQUIRE(stored.size() == 1);
   REQUIRE(stored.contains("meta-2"));
-  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(attachments.at("meta-2")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-2")) == nlohmann::json::parse(updated_attachments.at("meta-2")));
 }
 
 TEST_CASE("reduct::IBucket should remove all entry attachments", "[entry_api][1_19]") {
@@ -969,8 +988,22 @@ TEST_CASE("reduct::IBucket should remove all entry attachments", "[entry_api][1_
       {"meta-1", R"({"value":1})"},
       {"meta-2", R"({"value":2})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"meta-1", R"({"value":10})"},
+      {"meta-2", R"({"value":20})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
+
+  auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err_before == Error::kOk);
+  REQUIRE(stored_before.size() == 2);
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-1")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-2")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-2")));
+
   REQUIRE(bucket->RemoveAttachments("entry-1", {}) == Error::kOk);
 
   auto [stored, err] = bucket->ReadAttachments("entry-1");
@@ -987,16 +1020,22 @@ TEST_CASE("reduct::IBucket should remove entry attachments with numeric keys", "
       {"1", R"({"enabled":true,"values":[1,2,3]})"},
       {"2.5", R"({"name":"test"})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"1", R"({"enabled":false,"values":[4,5,6]})"},
+      {"2.5", R"({"name":"updated"})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
 
   auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
   REQUIRE(err_before == Error::kOk);
   REQUIRE(stored_before.size() == 2);
   REQUIRE(stored_before.contains("1"));
   REQUIRE(stored_before.contains("2.5"));
-  REQUIRE(nlohmann::json::parse(stored_before.at("1")) == nlohmann::json::parse(attachments.at("1")));
-  REQUIRE(nlohmann::json::parse(stored_before.at("2.5")) == nlohmann::json::parse(attachments.at("2.5")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("1")) == nlohmann::json::parse(updated_attachments.at("1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("2.5")) ==
+          nlohmann::json::parse(updated_attachments.at("2.5")));
 
   REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"1", "2.5"}) == Error::kOk);
 
@@ -1016,15 +1055,32 @@ TEST_CASE("reduct::IBucket should remove entry attachments with reserved keys", 
       {"$system", R"({"value":"test"})"},
       {"$internal", R"({"value":"hidden"})"},
   };
+  IBucket::AttachmentMap updated_attachments{
+      {"meta-1", R"({"value":10})"},
+      {"$system", R"({"value":"updated"})"},
+      {"$internal", R"({"value":"visible"})"},
+  };
 
   REQUIRE(bucket->WriteAttachments("entry-1", attachments) == Error::kOk);
+  REQUIRE(bucket->WriteAttachments("entry-1", updated_attachments) == Error::kOk);
+
+  auto [stored_before, err_before] = bucket->ReadAttachments("entry-1");
+  REQUIRE(err_before == Error::kOk);
+  REQUIRE(stored_before.size() == 3);
+  REQUIRE(nlohmann::json::parse(stored_before.at("meta-1")) ==
+          nlohmann::json::parse(updated_attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("$system")) ==
+          nlohmann::json::parse(updated_attachments.at("$system")));
+  REQUIRE(nlohmann::json::parse(stored_before.at("$internal")) ==
+          nlohmann::json::parse(updated_attachments.at("$internal")));
+
   REQUIRE(bucket->RemoveAttachments("entry-1", std::set<std::string>{"$system", "$internal"}) == Error::kOk);
 
   auto [stored, err] = bucket->ReadAttachments("entry-1");
   REQUIRE(err == Error::kOk);
   REQUIRE(stored.size() == 1);
   REQUIRE(stored.contains("meta-1"));
-  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(attachments.at("meta-1")));
+  REQUIRE(nlohmann::json::parse(stored.at("meta-1")) == nlohmann::json::parse(updated_attachments.at("meta-1")));
 }
 
 
