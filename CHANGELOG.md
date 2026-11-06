@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## 1.21.3 - 2026-11-06
+
 ### Fixed
 
 - Prevent deadlocks when reads or queries are invoked from a callback on the same bucket, [PR-146](https://github.com/reductstore/reduct-cpp/pull/146)
