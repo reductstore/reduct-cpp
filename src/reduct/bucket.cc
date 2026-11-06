@@ -629,20 +629,25 @@ class Bucket : public IBucket {
     const bool run_callbacks_inline = IsCallbackWorkerThread();
     std::optional<IHttpClient::Headers> response_headers;
 
-    auto parse_headers_and_receive_data =
-        [&type, &stopped, &data, &data_mutex, &callback, &future, head, run_callbacks_inline, &response_headers,
-         this](IHttpClient::Headers&& headers) {
-      if (run_callbacks_inline) {
-        response_headers = std::move(headers);
-        return;
-      }
-
+    auto build_records = [&type, &data, &data_mutex, head, this](IHttpClient::Headers&& headers) {
       std::vector<ReadableRecord> records;
       if (type == ReadType::kBatched) {
         records = internal::ParseAndBuildBatchedRecordsV1(&data, &data_mutex, head, std::move(headers));
       } else {
         records.emplace_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(headers)));
       }
+      return records;
+    };
+
+    auto parse_headers_and_receive_data =
+        [&stopped, &callback, &future, run_callbacks_inline, &response_headers,
+         &build_records, this](IHttpClient::Headers&& headers) {
+      if (run_callbacks_inline) {
+        response_headers = std::move(headers);
+        return;
+      }
+
+      auto records = build_records(std::move(headers));
       for (auto& record : records) {
         Task task([record = std::move(record), &callback, &stopped] {
           if (stopped) {
@@ -684,23 +689,8 @@ class Bucket : public IBucket {
         data.emplace_back(std::nullopt);
       }
 
-      if (response_headers) {
-        std::vector<ReadableRecord> records;
-        if (type == ReadType::kBatched) {
-          records = internal::ParseAndBuildBatchedRecordsV1(&data, &data_mutex, head, std::move(*response_headers));
-        } else {
-          records.emplace_back(ParseAndBuildSingleRecord(&data, &data_mutex, head, std::move(*response_headers)));
-        }
-
-        for (const auto& record : records) {
-          if (stopped) {
-            break;
-          }
-          stopped = !callback(record);
-          if (!stopped) {
-            stopped = record.last;
-          }
-        }
+      if (run_callbacks_inline) {
+        RunCallbacksInline(build_records(std::move(*response_headers)), callback, &stopped);
       } else if (future.valid()) {
         future.wait();
       }
@@ -720,14 +710,18 @@ class Bucket : public IBucket {
     IHttpClient::Headers request_headers;
     request_headers.emplace(std::string(internal::kHeaderQueryId), std::to_string(query_id));
 
-    auto parse_headers_and_receive_data = [&stopped, &data, &data_mutex, &callback, &future, &response_headers, head,
-                                           run_callbacks_inline, this](IHttpClient::Headers&& headers) {
+    auto build_records = [&data, &data_mutex, head](IHttpClient::Headers&& headers) {
+      return internal::ParseAndBuildBatchedRecordsV2(&data, &data_mutex, head, std::move(headers));
+    };
+
+    auto parse_headers_and_receive_data = [&stopped, &callback, &future, &response_headers, run_callbacks_inline,
+                                           &build_records, this](IHttpClient::Headers&& headers) {
       if (run_callbacks_inline) {
         response_headers = std::move(headers);
         return;
       }
 
-      auto records = internal::ParseAndBuildBatchedRecordsV2(&data, &data_mutex, head, std::move(headers));
+      auto records = build_records(std::move(headers));
       for (auto& record : records) {
         Task task([record = std::move(record), &callback, &stopped] {
           if (stopped) {
@@ -769,18 +763,8 @@ class Bucket : public IBucket {
         data.emplace_back(std::nullopt);
       }
 
-      if (response_headers) {
-        auto records =
-            internal::ParseAndBuildBatchedRecordsV2(&data, &data_mutex, head, std::move(*response_headers));
-        for (const auto& record : records) {
-          if (stopped) {
-            break;
-          }
-          stopped = !callback(record);
-          if (!stopped) {
-            stopped = record.last;
-          }
-        }
+      if (run_callbacks_inline) {
+        RunCallbacksInline(build_records(std::move(*response_headers)), callback, &stopped);
       } else if (future.valid()) {
         future.wait();
       }
@@ -836,6 +820,19 @@ class Bucket : public IBucket {
       return Error::kOk;
     };
     return record;
+  }
+
+  static void RunCallbacksInline(const std::vector<ReadableRecord>& records, const ReadRecordCallback& callback,
+                                 bool* stopped) {
+    for (const auto& record : records) {
+      if (*stopped) {
+        break;
+      }
+      *stopped = !callback(record);
+      if (!*stopped) {
+        *stopped = record.last;
+      }
+    }
   }
 
   bool IsCallbackWorkerThread() const noexcept { return std::this_thread::get_id() == worker_.get_id(); }
