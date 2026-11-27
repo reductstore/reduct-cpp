@@ -336,6 +336,14 @@ class IBucket {
     std::optional<Time> timestamp;
     LabelMap labels;
     std::string content_type;
+    bool sync = false;
+  };
+
+  /**
+   * Options for writing a batch of records
+   */
+  struct BatchWriteOptions {
+    bool sync = false;
   };
 
   /**
@@ -358,11 +366,31 @@ class IBucket {
                                                        BatchCallback callback) const noexcept = 0;
 
   /**
+   * Write a batch of records in one HTTP request with options
+   * @param entry_name entry in bucket
+   * @param options options for the batch write
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  [[nodiscard]] virtual Result<BatchErrors> WriteBatch(std::string_view entry_name,
+                                                       const BatchWriteOptions& options,
+                                                       BatchCallback callback) const noexcept = 0;
+
+  /**
    * Write a batch of records in one HTTP request (targeting multiple entries)
    * @param callback a callback to add records to batch
    * @return HTTP error or map of errors for each record
    */
   [[nodiscard]] virtual Result<BatchRecordErrors> WriteBatch(BatchCallback callback) const noexcept = 0;
+
+  /**
+   * Write a batch of records in one HTTP request (targeting multiple entries) with options
+   * @param options options for the batch write
+   * @param callback a callback to add records to batch
+   * @return HTTP error or map of errors for each record
+   */
+  [[nodiscard]] virtual Result<BatchRecordErrors> WriteBatch(const BatchWriteOptions& options,
+                                                              BatchCallback callback) const noexcept = 0;
 
   /**
    * Write labels of an existing record

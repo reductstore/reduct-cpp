@@ -16,9 +16,10 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV2(
     std::deque<std::optional<std::string>>* data, std::mutex* mutex, bool head, IHttpClient::Headers&& headers);
 
 Result<IBucket::BatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path,
-                                            std::string_view entry_name, IBucket::Batch batch, BatchType type);
+                                            std::string_view entry_name, IBucket::Batch batch, BatchType type,
+                                            bool sync = false);
 Result<IBucket::BatchRecordErrors> ProcessBatchV2Records(IHttpClient* client, std::string_view io_path,
-                                                         IBucket::Batch batch, BatchType type);
+                                                         IBucket::Batch batch, BatchType type, bool sync = false);
 
 }  // namespace reduct::internal
 

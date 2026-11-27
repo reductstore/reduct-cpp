@@ -38,7 +38,11 @@ TEST_CASE("reduct::IBucket should write/read a record", "[entry_api]") {
   err = bucket->Write(
       "entry",
       IBucket::WriteOptions{
-          .timestamp = ts, .labels = {{"label1", "value1"}, {"label2", "value2"}}, .content_type = "text/plain"},
+          .timestamp = ts,
+          .labels = {{"label1", "value1"}, {"label2", "value2"}},
+          .content_type = "text/plain",
+          .sync = true,
+      },
       [&blob](auto rec) { rec->WriteAll(blob); });
   REQUIRE(err == Error::kOk);
 
@@ -486,11 +490,12 @@ TEST_CASE("reduct::IBucket should write shared data in a batch across entries", 
   auto small = std::make_shared<const std::string>("small");
 
   IBucket::Time ts{};
-  auto [errors, err] = bucket->WriteBatch([&](IBucket::Batch* batch) {
-    batch->AddRecord("entry-a", ts, big, "application/mcap", {{"k", "v"}});
-    batch->AddRecord("entry-b", ts, small);
-    batch->AddRecord("entry-a", ts + us(1), small);
-  });
+  auto [errors, err] = bucket->WriteBatch(
+      IBucket::BatchWriteOptions{.sync = true}, [&](IBucket::Batch* batch) {
+        batch->AddRecord("entry-a", ts, big, "application/mcap", {{"k", "v"}});
+        batch->AddRecord("entry-b", ts, small);
+        batch->AddRecord("entry-a", ts + us(1), small);
+      });
 
   REQUIRE(err == Error::kOk);
   REQUIRE(errors.empty());
@@ -528,7 +533,7 @@ TEST_CASE("reduct::IBucket should write batch of records", "[bucket_api][1_7]") 
 
   auto t = IBucket::Time();
   REQUIRE(bucket
-              ->WriteBatch("entry-1",
+              ->WriteBatch("entry-1", IBucket::BatchWriteOptions{.sync = true},
                            [t](IBucket::Batch* batch) {
                              batch->AddRecord(t, "some_data1");
                              batch->AddRecord(t + us(1), "some_data2", "text/plain");

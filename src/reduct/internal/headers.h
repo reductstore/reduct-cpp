@@ -18,6 +18,7 @@ constexpr std::string_view kHeaderLabelPrefix = "x-reduct-label-";
 constexpr std::string_view kHeaderEntries = "x-reduct-entries";
 constexpr std::string_view kHeaderStartTs = "x-reduct-start-ts";
 constexpr std::string_view kHeaderLabels = "x-reduct-labels";
+constexpr std::string_view kHeaderSyncWrite = "x-reduct-sync-write";
 
 }  // namespace reduct::internal
 
