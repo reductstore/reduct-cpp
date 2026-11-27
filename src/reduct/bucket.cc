@@ -29,7 +29,6 @@
 
 #include "reduct/internal/batch_v1.h"
 #include "reduct/internal/batch_v2.h"
-#include "reduct/internal/bucket.h"
 #include "reduct/internal/headers.h"
 #include "reduct/internal/http_client.h"
 #include "reduct/internal/serialisation.h"
@@ -46,15 +45,11 @@ class Bucket : public IBucket {
  public:
   Bucket(std::string_view url, std::string_view name, const HttpOptions& options,
          std::optional<std::string> api_version = std::nullopt)
-      : Bucket(name, IHttpClient::Build(url, options)) {
+      : client_(IHttpClient::Build(url, options)), name_(name), path_(fmt::format("/b/{}", name)),
+        io_path_(fmt::format("/io/{}", name)), stop_{} {
     if (api_version) {
       client_->SetApiVersion(api_version);
     }
-  }
-
-  Bucket(std::string_view name, std::unique_ptr<IHttpClient> client)
-      : client_(std::move(client)), name_(name), path_(fmt::format("/b/{}", name)),
-        io_path_(fmt::format("/io/{}", name)), stop_{} {
     worker_ = std::thread([this] {
       while (!stop_) {
         Task task;
@@ -1000,11 +995,6 @@ std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string
 std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name, const HttpOptions& options,
                                         std::optional<std::string> api_version) noexcept {
   return std::make_unique<Bucket>(server_url, name, options, std::move(api_version));
-}
-
-std::unique_ptr<IBucket> internal::BuildBucketForTesting(std::string_view name,
-                                                         std::unique_ptr<IHttpClient> client) noexcept {
-  return std::make_unique<Bucket>(name, std::move(client));
 }
 
 // Settings
