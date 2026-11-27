@@ -30,7 +30,8 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV1(
     std::deque<std::optional<std::string>>* data, std::mutex* mutex, bool head, IHttpClient::Headers&& headers);
 
 Result<IBucket::BatchErrors> ProcessBatchV1(IHttpClient* client, std::string_view bucket_path,
-                                            std::string_view entry_name, IBucket::Batch batch, BatchType type);
+                                            std::string_view entry_name, IBucket::Batch batch, BatchType type,
+                                            bool sync = false);
 
 }  // namespace reduct::internal
 

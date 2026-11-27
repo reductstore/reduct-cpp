@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- Add opt-in synchronous writes (`sync`) for single-record and batch write requests
+
 ## 1.21.3 - 2026-11-06
 
 ### Fixed

@@ -15,6 +15,7 @@ set(SRC_FILES
     reduct/replication_api_test.cc
     reduct/lifecycle_api_test.cc
     reduct/server_api_test.cc
+    reduct/sync_write_test.cc
     reduct/token_api_test.cc
     test.cc
 )

@@ -431,7 +431,11 @@ Result<BatchV2Request> BuildBatchV2Request(std::string_view default_entry, const
 Result<std::tuple<std::string, IHttpClient::Headers>> SendBatchV2(IHttpClient* client, std::string_view io_path,
                                                                   BatchType type, IBucket::Batch batch,
                                                                   std::vector<size_t> ordered,
-                                                                  IHttpClient::Headers headers) {
+                                                                  IHttpClient::Headers headers, bool sync) {
+  if (sync && type == BatchType::kWrite) {
+    headers.emplace(std::string(kHeaderSyncWrite), "true");
+  }
+
   switch (type) {
     case BatchType::kWrite: {
       const auto content_length = batch.size();
@@ -451,7 +455,7 @@ Result<std::tuple<std::string, IHttpClient::Headers>> SendBatchV2(IHttpClient* c
 }
 
 Result<IBucket::BatchErrors> ProcessBatchV2(IHttpClient* client, std::string_view io_path, std::string_view entry_name,
-                                            IBucket::Batch batch, BatchType type) {
+                                            IBucket::Batch batch, BatchType type, bool sync) {
   auto [request, request_err] = BuildBatchV2Request(entry_name, batch, type, false);
   if (request_err) {
     return {{}, std::move(request_err)};
@@ -461,7 +465,8 @@ Result<IBucket::BatchErrors> ProcessBatchV2(IHttpClient* client, std::string_vie
   }
 
   auto [resp, err] =
-      SendBatchV2(client, io_path, type, std::move(batch), std::move(request.ordered), std::move(request.headers));
+      SendBatchV2(client, io_path, type, std::move(batch), std::move(request.ordered), std::move(request.headers),
+                  sync);
   if (err) {
     return {{}, err};
   }
@@ -490,7 +495,7 @@ Result<IBucket::BatchErrors> ProcessBatchV2(IHttpClient* client, std::string_vie
 }
 
 Result<IBucket::BatchRecordErrors> ProcessBatchV2Records(IHttpClient* client, std::string_view io_path,
-                                                         IBucket::Batch batch, BatchType type) {
+                                                         IBucket::Batch batch, BatchType type, bool sync) {
   auto [request, request_err] = BuildBatchV2Request("", batch, type, true);
   if (request_err) {
     return {{}, std::move(request_err)};
@@ -500,7 +505,8 @@ Result<IBucket::BatchRecordErrors> ProcessBatchV2Records(IHttpClient* client, st
   }
 
   auto [resp, err] =
-      SendBatchV2(client, io_path, type, std::move(batch), std::move(request.ordered), std::move(request.headers));
+      SendBatchV2(client, io_path, type, std::move(batch), std::move(request.ordered), std::move(request.headers),
+                  sync);
   if (err) {
     return {{}, err};
   }

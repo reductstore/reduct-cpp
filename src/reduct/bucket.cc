@@ -29,6 +29,7 @@
 
 #include "reduct/internal/batch_v1.h"
 #include "reduct/internal/batch_v2.h"
+#include "reduct/internal/bucket.h"
 #include "reduct/internal/headers.h"
 #include "reduct/internal/http_client.h"
 #include "reduct/internal/serialisation.h"
@@ -45,13 +46,15 @@ class Bucket : public IBucket {
  public:
   Bucket(std::string_view url, std::string_view name, const HttpOptions& options,
          std::optional<std::string> api_version = std::nullopt)
-      : path_(fmt::format("/b/{}", name)), io_path_(fmt::format("/io/{}", name)), stop_{} {
-    name_ = name;
-    client_ = IHttpClient::Build(url, options);
+      : Bucket(name, IHttpClient::Build(url, options)) {
     if (api_version) {
       client_->SetApiVersion(api_version);
     }
+  }
 
+  Bucket(std::string_view name, std::unique_ptr<IHttpClient> client)
+      : client_(std::move(client)), name_(name), path_(fmt::format("/b/{}", name)),
+        io_path_(fmt::format("/io/{}", name)), stop_{} {
     worker_ = std::thread([this] {
       while (!stop_) {
         Task task;
@@ -167,16 +170,29 @@ class Bucket : public IBucket {
     const auto content_type = options.content_type.empty() ? "application/octet-stream" : options.content_type;
 
     IHttpClient::Headers headers = MakeHeadersFromLabels(options);
+    if (options.sync) {
+      headers.emplace(std::string(internal::kHeaderSyncWrite), "true");
+    }
     return client_->Post(fmt::format("{}/{}?ts={}", path_, entry_name, time), content_type, record.content_length_,
                          std::move(headers), std::move(record.callback_));
   }
 
   Result<BatchErrors> WriteBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
-    return ProcessBatchV1(entry_name, std::move(callback), BatchType::kWrite);
+    return WriteBatch(entry_name, {}, std::move(callback));
+  }
+
+  Result<BatchErrors> WriteBatch(std::string_view entry_name, const BatchWriteOptions& options,
+                                 BatchCallback callback) const noexcept override {
+    return ProcessBatchV1(entry_name, std::move(callback), BatchType::kWrite, options.sync);
   }
 
   Result<BatchRecordErrors> WriteBatch(BatchCallback callback) const noexcept override {
-    return ProcessBatchV2(std::move(callback), BatchType::kWrite);
+    return WriteBatch(BatchWriteOptions{}, std::move(callback));
+  }
+
+  Result<BatchRecordErrors> WriteBatch(const BatchWriteOptions& options,
+                                       BatchCallback callback) const noexcept override {
+    return ProcessBatchV2(std::move(callback), BatchType::kWrite, options.sync);
   }
 
   Result<BatchErrors> UpdateBatch(std::string_view entry_name, BatchCallback callback) const noexcept override {
@@ -919,19 +935,19 @@ class Bucket : public IBucket {
     return Error::kOk;
   }
 
-  Result<BatchErrors> ProcessBatchV1(std::string_view entry_name, BatchCallback callback,
-                                     BatchType type) const noexcept {
+  Result<BatchErrors> ProcessBatchV1(std::string_view entry_name, BatchCallback callback, BatchType type,
+                                     bool sync = false) const noexcept {
     Batch batch;
     callback(&batch);
 
     if (SupportsBatchProtocolV2()) {
-      return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type);
+      return internal::ProcessBatchV2(client_.get(), io_path_, entry_name, std::move(batch), type, sync);
     }
 
-    return internal::ProcessBatchV1(client_.get(), path_, entry_name, std::move(batch), type);
+    return internal::ProcessBatchV1(client_.get(), path_, entry_name, std::move(batch), type, sync);
   }
 
-  Result<BatchRecordErrors> ProcessBatchV2(BatchCallback callback, BatchType type) const noexcept {
+  Result<BatchRecordErrors> ProcessBatchV2(BatchCallback callback, BatchType type, bool sync = false) const noexcept {
     Batch batch;
     callback(&batch);
 
@@ -940,7 +956,7 @@ class Bucket : public IBucket {
     }
 
     if (SupportsBatchProtocolV2()) {
-      return internal::ProcessBatchV2Records(client_.get(), io_path_, std::move(batch), type);
+      return internal::ProcessBatchV2Records(client_.get(), io_path_, std::move(batch), type, sync);
     }
 
     std::string entry_name;
@@ -955,7 +971,7 @@ class Bucket : public IBucket {
       return {{}, Error{.code = 400, .message = "Entry name is required"}};
     }
 
-    auto [errors, err] = internal::ProcessBatchV1(client_.get(), path_, entry_name, std::move(batch), type);
+    auto [errors, err] = internal::ProcessBatchV1(client_.get(), path_, entry_name, std::move(batch), type, sync);
     if (err) {
       return {{}, err};
     }
@@ -984,6 +1000,11 @@ std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string
 std::unique_ptr<IBucket> IBucket::Build(std::string_view server_url, std::string_view name, const HttpOptions& options,
                                         std::optional<std::string> api_version) noexcept {
   return std::make_unique<Bucket>(server_url, name, options, std::move(api_version));
+}
+
+std::unique_ptr<IBucket> internal::BuildBucketForTesting(std::string_view name,
+                                                         std::unique_ptr<IHttpClient> client) noexcept {
+  return std::make_unique<Bucket>(name, std::move(client));
 }
 
 // Settings

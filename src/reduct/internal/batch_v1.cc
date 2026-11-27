@@ -191,7 +191,8 @@ std::vector<IBucket::ReadableRecord> ParseAndBuildBatchedRecordsV1(
 }
 
 Result<IBucket::BatchErrors> ProcessBatchV1(IHttpClient* client, std::string_view bucket_path,
-                                            std::string_view entry_name, IBucket::Batch batch, BatchType type) {
+                                            std::string_view entry_name, IBucket::Batch batch, BatchType type,
+                                            bool sync) {
   auto ordered = SortRecords(batch, std::string(entry_name), false);
 
   std::set<std::string> unique_entries;
@@ -226,6 +227,10 @@ Result<IBucket::BatchErrors> ProcessBatchV1(IHttpClient* client, std::string_vie
         headers.emplace(key, "0,");
         break;
     }
+  }
+
+  if (sync && type == BatchType::kWrite) {
+    headers.emplace(std::string(kHeaderSyncWrite), "true");
   }
 
   Result<std::tuple<std::string, IHttpClient::Headers>> resp_result;
